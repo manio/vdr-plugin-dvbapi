@@ -1,0 +1,37 @@
+TOC
+1. Introduction
+2. Getting the source code
+3. Installing 
+
+
+-----------------------------------------------------------------------------
+1. Introduction
+-----------------------------------------------------------------------------
+
+DVBAPI plugin for VDR
+
+  The plugin is simplified version of VDR-SC plugin, with modifications from dvbapi-patch.tar.gz.
+  
+Refer to INSTALL for installation and usage procedure
+
+Can be freely distributed and modified under GPL lincense.
+
+NOTE TO NEW LINUX USERS: All lines that are prefixed with the '$'
+character are commands that need to be typed into a terminal window /
+console (similar to the command prompt for Windows). Note that the '$'
+character itself should NOT be typed as part of the command.
+
+
+-----------------------------------------------------------------------------
+2. Getting the source code
+-----------------------------------------------------------------------------
+
+You will have to grab the source code of course. First install the git
+package provided by your distribution. Then from a terminal, type:
+
+   $ cd /usr/local/src/vdr/PLUGINS/srv
+   $ git clone .
+
+-----------------------------------------------------------------------------
+3. Installing
+-----------------------------------------------------------------------------
