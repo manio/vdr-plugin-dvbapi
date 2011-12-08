@@ -1,7 +1,7 @@
 TOC
 1. Introduction
 2. Getting the source code
-3. Installing 
+3. Basic Installation
 
 
 -----------------------------------------------------------------------------
@@ -33,5 +33,17 @@ package provided by your distribution. Then from a terminal, type:
    $ git clone .
 
 -----------------------------------------------------------------------------
-3. Installing
+3. Basic Installation 
 -----------------------------------------------------------------------------
+
+   Briefly, the shell commands `./configure; make; make install' should
+configure, build, and install this package. 
+
+ Run`configure --help' for more details.
+
+Using:
+ 1) Start the softcam with LD_PRELOAD:
+ LD_PRELOAD=/usr/local/lib/dvbapi_ca.so /usr/local/bin/oscam -b
+ 
+ 2) Start the VDR with dvbpi plugin
+ /usr/local/bin/vdr -c /etc/vdr -E /var/vdr -L /usr/local/lib/vdr -P dvbapi 
