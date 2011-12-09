@@ -2,7 +2,8 @@ TOC
 1. Introduction
 2. Getting the source code
 3. Basic Installation
-
+4. Thanks area
+5. Important links
 
 -----------------------------------------------------------------------------
 1. Introduction
@@ -12,7 +13,7 @@ DVBAPI plugin for VDR
 
   The plugin is simplified version of VDR-SC plugin, with modifications from dvbapi-patch.tar.gz.
   
-Refer to INSTALL for installation and usage procedure
+Refer to INSTALL/README for installation and usage procedure
 
 Can be freely distributed and modified under GPL lincense.
 
@@ -47,3 +48,42 @@ Using:
  
  2) Start the VDR with dvbpi plugin
  /usr/local/bin/vdr -c /etc/vdr -E /var/vdr -L /usr/local/lib/vdr -P dvbapi 
+
+ 3) In the oscam.conf file add following options
+	[dvbapi]
+	enabled = 1
+	au = 1
+	boxtype = pc    
+	user = vdr
+	pmt_mode = 1
+	request_mode = 1
+
+   boxtype to "pc" will allow oscam to take adapter/demux information from CAPMT frame.
+   pmt_mode to "1" will allow oscam to use camd.socket in /tmp/ dir
+
+-----------------------------------------------------------------------------
+4. Thanks area
+-----------------------------------------------------------------------------
+
+I will like to give a big thanks to a number of people over the Oscam/eurocardsharing forum for 
+there great help and support.
+
+ To Aigars for creating this simplefied plugin.
+
+ To Narog for implementing the multiple adapter support
+ 
+ To Peje/Unixer/Copper/Manio for there patience, support and testing.
+ 
+ To the authors of SC plugin, FFdecsa and Oscam for there greate work and dedication
+
+ In last to all other forum members that have/will contribute to this plugin.
+
+-----------------------------------------------------------------------------
+5. Important links
+-----------------------------------------------------------------------------
+Remember to read the full threads on the forums.
+
+Oscam Forum: How to use DVBAPI with normal x86 Linux and VDR
+
+http://www.oscam.to/wbb3/index.php?page=Thread&threadID=7462&pageNo=1
+

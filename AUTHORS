@@ -1,1 +1,27 @@
+To Aigars for creating this simplefied plugin.
+To Narog for implementing the multiple adapter support
 
+
+Version 1.0.4 - 20111207:
+
+Narog adapted the CAPMT message to support demux/adapter information, moving the PMT information 2 bytes down 
+on the CAPMT frame.
+
+Version 1.0.3 - 20111202:
+
+Narog incorporated the adapter/demux information in the CAPMT message.
+This code worked for some cards, but not for dvb-t card.
+
+Version 1.0.2 - 201111xx:
+
+Narog added some support for multiple adapters using a file to tell dvbapi_ca what adapter was in use.
+This code didnt work correctly and was dumped.
+
+Version 1.0.1 - 20110615:
+
+Aigars fix some problem with the dvbapi_ca.so shared library
+
+
+Version 1.0.0 - 20110614:
+
+Aigars created first version of the plugin using SC vdr plugin and with modifications from dvbapi-patch.tar.gz
