@@ -148,8 +148,8 @@ CAPMT::~CAPMT()
         }
         
         length=((buffer[2]&0xf)<<8) + buffer[3]+3;
-#ifdef PMT_FILE
         close(fd);  // just in case ;)
+#ifdef PMT_FILE
               FILE *fout=fopen("/tmp/pmt.tmp","wt");
               for (k=0;k<length;k++)
               {
