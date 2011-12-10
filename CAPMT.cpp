@@ -183,7 +183,7 @@ CAPMT::~CAPMT()
         	snprintf(serv_addr_un.sun_path,sizeof(serv_addr_un.sun_path),"/tmp/camd.socket");
         	if(connect(camdSocket,(const sockaddr*)&serv_addr_un,sizeof(serv_addr_un))!=0)
         	{
-               esyslog("DVPAPI: Canot connecto to /tmp/camd.socket, Do you have softcam running?");
+               esyslog("DVPAPI: Canot connecto to /tmp/camd.socket, Do you have OSCam running?");
         	   camdSocket=0;
         	}
         }
