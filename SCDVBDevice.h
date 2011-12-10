@@ -87,6 +87,8 @@ public:
   bool SetChannelDevice(const cChannel *Channel, bool LiveView);
   bool Ready(void);
   bool SetCaPid(ca_pid_t *ca_pid);
+  CAPMT *GetCAPMT();
+  void SetReady(bool Ready);
 
 
   };

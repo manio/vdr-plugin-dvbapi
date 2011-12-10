@@ -56,6 +56,7 @@ public:
    virtual bool Assign(cDevice *Device, bool Query=false);
    int GetCaids(int slot, unsigned short *Caids, int max);
   bool Ready(void);
+  SCDVBDevice *GetDevice();
 private:
   int addCaid(int offset,int limit,unsigned short caid);
 
