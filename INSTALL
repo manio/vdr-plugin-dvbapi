@@ -21,3 +21,19 @@ Using:
  2) Start the VDR with dvbpi plugin
  /usr/local/bin/vdr -c /etc/vdr -E /var/vdr -L /usr/local/lib/vdr -P dvbapi 
 
+ 3) In the oscam.conf file add following options
+	[dvbapi]
+	enabled = 1
+	au = 1
+	boxtype = pc    
+	user = vdr
+	pmt_mode = 1
+	request_mode = 1
+
+   boxtype to "pc" will allow oscam to take adapter/demux information from CAPMT frame.
+   pmt_mode to "1" will allow oscam to use camd.socket in /tmp/ dir
+
+ 4) Apply patch in patches directory to oscam source code
+    
+	$ cd oscam
+        $ patch -p1 < /usr/local/src/vdr/PLUGINS/src/dvbapi/patches/oscam-trunk-vdr.diff
