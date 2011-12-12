@@ -50,6 +50,10 @@ SCCIAdapter::SCCIAdapter(SCDVBDevice *sCDVBDevice, int cardIndex)
 
 }
 
+SCDVBDevice *SCCIAdapter::GetDevice()
+{
+  return sCDVBDevice;
+}
 
  int SCCIAdapter::addCaid(int offset,int limit,unsigned short caid)
  {

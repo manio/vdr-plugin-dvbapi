@@ -94,7 +94,7 @@ CAPMT::~CAPMT()
 // oscam also reads PMT file, but it is moch slower
 //#define PMT_FILE
 
- void CAPMT::send(const cChannel *channel )
+ void CAPMT::send(const int sid )
  {
 #ifdef PMT_FILE
    unlink("/tmp/pmt.tmp");
@@ -124,7 +124,7 @@ CAPMT::~CAPMT()
      }
      else
      {
-       pmt_pid=get_pmt_pid(buffer, channel->Sid());
+       pmt_pid=get_pmt_pid(buffer, sid);
        if (pmt_pid==0)
        {
          esyslog("DVPAPI: Error pmt_pid not found");
@@ -141,7 +141,7 @@ CAPMT::~CAPMT()
          {
            esyslog("DVPAPI: Error in read pmt\n");
          }
-         if (channel->Sid()==((buffer[4]<<8)+buffer[5]))
+         if (sid==((buffer[4]<<8)+buffer[5]))
          {
            break;
          }
@@ -159,7 +159,7 @@ CAPMT::~CAPMT()
 #else
         char* caPMT=(char*)malloc(1024);
    // http://cvs.tuxbox.org/lists/tuxbox-cvs-0208/msg00434.html
-        isyslog("DVBAPI: :: CAMPT channelSid =0x%x(%d) ",channel->Sid(),channel->Sid());
+        isyslog("DVBAPI: :: CAMPT channelSid =0x%x(%d) ",sid,sid);
         memcpy(caPMT, "\x9F\x80\x32\x82\xFF\xFB\x03\xFF\xFF\x00\x00\x13\x00", 12);
         int toWrite=(length-12-4-1)+13+2;
         caPMT[4]=(toWrite)>>8;
@@ -183,7 +183,7 @@ CAPMT::~CAPMT()
         	snprintf(serv_addr_un.sun_path,sizeof(serv_addr_un.sun_path),"/tmp/camd.socket");
         	if(connect(camdSocket,(const sockaddr*)&serv_addr_un,sizeof(serv_addr_un))!=0)
         	{
-               esyslog("DVPAPI: Canot connecto to /tmp/camd.socket, Do you have softcam running?");
+               esyslog("DVPAPI: Canot connecto to /tmp/camd.socket, Do you have OSCam running?");
         	   camdSocket=0;
         	}
         }

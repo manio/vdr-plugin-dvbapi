@@ -18,7 +18,7 @@ echo ""
 
 
 # customize here
-FFdecsaDIR="/usr/local/src/vdr/PLUGINS/src/dvbapi/FFdecsa"
+FFdecsaDIR="./FFdecsa"
 OwnFlags=""
 
 # compiler

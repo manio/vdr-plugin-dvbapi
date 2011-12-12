@@ -17,6 +17,7 @@
 // from vdr's ci.c
 #define AOT_CA_INFO_ENQ             0x9F8030
 #define AOT_CA_INFO                 0x9F8031
+#define AOT_CA_PMT                  0x9f8032
 
 
 SCCAMSlot::SCCAMSlot(SCCIAdapter *sCCIAdapter, int cardIndex, int slot) :cCamSlot(sCCIAdapter),checkTimer(-SLOT_CAID_CHECK-1000),rb(KILOBYTE(4),5+LEN_OFF,false,"SC-CI slot answer")
@@ -171,7 +172,60 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
 	  isyslog("DVBAPI: SCCAMSlot::Process %d.%d tag length exceeds data length",cardIndex,slot);
     dlen=len-(data-save);
     }
-  if(tag==AOT_CA_INFO_ENQ)
+  switch(tag) {
+    case AOT_CA_INFO_ENQ:
       CaInfo(tcid,cid);
+      break;
+
+    case AOT_CA_PMT:
+      if(dlen>=6) {
+        int ca_lm=data[0];
+        int ci_cmd=-1;
+        int sid=(data[1]<<8)+data[2];
+        int ilen=(data[4]<<8)+data[5];
+        isyslog("DVBAPI: SCCAMSlot::Process %d.%d CA_PMT decoding len=%x lm=%x prg=%d len=%x",cardIndex,slot,dlen,ca_lm,sid,ilen);
+        data+=6; dlen-=6;
+        if(ilen>0 && dlen>=ilen) {
+          ci_cmd=data[0];
+          }
+        data+=ilen; dlen-=ilen;
+        while(dlen>=5) {
+          ilen=(data[3]<<8)+data[4];
+          data+=5; dlen-=5;
+          if(ilen>0 && dlen>=ilen) {
+            ci_cmd=data[0];
+            }
+          data+=ilen; dlen-=ilen;
+          }
+        isyslog("DVBAPI: SCCAMSlot::Process %d.%d got CA pmt ciCmd=%d caLm=%d",cardIndex,slot,ci_cmd,ca_lm);
+        if(doReply && (ci_cmd==0x03 || (ci_cmd==0x01 && ca_lm==0x03))) {
+          unsigned char *b;
+          if((b=frame.GetBuff(4+11))) {
+            b[0]=0xa0; b[2]=tcid;
+            b[3]=0x90;
+            b[4]=0x02; b[5]=cid<<8; b[6]=cid&0xff;
+            b[7]=0x9f; b[8]=0x80; b[9]=0x33; // AOT_CA_PMT_REPLY
+            b[11]=sid<<8;
+            b[12]=sid&0xff;
+            b[13]=0x00;
+            b[14]=0x81; 	// CA_ENABLE
+            b[10]=4; b[1]=4+9;
+            frame.Put();
+            isyslog("DVBAPI: SCCAMSlot::Process %d.%d answer to query",cardIndex,slot);
+            }
+          }
+        if(sid!=0) {
+          if(ci_cmd==0x04) {
+            isyslog("DVBAPI: SCCAMSlot::Process %d.%d stop decrypt",cardIndex,slot);
+            }
+          if(ci_cmd==0x01 || (ci_cmd==-1 && (ca_lm==0x04 || ca_lm==0x05))) {
+            isyslog("DVBAPI: SCCAMSlot::Process %d.%d set CAM decrypt (SID %d)",cardIndex,slot,sid);
+            sCCIAdapter->GetDevice()->GetCAPMT()->send(sid);
+            sCCIAdapter->GetDevice()->SetReady(true);
+            }
+          }
+        }
+      break;
+    }
  }
 
