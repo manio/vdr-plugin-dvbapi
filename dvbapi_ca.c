@@ -2,9 +2,9 @@
  * gcc -O -fbuiltin -fomit-frame-pointer -fPIC -shared -o dvbapi_ca.so dvbapi_ca.c -ldl
  *
  * run cccam with:
- * LD_PRELOAD=./ca.so ./xxx.i386
+ * LD_PRELOAD=./dvbapi_ca.so; export LD_PRELOAD; ./oscam -d 255 -b
  *
- * Will then send CWs to vdr-sc cardclient cccam
+ * Will then send CWs to vdr-dvbapi cardclient 
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -248,8 +248,14 @@ int ioctl (int fd, int request, void *a) {
   if (!func) func = (int (*) (int, int, void *)) dlsym (REAL_LIBC, "ioctl");
   int i;
   for(i=0;i<MAX_CA;i++)
+  {
     if (fd == cafd[i])
-      return cactl (fd, i, request, a);
+    { 
+	DBG(">>>>>>>> dvbapi.so - ioctl fd is a cai - fd %d cai %d",fd,cafd[i]);  
+   	return cactl (fd, i, request, a);
+     }
+  }
+  DBG(">>>>>>>> dvbapi.so - ioctl fd is not a cai - fd %d",fd);  
   return (*func) (fd, request, a); 
 } // ioctl
 
