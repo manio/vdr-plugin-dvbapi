@@ -61,10 +61,10 @@ eModuleStatus SCCAMSlot::Status(void)
 bool SCCAMSlot::Reset(bool log)
 {
   isyslog("DVBAPI: SCCAMSlot::Reset log=%i",log);
+  reset=true;
   resetTimer.Set(SLOT_RESET_TIME);
   rb.Clear();
 //  if(log) PRINTF(L_CORE_CI,"%d.%d: reset",cardIndex,slot);
-  reset=true;
   isyslog("DVBAPI: SCCAMSlot::Reset Done");
   return reset;
 }

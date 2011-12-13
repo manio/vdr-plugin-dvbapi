@@ -146,9 +146,13 @@ bool DeCSA::Decrypt(unsigned char *data, int len, bool force)
             if(flags[idx]&FL_ACTIVITY)
             {
               flags[idx]&=~FL_ACTIVITY;
-              }
+              if(wait.TimedWait(mutex,MAX_KEY_WAIT))
+                isyslog("DVBAPI: %d.%d: successfully waited for key",cardindex,idx);
+              else
+                isyslog("DVBAPI: %d.%d: timed out. proceeding anyways",cardindex,idx);
             }
           }
+        }
         if(newRange)
         {
           r+=2; newRange=false;
