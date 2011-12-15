@@ -40,10 +40,9 @@ class CAPMT
 public:
 	 CAPMT(int adatper,int demux);
 	  ~CAPMT();
-   void send(const int sid );
+   int send(const int sid, int socket_fd);
   private:
      int adapter;
-	 int camdSocket;
 	 int demux;
 	 int read_t(int fd, unsigned char *buffer);
 	 int set_filter_pmt(int fd, int pid);

@@ -63,9 +63,28 @@ void SCDVBDevice::CiStartDecrypting(void)
 
   bool  SCDVBDevice::SetChannelDevice(const cChannel *Channel, bool LiveView)
  {
-  initialCaDscr=true;
+//  initialCaDscr=true;
+//  isReady=false;
+//  return cDvbDevice::SetChannelDevice(Channel,LiveView);
+
+  // doing it the old way - need to FIX it later - maybe some of following code is not needed
   isReady=false;
-  return cDvbDevice::SetChannelDevice(Channel,LiveView);
+  isyslog("DVBAPI: SCDVBDevice::SetChannelDevice");
+  switchMutex.Lock();
+  isyslog("DVBAPI: SCDVBDevice::SetChannelDevice  SOFTCAM_SWITCH....");
+  bool ret=cDvbDevice::SetChannelDevice(Channel,LiveView);
+  // HERE
+  isyslog("SOFTCAM_SWITCH Device: '%d' Channel: '%d' SID '%d' ", this->DeviceNumber(), Channel->Number(), Channel->Sid());
+  if(HasLock(5000))
+  {
+    isyslog("DVBAPI: SCDVBDevice::SetChannelDevice SOFTCAM_SWITCH HasLock");
+    initialCaDscr=true;
+    //cAPMT->send(Channel->Sid());
+  }
+  isyslog("DVBAPI: SCDVBDevice::SetChannelDevice SOFTCAM_SWITCH Finished ret=%d",ret);
+  //isReady=true;
+  switchMutex.Unlock();
+  return ret;
  }
 
 

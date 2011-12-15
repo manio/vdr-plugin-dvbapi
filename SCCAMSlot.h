@@ -9,6 +9,7 @@
 #define MAX_CW_IDX        16
 #define CAID_TIME      300000 // time between caid scans
 #define TRIGGER_TIME    10000 // min. time between caid scan trigger
+#define MAX_SOCKETS        16 // max sockets (simultaneus channels) per demux
 
 #ifdef VDR_MAXCAID
 #define MAX_CI_SLOT_CAIDS VDR_MAXCAID
@@ -41,8 +42,13 @@ private:
   eModuleStatus lastStatus;
   cRingBufferLinear rb;
   Frame frame;
+  int sids[MAX_SOCKETS];
+  int sockets[MAX_SOCKETS];
+
+  void ProcessSIDRequest(int sid, int ca_lm);
 public:
   SCCAMSlot(SCCIAdapter *ca, int cardIndex, int slot);
+  ~SCCAMSlot();
 
   int GetLength(const unsigned char * &data);
   int LengthSize(int n);

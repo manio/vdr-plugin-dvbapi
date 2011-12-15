@@ -22,6 +22,12 @@
 
 SCCAMSlot::SCCAMSlot(SCCIAdapter *sCCIAdapter, int cardIndex, int slot) :cCamSlot(sCCIAdapter),checkTimer(-SLOT_CAID_CHECK-1000),rb(KILOBYTE(4),5+LEN_OFF,false,"SC-CI slot answer")
 {
+    for (int i=0; i<MAX_SOCKETS; i++)
+    {
+        sids[i] = 0;
+        sockets[i] = 0;
+    }
+
   this->sCCIAdapter=sCCIAdapter;
   this->cardIndex=cardIndex;
   this->slot=slot;
@@ -30,7 +36,17 @@ SCCAMSlot::SCCAMSlot(SCCIAdapter *sCCIAdapter, int cardIndex, int slot) :cCamSlo
   Reset(false);
 }
 
-
+SCCAMSlot::~SCCAMSlot()
+{
+    for (int i=0; i<MAX_SOCKETS; i++)
+    {
+	if(sockets[i] != 0)
+	{
+	    close(sockets[i]);
+	    sockets[i] = 0;
+	}
+    }
+}
 
 eModuleStatus SCCAMSlot::Status(void)
 {
@@ -218,10 +234,9 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
           if(ci_cmd==0x04) {
             isyslog("DVBAPI: SCCAMSlot::Process %d.%d stop decrypt",cardIndex,slot);
             }
-          if(ci_cmd==0x01 || (ci_cmd==-1 && (ca_lm==0x04 || ca_lm==0x05))) {
+          if(ci_cmd==0x01 || ci_cmd==0x03 || (ci_cmd==-1 && (ca_lm==0x04 || ca_lm==0x05))) {
             isyslog("DVBAPI: SCCAMSlot::Process %d.%d set CAM decrypt (SID %d)",cardIndex,slot,sid);
-            sCCIAdapter->GetDevice()->GetCAPMT()->send(sid);
-            sCCIAdapter->GetDevice()->SetReady(true);
+            ProcessSIDRequest(sid, ca_lm);
             }
           }
         }
@@ -229,3 +244,102 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
     }
  }
 
+void SCCAMSlot::ProcessSIDRequest(int sid, int ca_lm)
+{
+/*
+    here is what i found so far analyzing AOT_CA_PMT frame from vdr
+    lm=4 prg=X: request for X SID to be decrypted (added)
+    lm=5 prg=X: request for X SID to stop decryption (removed)
+    lm=3 prg=0: this is sent when changing transponder or during epg scan (also before new channel but ONLY if it is on different transponder)
+*/
+    int i;
+
+//    for (i=0; i<MAX_SOCKETS; i++)
+//        esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest-SOCKETS TABLE DUMP [%d]: sid=%d socket=%d",i,sids[i],sockets[i]);
+    if (sid == 0)
+    {
+        esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest got empty SID - returning from function");
+        return;
+    }
+    if (ca_lm == 0x04)          //adding new sid
+    {
+        int found = 0;
+        for (i=0; i<MAX_SOCKETS; i++)
+        {
+            if (sids[i] == sid)
+            {
+                found = 1;
+                break;
+            }
+        }
+
+        if (found)
+            esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest found sid, reusing socket, i=%d", i);
+        else                    //not found - adding to first free in table
+        {
+            for (i=0; i<MAX_SOCKETS; i++)
+            {
+                if (sids[i] == 0)
+                {
+                    sids[i] = sid;
+                    break;
+                }
+            }
+        }
+        if (i == MAX_SOCKETS)
+        {
+                esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest ERROR: no free space to new SID!!!");
+                return;
+        }
+        else
+        {
+                sids[i] = sid;
+                esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest added: i=%d", i);
+        }
+    }
+    else if (ca_lm == 0x05)     //removing sid
+    {
+        // optimization: if we have only one socket in use  - just leave it for future use
+        int active = 0, k;
+        for (i=0; i<MAX_SOCKETS; i++)
+        {
+            if (sids[i] != 0)
+            {
+                k = i;          //save index
+                active++;
+            }
+        }
+        if (active == 1)
+        {
+            sids[k] = 0;        //marking only a SID as empty
+            return;
+        }
+
+        for (i=0; i<MAX_SOCKETS; i++)
+        {
+            if (sids[i] == sid)
+                break;
+        }
+        if (i == MAX_SOCKETS)
+        {
+                esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest ERROR: socket to close not found");
+                return;
+        }
+
+        //closing socket (oscam handles this as event and stop decrypting)
+        esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest closing socket i=%d, socket_fd=%d", i, sockets[i]);
+        sids[i] = 0;
+        if (sockets[i] > 0)
+            close(sockets[i]);
+        sockets[i] = 0;
+        return;
+    }
+    else
+    {
+        esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest error: unhandled request type = %d", ca_lm);
+        return;
+    }
+
+    sockets[i] = sCCIAdapter->GetDevice()->GetCAPMT()->send(sid, sockets[i]);
+    sCCIAdapter->GetDevice()->SetReady(true);
+}
