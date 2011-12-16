@@ -251,6 +251,7 @@ void SCCAMSlot::ProcessSIDRequest(int sid, int ca_lm)
     lm=4 prg=X: request for X SID to be decrypted (added)
     lm=5 prg=X: request for X SID to stop decryption (removed)
     lm=3 prg=0: this is sent when changing transponder or during epg scan (also before new channel but ONLY if it is on different transponder)
+    lm=3 prg=X: it seems that this is sent when starting vdr with active timers
 */
     int i;
 
@@ -261,7 +262,7 @@ void SCCAMSlot::ProcessSIDRequest(int sid, int ca_lm)
         esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest got empty SID - returning from function");
         return;
     }
-    if (ca_lm == 0x04)          //adding new sid
+    if (ca_lm == 0x04 || ca_lm == 0x03)          //adding new sid
     {
         int found = 0;
         for (i=0; i<MAX_SOCKETS; i++)
