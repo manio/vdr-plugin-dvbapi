@@ -31,8 +31,8 @@ UDPSocket::UDPSocket(SCDVBDevice *pSCDVBDevice)
   if(hostaddr)
   {
    unsigned int port;
-   port = 9000 + sCDVBDevice->adapter;
-   isyslog("DVBAPI: Adapter %d\n",sCDVBDevice->adapter);
+   port = 9000 + sCDVBDevice->DeviceNumber();
+   isyslog("DVBAPI: Adapter %d\n",sCDVBDevice->DeviceNumber());
    isyslog("DVBAPI: UDPSocket hostaddr port %d",port);
    socketAddr.sin_family=AF_INET;
    socketAddr.sin_port=htons(port);

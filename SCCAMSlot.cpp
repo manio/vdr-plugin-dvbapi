@@ -236,7 +236,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
             }
           if(ci_cmd==0x01 || ci_cmd==0x03 || (ci_cmd==-1 && (ca_lm==0x04 || ca_lm==0x05))) {
             isyslog("DVBAPI: SCCAMSlot::Process %d.%d set CAM decrypt (SID %d)",cardIndex,slot,sid);
-            ProcessSIDRequest(sCCIAdapter->GetDevice()->adapter, sid, ca_lm);
+            ProcessSIDRequest(sCCIAdapter->GetDevice()->DeviceNumber(), sid, ca_lm);
             }
           }
         }
