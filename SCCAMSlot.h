@@ -45,7 +45,7 @@ private:
   int sids[MAX_SOCKETS];
   int sockets[MAX_SOCKETS];
 
-  void ProcessSIDRequest(int sid, int ca_lm);
+  void ProcessSIDRequest(int card_index, int sid, int ca_lm);
 public:
   SCCAMSlot(SCCIAdapter *ca, int cardIndex, int slot);
   ~SCCAMSlot();

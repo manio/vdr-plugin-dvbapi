@@ -27,7 +27,7 @@ SCDVBDevice::SCDVBDevice(int adapter, int frontend, int cafd) :cDvbDevice(adapte
   softcsa=(fd_ca<0);
   UDPSocket::bindx(this);
   decsa=new DeCSA(adapter);
-  cAPMT=new CAPMT(adapter,frontend);
+  cAPMT=new CAPMT;
   sCCIAdapter=new SCCIAdapter(this,adapter);
   isyslog(" SCDVBDevice::SCDVBDevice Done.");
 }

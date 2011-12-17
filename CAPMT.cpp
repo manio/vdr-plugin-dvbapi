@@ -9,16 +9,6 @@
 #include <stdio.h>
 
 
-CAPMT::CAPMT(int adapter,int demux)
-{
-	this->adapter=adapter;
-	this->demux=demux;
-}
-
-CAPMT::~CAPMT()
-{
-}
-
  int CAPMT::read_t(int fd, unsigned char *buffer)
  {
     struct pollfd p;
@@ -90,7 +80,7 @@ CAPMT::~CAPMT()
 // oscam also reads PMT file, but it is moch slower
 //#define PMT_FILE
 
- int CAPMT::send(const int sid, int socket_fd)
+ int CAPMT::send(const int adapter, const int sid, int socket_fd)
  {
 #ifdef PMT_FILE
    unlink("/tmp/pmt.tmp");
@@ -102,8 +92,7 @@ CAPMT::~CAPMT()
 //   FILE *fout;
    unsigned char buffer[4096];
    char *demux_dev;
-   asprintf(&demux_dev, "/dev/dvb/adapter%d/demux%d",adapter,demux);
-   esyslog("DEMUX: %s",demux_dev);
+   asprintf(&demux_dev, "/dev/dvb/adapter%d/demux0",adapter);
    if ((fd = open(demux_dev, O_RDWR)) < 0)
    {
       esyslog("DVPAPI: Error opening demux device");
@@ -165,7 +154,7 @@ CAPMT::~CAPMT()
         caPMT[8] = buffer[5]; // progno
         //
         caPMT[11]=buffer[12]+1;    
-        caPMT[12]=(char)demux; // demux id
+        caPMT[12]=0;             // demux id
         caPMT[13]=(char)adapter; // adapter id
 
         memcpy(caPMT+13+2,buffer+13,length-12-4-1);        

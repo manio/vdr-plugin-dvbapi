@@ -236,7 +236,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
             }
           if(ci_cmd==0x01 || ci_cmd==0x03 || (ci_cmd==-1 && (ca_lm==0x04 || ca_lm==0x05))) {
             isyslog("DVBAPI: SCCAMSlot::Process %d.%d set CAM decrypt (SID %d)",cardIndex,slot,sid);
-            ProcessSIDRequest(sid, ca_lm);
+            ProcessSIDRequest(sCCIAdapter->GetDevice()->adapter, sid, ca_lm);
             }
           }
         }
@@ -244,7 +244,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
     }
  }
 
-void SCCAMSlot::ProcessSIDRequest(int sid, int ca_lm)
+void SCCAMSlot::ProcessSIDRequest(int card_index, int sid, int ca_lm)
 {
 /*
     here is what i found so far analyzing AOT_CA_PMT frame from vdr
@@ -341,6 +341,6 @@ void SCCAMSlot::ProcessSIDRequest(int sid, int ca_lm)
         return;
     }
 
-    sockets[i] = sCCIAdapter->GetDevice()->GetCAPMT()->send(sid, sockets[i]);
+    sockets[i] = sCCIAdapter->GetDevice()->GetCAPMT()->send(card_index, sid, sockets[i]);
     sCCIAdapter->GetDevice()->SetReady(true);
 }
