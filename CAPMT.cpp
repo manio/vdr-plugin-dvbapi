@@ -93,6 +93,7 @@
    unsigned char buffer[4096];
    char *demux_dev;
    asprintf(&demux_dev, "/dev/dvb/adapter%d/demux0",adapter);
+   esyslog("DVPAPI: opening demux: %s", demux_dev);
    if ((fd = open(demux_dev, O_RDWR)) < 0)
    {
       esyslog("DVPAPI: Error opening demux device");
