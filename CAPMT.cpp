@@ -185,12 +185,12 @@
 		socket_fd=0;
           }
         }
-        return socket_fd;
         free(caPMT);
 #endif
          }
       }
    }
    free(demux_dev);
+    return socket_fd;
  }
 
