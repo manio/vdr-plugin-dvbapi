@@ -27,7 +27,7 @@ SCDVBDevice::SCDVBDevice(int adapter, int frontend, int cafd) :cDvbDevice(adapte
   softcsa=(fd_ca<0);
   UDPSocket::bindx(this);
   decsa=new DeCSA(adapter);
-  cAPMT=new CAPMT(adapter,frontend);
+  cAPMT=new CAPMT;
   sCCIAdapter=new SCCIAdapter(this,adapter);
   isyslog(" SCDVBDevice::SCDVBDevice Done.");
 }
@@ -63,9 +63,28 @@ void SCDVBDevice::CiStartDecrypting(void)
 
   bool  SCDVBDevice::SetChannelDevice(const cChannel *Channel, bool LiveView)
  {
-  initialCaDscr=true;
+//  initialCaDscr=true;
+//  isReady=false;
+//  return cDvbDevice::SetChannelDevice(Channel,LiveView);
+
+  // doing it the old way - need to FIX it later - maybe some of following code is not needed
   isReady=false;
-  return cDvbDevice::SetChannelDevice(Channel,LiveView);
+  isyslog("DVBAPI: SCDVBDevice::SetChannelDevice");
+  switchMutex.Lock();
+  isyslog("DVBAPI: SCDVBDevice::SetChannelDevice  SOFTCAM_SWITCH....");
+  bool ret=cDvbDevice::SetChannelDevice(Channel,LiveView);
+  // HERE
+  isyslog("SOFTCAM_SWITCH Device: '%d' Channel: '%d' SID '%d' ", this->DeviceNumber(), Channel->Number(), Channel->Sid());
+  if(HasLock(5000))
+  {
+    isyslog("DVBAPI: SCDVBDevice::SetChannelDevice SOFTCAM_SWITCH HasLock");
+    initialCaDscr=true;
+    //cAPMT->send(Channel->Sid());
+  }
+  isyslog("DVBAPI: SCDVBDevice::SetChannelDevice SOFTCAM_SWITCH Finished ret=%d",ret);
+  //isReady=true;
+  switchMutex.Unlock();
+  return ret;
  }
 
 
@@ -268,12 +287,17 @@ bool SCDVBDevice::SoftCSA(bool live)
 
 bool SCDVBDevice::SetCaDescr(ca_descr_t *ca_descr)
 {
- isyslog("SCDVBDevice::SetCaDescr Ready()=%d",Ready());
+ isyslog("SCDVBDevice::SetCaDescr index=%d, Ready()=%d", ca_descr->index, Ready());
 // if(!softcsa || (fullts && ca_descr->index==0))
 // {
 //   cMutexLock lock(&cafdMutex);
 //   return ioctl(fd_ca,CA_SET_DESCR,ca_descr)>=0;
 // }
+    if (ca_descr->index == -1)
+    {
+	isyslog("SCDVBDevice::SetCaDescr removal request - ignoring");
+	return true;
+    }
  if(!Ready())
    return Ready();
   bool ret=decsa->SetDescr(ca_descr,initialCaDscr);
@@ -283,12 +307,17 @@ bool SCDVBDevice::SetCaDescr(ca_descr_t *ca_descr)
 
 bool SCDVBDevice::SetCaPid(ca_pid_t *ca_pid)
 {
-  isyslog("SCDVBDevice::SetCaPid Ready()=%d",Ready());
+  isyslog("SCDVBDevice::SetCaPid PID=%d, index=%d, Ready()=%d", ca_pid->pid, ca_pid->index, Ready());
  // if(!softcsa || (fullts && ca_pid->index==0))
  // {
   //  cMutexLock lock(&cafdMutex);
  //   return ioctl(fd_ca,CA_SET_PID,ca_pid)>=0;
  // }
+    if (ca_pid->index == -1)
+    {
+	isyslog("SCDVBDevice::SetCaPid removal request - ignoring");
+	return true;
+    }
   if(!Ready())
     return Ready();
    return decsa->SetCaPid(ca_pid);

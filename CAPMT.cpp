@@ -9,20 +9,6 @@
 #include <stdio.h>
 
 
-CAPMT::CAPMT(int adapter,int demux)
-{
-	this->adapter=adapter;
-	this->demux=demux;
-   camdSocket=0;
-}
-
-CAPMT::~CAPMT()
-{
-  if(camdSocket!=0)
-    close(camdSocket);
-  camdSocket=0;
-}
-
  int CAPMT::read_t(int fd, unsigned char *buffer)
  {
     struct pollfd p;
@@ -94,7 +80,7 @@ CAPMT::~CAPMT()
 // oscam also reads PMT file, but it is moch slower
 //#define PMT_FILE
 
- void CAPMT::send(const int sid )
+ int CAPMT::send(const int adapter, const int sid, int socket_fd)
  {
 #ifdef PMT_FILE
    unlink("/tmp/pmt.tmp");
@@ -106,8 +92,8 @@ CAPMT::~CAPMT()
 //   FILE *fout;
    unsigned char buffer[4096];
    char *demux_dev;
-   asprintf(&demux_dev, "/dev/dvb/adapter%d/demux%d",adapter,demux);
-   esyslog("DEMUX: %s",demux_dev);
+   asprintf(&demux_dev, "/dev/dvb/adapter%d/demux0",adapter);
+   esyslog("DVPAPI: opening demux: %s", demux_dev);
    if ((fd = open(demux_dev, O_RDWR)) < 0)
    {
       esyslog("DVPAPI: Error opening demux device");
@@ -169,33 +155,35 @@ CAPMT::~CAPMT()
         caPMT[8] = buffer[5]; // progno
         //
         caPMT[11]=buffer[12]+1;    
-        caPMT[12]=(char)demux; // demux id
+        caPMT[12]=0;             // demux id
         caPMT[13]=(char)adapter; // adapter id
 
         memcpy(caPMT+13+2,buffer+13,length-12-4-1);        
 
-        if(camdSocket==0)
+        if(socket_fd==0)
         {
-        	camdSocket=socket(AF_LOCAL,SOCK_STREAM,0);
+        	socket_fd=socket(AF_LOCAL,SOCK_STREAM,0);
         	sockaddr_un serv_addr_un;
         	memset(&serv_addr_un,0,sizeof(serv_addr_un));
         	serv_addr_un.sun_family=AF_LOCAL;
         	snprintf(serv_addr_un.sun_path,sizeof(serv_addr_un.sun_path),"/tmp/camd.socket");
-        	if(connect(camdSocket,(const sockaddr*)&serv_addr_un,sizeof(serv_addr_un))!=0)
+        	if(connect(socket_fd,(const sockaddr*)&serv_addr_un,sizeof(serv_addr_un))!=0)
         	{
                esyslog("DVPAPI: Canot connecto to /tmp/camd.socket, Do you have OSCam running?");
-        	   camdSocket=0;
+		    socket_fd=0;
         	}
+		else
+		    esyslog("DVPAPI: created socket with socket_fd=%d", socket_fd);
         }
-        if(camdSocket!=0)
+        if(socket_fd!=0)
         {
-          int wrote=write(camdSocket,caPMT,toWrite);
-          isyslog("DVBAPI: :: CAMPT length=%d toWrite=%d wrote=%d",length,toWrite,wrote);
+          int wrote=write(socket_fd,caPMT,toWrite);
+          isyslog("DVBAPI: :: CAMPT socket_fd=%d length=%d toWrite=%d wrote=%d",socket_fd,length,toWrite,wrote);
           if(wrote!=toWrite)
           {
               esyslog("DVPAPI: CAMPT:send failed");
-        	  close(camdSocket);
-        	  camdSocket=0;
+		close(socket_fd);
+		socket_fd=0;
           }
         }
         free(caPMT);
@@ -204,5 +192,6 @@ CAPMT::~CAPMT()
       }
    }
    free(demux_dev);
+    return socket_fd;
  }
 

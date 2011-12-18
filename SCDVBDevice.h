@@ -28,8 +28,6 @@ class SCCIAdapter;
 
 class SCDVBDevice : public cDvbDevice
 {
-public:
-	int adapter;
 private:
   bool initialCaDscr;
   DeCSA *decsa;

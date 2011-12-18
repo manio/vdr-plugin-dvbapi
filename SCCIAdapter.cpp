@@ -28,6 +28,7 @@ SCCIAdapter::SCCIAdapter(SCDVBDevice *sCDVBDevice, int cardIndex)
  memset(version,1,sizeof(version));
  memset(slots,0,sizeof(slots));
  caidsLength=0;
+ Channels.Lock(false);
  for(cChannel *channel=Channels.First(); channel; channel=Channels.Next(channel))
  {
   if(!channel->GroupSep() && channel->Ca()>=CA_ENCRYPTED_MIN)
@@ -36,6 +37,7 @@ SCCIAdapter::SCCIAdapter(SCDVBDevice *sCDVBDevice, int cardIndex)
 	 addCaid(0,caidsLength,(unsigned short)*ids);
   }
  }
+ Channels.Unlock();
  rb=new cRingBufferLinear(KILOBYTE(8),6+LEN_OFF,false,"SC-CI adapter read");
  if(rb)
  {
@@ -211,6 +213,9 @@ void SCCIAdapter::Write(const unsigned char *buff, int len)
 
 SCCIAdapter::~SCCIAdapter()
 {
+  ciMutex.Lock();
+  delete rb; rb=0;
+  ciMutex.Unlock();
 }
 
 
