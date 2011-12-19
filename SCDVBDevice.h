@@ -86,6 +86,7 @@ public:
   bool Ready(void);
   bool SetCaPid(ca_pid_t *ca_pid);
   CAPMT *GetCAPMT();
+  SCCIAdapter *GetSCCIAdapter();
   void SetReady(bool Ready);
 
 

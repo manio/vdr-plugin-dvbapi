@@ -42,13 +42,8 @@ private:
   eModuleStatus lastStatus;
   cRingBufferLinear rb;
   Frame frame;
-  int sids[MAX_SOCKETS];
-  int sockets[MAX_SOCKETS];
-
-  void ProcessSIDRequest(int card_index, int sid, int ca_lm);
 public:
   SCCAMSlot(SCCIAdapter *ca, int cardIndex, int slot);
-  ~SCCAMSlot();
 
   int GetLength(const unsigned char * &data);
   int LengthSize(int n);

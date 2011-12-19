@@ -37,6 +37,11 @@ CAPMT *SCDVBDevice::GetCAPMT()
   return cAPMT;
 }
 
+SCCIAdapter *SCDVBDevice::GetSCCIAdapter()
+{
+  return sCCIAdapter;
+}
+
 void SCDVBDevice::SetReady(bool Ready)
 {
   isReady = Ready;
