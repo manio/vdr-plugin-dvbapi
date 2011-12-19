@@ -45,6 +45,10 @@ class SCCIAdapter : public cCiAdapter
   //
   Frame frame;
   cRingBufferLinear *rb;
+
+  int sids[MAX_SOCKETS];
+  int sockets[MAX_SOCKETS];
+
 public:
 
   SCCIAdapter(SCDVBDevice *sCDVBDevice, int CardIndex);
@@ -57,6 +61,7 @@ public:
    int GetCaids(int slot, unsigned short *Caids, int max);
   bool Ready(void);
   SCDVBDevice *GetDevice();
+  void ProcessSIDRequest(int card_index, int sid, int ca_lm);
 private:
   int addCaid(int offset,int limit,unsigned short caid);
 
