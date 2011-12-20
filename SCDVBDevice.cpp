@@ -266,7 +266,7 @@ void SCDVBDevice::OnPluginUnload(void)
 bool SCDVBDevice::Ready(void)
 {
 //  isyslog("SCDVBDevice::Ready");
-  return isReady;
+  return true;
 //  return (sCCIAdapter   ? sCCIAdapter->Ready():true) &&
 //         (hWCIAdapter ? hWCIAdapter->Ready():true);
 }
