@@ -216,7 +216,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
           if(ci_cmd==0x04) {
             isyslog("DVBAPI: SCCAMSlot::Process %d.%d stop decrypt",cardIndex,slot);
             }
-          if(ci_cmd==0x01 || ci_cmd==0x03 || (ci_cmd==-1 && (ca_lm==0x04 || ca_lm==0x05))) {
+          if(ci_cmd==0x01 || (ci_cmd==-1 && (ca_lm==0x04 || ca_lm==0x05))) {
             isyslog("DVBAPI: SCCAMSlot::Process %d.%d set CAM decrypt (SID %d)",cardIndex,slot,sid);
 
 	    SCDVBDevice *dev=dynamic_cast<SCDVBDevice *>(Device());
