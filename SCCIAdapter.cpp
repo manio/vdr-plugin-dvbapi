@@ -312,22 +312,6 @@ void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm)
     }
     else if (ca_lm == 0x05)     //removing sid
     {
-        // optimization: if we have only one socket in use  - just leave it for future use
-        int active = 0, k;
-        for (i=0; i<MAX_SOCKETS; i++)
-        {
-            if (sids[i] != 0)
-            {
-                k = i;          //save index
-                active++;
-            }
-        }
-        if (active == 1)
-        {
-            sids[k] = 0;        //marking only a SID as empty
-            return;
-        }
-
         for (i=0; i<MAX_SOCKETS; i++)
         {
             if (sids[i] == sid)
