@@ -30,8 +30,9 @@ character itself should NOT be typed as part of the command.
 You will have to grab the source code of course. First install the git
 package provided by your distribution. Then from a terminal, type:
 
-   $ cd /usr/local/src/vdr/PLUGINS/srv
-   $ git clone .
+   $ cd /usr/local/src/vdr/PLUGINS/src
+   $ git clone git://github.com/manio/vdr-plugin-dvbapi.git
+   $ ln -s vdr-plugin-dvbapi dvbapi
 
 -----------------------------------------------------------------------------
 3. Basic Installation 
@@ -43,13 +44,10 @@ configure, build, and install this package.
  Run`configure --help' for more details.
 
 Using:
- 1) Start the softcam with LD_PRELOAD:
- LD_PRELOAD=/usr/local/lib/dvbapi_ca.so /usr/local/bin/oscam -b
- 
- 2) Start the VDR with dvbpi plugin
+ 1) Start the VDR with dvbpi plugin
  /usr/local/bin/vdr -c /etc/vdr -E /var/vdr -L /usr/local/lib/vdr -P dvbapi 
 
- 3) In the oscam.conf file add following options
+ 2) In the oscam.conf file add following options
 	[dvbapi]
 	enabled = 1
 	au = 1
@@ -61,10 +59,11 @@ Using:
    boxtype to "pc" will allow oscam to take adapter/demux information from CAPMT frame.
    pmt_mode to "1" will allow oscam to use camd.socket in /tmp/ dir
 
- 4) Apply patch in patches directory to oscam source code
+ 3) Apply patches from patches directory to oscam source code
     
 	$ cd oscam
-        $ patch -p1 < /usr/local/src/vdr/PLUGINS/src/dvbapi/patches/oscam-trunk-vdr.diff
+        $ patch -p1 < /usr/local/src/vdr/PLUGINS/src/dvbapi/patches/1-oscam-trunk-vdr.diff
+        $ patch -p1 < /usr/local/src/vdr/PLUGINS/src/dvbapi/patches/2-oscam-dvbapi_ca.diff
 
 -----------------------------------------------------------------------------
 4. Thanks area
@@ -86,9 +85,6 @@ there great help and support.
 -----------------------------------------------------------------------------
 5. Important links
 -----------------------------------------------------------------------------
-Remember to read the full threads on the forums.
 
-Oscam Forum: How to use DVBAPI with normal x86 Linux and VDR
-
-http://www.oscam.to/wbb3/index.php?page=Thread&threadID=7462&pageNo=1
-
+Remember to read the full threads on the OScam forum:
+http://www.oscam.to/wbb3/index.php?page=Thread&threadID=12340

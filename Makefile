@@ -54,7 +54,7 @@ DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 OBJS = CAPMT.o DeCSA.o DeCsaTSBuffer.o DVBAPI.o SCDeviceProbe.o  SCDVBDevice.o UDPSocket.o SCCIAdapter.o Frame.o SCCAMSlot.o
 
 # FFdeCSA
-CPUOPT ?= athlon64
+CPUOPT     ?= athlon64
 PARALLEL   ?= PARALLEL_128_SSE
 CSAFLAGS   ?= -fPIC -O3 -fexpensive-optimizations -funroll-loops -mmmx -msse -msse2 -msse3
 FFDECSADIR  = FFdecsa
@@ -63,7 +63,7 @@ FFDECSATEST = $(FFDECSADIR)/FFdecsa_test.done
 
 ### The main target:
 
-all: libvdr-$(PLUGIN).so dvbapi_ca.so
+all: libvdr-$(PLUGIN).so
 
 ### Implicit rules:
 
@@ -75,10 +75,7 @@ all: libvdr-$(PLUGIN).so dvbapi_ca.so
 libvdr-$(PLUGIN).so: $(OBJS) $(FFDECSA)
 	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(FFDECSA) -o $@
 	@cp --remove-destination $@ $(LIBDIR)/$@.$(APIVERSION)
-	
-dvbapi_ca.so: dvbapi_ca.c
-	gcc -O -fbuiltin -fomit-frame-pointer -fPIC -shared -o $@ $< -ldl
-	
+
 $(FFDECSA): $(FFDECSADIR)/*.c $(FFDECSADIR)/*.h
 	@$(MAKE) COMPILER="$(CXX)" FLAGS="$(CSAFLAGS) -march=$(CPUOPT)" PARALLEL_MODE=$(PARALLEL) -C $(FFDECSADIR) all
 
