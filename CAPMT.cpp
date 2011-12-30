@@ -77,6 +77,52 @@
    return 0;
  }
 
+bool CAPMT::get_pmt(const int adapter, const int sid, unsigned char* buffer)
+{
+	int fd=-1;
+	int length;
+	int k;
+	int pmt_pid=0;
+	char *demux_dev = NULL;
+	bool ret = false;
+
+	asprintf(&demux_dev, "/dev/dvb/adapter%d/demux0", adapter);
+	esyslog("DVPAPI: opening demux: %s", demux_dev);
+	if ((fd = open(demux_dev, O_RDWR)) < 0)
+		esyslog("DVPAPI: Error opening demux device");
+	else
+	{
+		if (set_filter(fd, 0) < 0)
+			esyslog("DVPAPI: Error in set filter pat");
+		if ((length = read_t(fd, buffer)) < 0)
+			esyslog("DVPAPI: Error in read read_t (pat)");
+		else
+		{
+			pmt_pid=get_pmt_pid(buffer, sid);
+			if (pmt_pid==0)
+				esyslog("DVPAPI: Error pmt_pid not found");
+			else
+			{
+				if (set_filter_pmt(fd, pmt_pid) < 0)
+					esyslog("DVPAPI: Error in set pmt filter");
+				for (k=0; k<64; k++)
+				{
+					if ((length = read_t(fd, buffer)) < 0)
+						esyslog("DVPAPI: Error in read pmt\n");
+					if (sid==((buffer[4]<<8)+buffer[5]))
+						break;
+				}
+				ret = true;
+			}
+		}
+	}
+	if (demux_dev)
+		free(demux_dev);
+	if (fd>0)
+		close(fd);
+	return ret;
+}
+
 // oscam also reads PMT file, but it is moch slower
 //#define PMT_FILE
 
@@ -85,56 +131,17 @@
 #ifdef PMT_FILE
    unlink("/tmp/pmt.tmp");
 #endif
-   int fd=-1;
    int length;
-   int k,ii;
-   int pmt_pid=0;
 //   FILE *fout;
    unsigned char buffer[4096];
-   char *demux_dev;
-   asprintf(&demux_dev, "/dev/dvb/adapter%d/demux0",adapter);
-   esyslog("DVPAPI: opening demux: %s", demux_dev);
-   if ((fd = open(demux_dev, O_RDWR)) < 0)
-   {
-      esyslog("DVPAPI: Error opening demux device");
-   }
-   else
-   {
-    if (set_filter(fd, 0) < 0)
-    {
-      esyslog("DVPAPI: Error in set filter pat");
-    }
-     if ((length = read_t(fd, buffer)) < 0)
-     {
-        esyslog("DVPAPI: Error in read read_t (pat)");
-     }
-     else
-     {
-       pmt_pid=get_pmt_pid(buffer, sid);
-       if (pmt_pid==0)
-       {
-         esyslog("DVPAPI: Error pmt_pid not found");
-       }
-       else
-       {
-        if (set_filter_pmt(fd, pmt_pid) < 0)
-        {
-         esyslog("DVPAPI: Error in set pmt filter");
-        }
-        for (k=0; k<64; k++)
-       {
-         if ((length = read_t(fd, buffer)) < 0)
-         {
-           esyslog("DVPAPI: Error in read pmt\n");
-         }
-         if (sid==((buffer[4]<<8)+buffer[5]))
-         {
-           break;
-         }
-        }
-        
-        length=((buffer[2]&0xf)<<8) + buffer[3]+3;
-        close(fd);  // just in case ;)
+
+	if (!get_pmt(adapter, sid, buffer))
+	{
+		esyslog("DVPAPI: Error obtaining PMT data, returning");
+		return 0;
+	}
+	length=((buffer[2]&0xf)<<8) + buffer[3]+3;
+
 #ifdef PMT_FILE
               FILE *fout=fopen("/tmp/pmt.tmp","wt");
               for (k=0;k<length;k++)
@@ -188,10 +195,6 @@
         }
         free(caPMT);
 #endif
-         }
-      }
-   }
-   free(demux_dev);
     return socket_fd;
  }
 

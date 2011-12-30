@@ -45,6 +45,7 @@ public:
 	 int set_filter(int fd, int pid);
 	 int get_pmt_pid(unsigned char *buffer, int SID);
 //     void WritePmtTmp(char DvbNum, int pmtid);
+	bool get_pmt(const int adapter, const int sid, unsigned char* buffer);
 };
 
 #endif // ___DECSA_H
