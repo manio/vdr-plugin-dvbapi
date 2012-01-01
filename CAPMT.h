@@ -38,7 +38,7 @@ typedef struct dmx_filter
 class CAPMT
 {
 public:
-   int send(const int adapter, const int sid, int socket_fd);
+   int send(const int adapter, const int sid, int socket_fd, const unsigned char *caDescr, int caDescrLen);
   private:
 	 int read_t(int fd, unsigned char *buffer);
 	 int set_filter_pmt(int fd, int pid);

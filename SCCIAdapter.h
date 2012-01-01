@@ -61,7 +61,7 @@ public:
    int GetCaids(int slot, unsigned short *Caids, int max);
   bool Ready(void);
   SCDVBDevice *GetDevice();
-  void ProcessSIDRequest(int card_index, int sid, int ca_lm);
+  void ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *caDescr, int caDescrLen);
 private:
   int addCaid(int offset,int limit,unsigned short caid);
 

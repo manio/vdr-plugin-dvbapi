@@ -126,21 +126,25 @@ bool CAPMT::get_pmt(const int adapter, const int sid, unsigned char* buffer)
 // oscam also reads PMT file, but it is moch slower
 //#define PMT_FILE
 
- int CAPMT::send(const int adapter, const int sid, int socket_fd)
+ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned char *caDescr, int caDescrLen)
  {
 #ifdef PMT_FILE
    unlink("/tmp/pmt.tmp");
 #endif
    int length;
+   int toWrite;
 //   FILE *fout;
    unsigned char buffer[4096];
 
-	if (!get_pmt(adapter, sid, buffer))
+	//obtain PMT data only if we don't have caDescriptors
+	if (!caDescr)
 	{
-		esyslog("DVPAPI: Error obtaining PMT data, returning");
-		return 0;
+		if (!get_pmt(adapter, sid, buffer))
+		{
+			esyslog("DVPAPI: Error obtaining PMT data, returning");
+			return 0;
+		}
 	}
-	length=((buffer[2]&0xf)<<8) + buffer[3]+3;
 
 #ifdef PMT_FILE
               FILE *fout=fopen("/tmp/pmt.tmp","wt");
@@ -154,18 +158,42 @@ bool CAPMT::get_pmt(const int adapter, const int sid, unsigned char* buffer)
    // http://cvs.tuxbox.org/lists/tuxbox-cvs-0208/msg00434.html
         isyslog("DVBAPI: :: CAMPT channelSid =0x%x(%d) ",sid,sid);
         memcpy(caPMT, "\x9F\x80\x32\x82\xFF\xFB\x03\xFF\xFF\x00\x00\x13\x00", 12);
-        int toWrite=(length-12-4-1)+13+2;
+
+	if (caDescr)
+	{
+		length = caDescrLen;
+		toWrite = (length)+13+2;
+	}
+	else
+	{
+		length=((buffer[2]&0xf)<<8) + buffer[3]+3;
+		toWrite=(length-12-4-1)+13+2;
+	}
+
         caPMT[4]=(toWrite)>>8;
         caPMT[5]=(toWrite)&0xff;
         // [6]=03
-        caPMT[7] = buffer[4]; // program no
-        caPMT[8] = buffer[5]; // progno
-        //
-        caPMT[11]=buffer[12]+1;    
+
+	if (caDescr)
+	{
+		caPMT[7] = (sid>>8)&0xff;	// program no
+		caPMT[8] = (sid)&0xff;		// progno
+		caPMT[11] = caDescrLen + 1;	// Program info length + 1
+	}
+	else
+	{
+		caPMT[7] = buffer[4];		// program no
+		caPMT[8] = buffer[5];		// progno
+		caPMT[11] = buffer[12]+1;
+	}
+
         caPMT[12]=0;             // demux id
         caPMT[13]=(char)adapter; // adapter id
 
-        memcpy(caPMT+13+2,buffer+13,length-12-4-1);        
+	if (caDescr)
+		memcpy(caPMT+13+2,caDescr,caDescrLen);
+	else
+		memcpy(caPMT+13+2,buffer+13,length-12-4-1);
 
         if(socket_fd==0)
         {

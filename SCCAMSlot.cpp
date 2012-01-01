@@ -146,8 +146,10 @@ void SCCAMSlot::CaInfo(int tcid, int cid)
 
 void SCCAMSlot::Process(const unsigned char *data, int len)
 {
-
   const unsigned char *save=data;
+  const unsigned char *caDescr = NULL;
+  int caDescrLen = 0;
+
   data+=3;
   int dlen=GetLength(data);
   if(dlen>len-(data-save)) {
@@ -177,21 +179,32 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
 
     case AOT_CA_PMT:
       if(dlen>=6) {
-        int ca_lm=data[0];
+        int ca_lm=data[0];			// lm -> list manager
         int ci_cmd=-1;
-        int sid=(data[1]<<8)+data[2];
-        int ilen=(data[4]<<8)+data[5];
+        int sid=(data[1]<<8)+data[2];		// program number
+        int ilen=(data[4]<<8)+data[5];		// program info length
         isyslog("DVBAPI: SCCAMSlot::Process %d.%d CA_PMT decoding len=%x lm=%x prg=%d len=%x",cardIndex,slot,dlen,ca_lm,sid,ilen);
         data+=6; dlen-=6;
         if(ilen>0 && dlen>=ilen) {
           ci_cmd=data[0];
+          if(ilen>1) {
+              caDescr = data+1;
+              caDescrLen = ilen-1;
+            }
+            isyslog("DVBAPI: SCCAMSlot::Process ci_cmd(G)=%02x",ci_cmd);
           }
         data+=ilen; dlen-=ilen;
         while(dlen>=5) {
-          ilen=(data[3]<<8)+data[4];
+          ilen=(data[3]<<8)+data[4];		// ES_Info_length
+          isyslog("DVBAPI: SCCAMSlot::Process pid=%d,%04x len=%d (0x%x)", data[0], (data[1]<<8)+data[2], ilen, ilen);
           data+=5; dlen-=5;
           if(ilen>0 && dlen>=ilen) {
             ci_cmd=data[0];
+            if(ilen>1) {
+                caDescr = data+1;
+                caDescrLen = ilen-1;
+              }
+              isyslog("DVBAPI: SCCAMSlot::Process ci_cmd(S)=%x",ci_cmd);
             }
           data+=ilen; dlen-=ilen;
           }
@@ -221,7 +234,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
 
 	    SCDVBDevice *dev=dynamic_cast<SCDVBDevice *>(Device());
 	    if(dev)
-		dev->GetSCCIAdapter()->ProcessSIDRequest(Device()->DeviceNumber(), sid, ca_lm);
+		dev->GetSCCIAdapter()->ProcessSIDRequest(Device()->DeviceNumber(), sid, ca_lm, caDescr, caDescrLen);
 	    else
 		esyslog("DVBAPI: SCCAMSlot::Process %d.%d FATAL ERROR: cannot find CIAdapter for ProcessSIDRequest", cardIndex, slot);
             }

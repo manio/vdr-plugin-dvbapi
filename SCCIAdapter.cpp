@@ -256,7 +256,7 @@ bool SCCIAdapter::Assign(cDevice *Device, bool Query)
   return true;
 }
 
-void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm)
+void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *caDescr, int caDescrLen)
 {
 /*
     here is what i found so far analyzing AOT_CA_PMT frame from vdr
@@ -337,6 +337,6 @@ void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm)
         return;
     }
 
-    sockets[i] = GetDevice()->GetCAPMT()->send(card_index, sid, sockets[i]);
+    sockets[i] = GetDevice()->GetCAPMT()->send(card_index, sid, sockets[i], caDescr, caDescrLen);
     GetDevice()->SetReady(true);
 }
