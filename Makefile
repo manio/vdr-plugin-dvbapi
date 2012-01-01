@@ -53,6 +53,12 @@ DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
 OBJS = CAPMT.o DeCSA.o DeCsaTSBuffer.o DVBAPI.o SCDeviceProbe.o  SCDVBDevice.o UDPSocket.o SCCIAdapter.o Frame.o SCCAMSlot.o
 
+# max number of CAIDs per slot
+MAXCAID := $(shell sed -ne '/define MAXCASYSTEMIDS/ s/^.[a-zA-Z ]*\([0-9]*\).*$$/\1/p' $(VDRDIR)/ci.c)
+ifneq ($(strip $(MAXCAID)),)
+  DEFINES += -DVDR_MAXCAID=$(MAXCAID)
+endif
+
 # FFdeCSA
 CPUOPT     ?= athlon64
 PARALLEL   ?= PARALLEL_128_SSE
