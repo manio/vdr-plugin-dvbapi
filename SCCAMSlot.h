@@ -11,11 +11,7 @@
 #define TRIGGER_TIME    10000 // min. time between caid scan trigger
 #define MAX_SOCKETS        16 // max sockets (simultaneus channels) per demux
 
-#ifdef VDR_MAXCAID
-#define MAX_CI_SLOT_CAIDS VDR_MAXCAID
-#else
-#define MAX_CI_SLOT_CAIDS 16
-#endif
+#define MAX_CI_SLOT_CAIDS 64
 
 /*
 #define TDPU_SIZE_INDICATOR 0x80
