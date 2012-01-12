@@ -21,7 +21,7 @@
     	return -1;
     }
     buffer[0] = 0;
-    return (read(fd,&buffer[1],184));
+    return (read(fd,&buffer[1],1024));
  }
 
 
