@@ -126,18 +126,19 @@ bool CAPMT::get_pmt(const int adapter, const int sid, unsigned char* buffer)
 // oscam also reads PMT file, but it is moch slower
 //#define PMT_FILE
 
- int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned char *caDescr, int caDescrLen)
+ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned char *vdr_caPMT, int vdr_caPMTLen)
  {
 #ifdef PMT_FILE
    unlink("/tmp/pmt.tmp");
 #endif
-   int length;
+   int length, length_field;
+   int offset = 0;
    int toWrite;
 //   FILE *fout;
    unsigned char buffer[4096];
 
 	//obtain PMT data only if we don't have caDescriptors
-	if (!caDescr)
+	if (!vdr_caPMT)
 	{
 		if (!get_pmt(adapter, sid, buffer))
 		{
@@ -154,47 +155,67 @@ bool CAPMT::get_pmt(const int adapter, const int sid, unsigned char* buffer)
               }
              fclose (fout);
 #else
+
+/////// preparing capmt data to send
         char* caPMT=(char*)malloc(1024);
    // http://cvs.tuxbox.org/lists/tuxbox-cvs-0208/msg00434.html
         isyslog("DVBAPI: :: CAMPT channelSid =0x%x(%d) ",sid,sid);
-        memcpy(caPMT, "\x9F\x80\x32\x82\xFF\xFB\x03\xFF\xFF\x00\x00\x13\x00", 12);
 
-	if (caDescr)
+	//ca_pmt_tag
+	caPMT[0] = 0x9F; caPMT[1] = 0x80; caPMT[2] = 0x32;
+	caPMT[3] = 0x82;		//2 following bytes for size
+
+	caPMT[6] = 0x03;		//list management = 3
+	caPMT[7] = sid >> 8;		//program_number
+	caPMT[8] = sid & 0xff;		//program_number
+	caPMT[9] = 0;			//version_number, current_next_indicator
+
+	caPMT[12] = 0x01;		//ca_pmt_cmd_id = CAPMT_CMD_OK_DESCRAMBLING
+	//adding own descriptor with demux and adapter_id
+	caPMT[13] = 0x82;		//CAPMT_DESC_DEMUX
+	caPMT[14] = 0x02;		//length
+	caPMT[15] = 0x00;		//demux id
+	caPMT[16] = (char)adapter;	//adapter id
+
+	if (vdr_caPMT)	//adding CA_PMT from vdr
 	{
-		length = caDescrLen;
-		toWrite = (length)+13+2;
+		caPMT[10] = vdr_caPMT[4];					//reserved+program_info_length
+		caPMT[11] = vdr_caPMT[5] + 1 + 4;				//reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
+
+		//obtaining program_info_length
+		int ilen = (vdr_caPMT[4] << 8) + vdr_caPMT[5];
+		//checking if we need to start copying 1 byte further and omit ca_pmt_cmd_id which we already have
+		if (ilen>0)
+		{
+		    offset = 1;
+		    caPMT[11] -= 1;					//-1 for ca_pmt_cmd_id which we have counted
+		}
+
+		length = vdr_caPMTLen;					//ca_pmt data length
+		memcpy(caPMT+17, vdr_caPMT+6+offset, length-6-offset);	//copy ca_pmt data from vdr
+
+		length_field = 17 + (length - 6 - offset) - 6;		//-6 = 3 bytes for AOT_CA_PMT and 3 for size
 	}
-	else
+	else		//adding full PMT data obtained from demux
 	{
-		length=((buffer[2]&0xf)<<8) + buffer[3]+3;
-		toWrite=(length-12-4-1)+13+2;
+		caPMT[10] = buffer[11];					//reserved+program_info_length
+		caPMT[11] = buffer[12] + 1 + 4;				//reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
+
+		length = ((buffer[2] & 0xf) << 8) + buffer[3] + 3;	//section_length (including 4 byte CRC)
+		memcpy(caPMT+17, buffer+13, length-12-4);		//copy PMT data without (-12 bytes for header, -4 byte for CRC_32)
+
+		length_field = 17 + (length - 12 - 4) - 6;		//-6 = 3 bytes for AOT_CA_PMT and 3 for size
 	}
 
-        caPMT[4]=(toWrite)>>8;
-        caPMT[5]=(toWrite)&0xff;
-        // [6]=03
+	//calculating length_field()
+	caPMT[4] = length_field >> 8;
+	caPMT[5] = length_field & 0xff;
 
-	if (caDescr)
-	{
-		caPMT[7] = (sid>>8)&0xff;	// program no
-		caPMT[8] = (sid)&0xff;		// progno
-		caPMT[11] = caDescrLen + 1;	// Program info length + 1
-	}
-	else
-	{
-		caPMT[7] = buffer[4];		// program no
-		caPMT[8] = buffer[5];		// progno
-		caPMT[11] = buffer[12]+1;
-	}
+	//number of bytes in packet to send (adding 3 bytes of ca_pmt_tag and 3 bytes of length_field)
+	toWrite = length_field + 6;
 
-        caPMT[12]=0;             // demux id
-        caPMT[13]=(char)adapter; // adapter id
 
-	if (caDescr)
-		memcpy(caPMT+13+2,caDescr,caDescrLen);
-	else
-		memcpy(caPMT+13+2,buffer+13,length-12-4-1);
-
+/////// sending data
         if(socket_fd==0)
         {
         	socket_fd=socket(AF_LOCAL,SOCK_STREAM,0);
