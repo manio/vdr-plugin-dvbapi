@@ -62,8 +62,7 @@ Using:
  3) Apply patches from patches directory to oscam source code
     
 	$ cd oscam
-        $ patch -p1 < /usr/local/src/vdr/PLUGINS/src/dvbapi/patches/1-oscam-trunk-vdr.diff
-        $ patch -p1 < /usr/local/src/vdr/PLUGINS/src/dvbapi/patches/2-oscam-dvbapi_ca.diff
+        $ patch -p1 < /usr/local/src/vdr/PLUGINS/src/dvbapi/patches/oscam-vdr.diff
 
 -----------------------------------------------------------------------------
 4. Thanks area
