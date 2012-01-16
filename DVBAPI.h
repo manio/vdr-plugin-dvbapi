@@ -22,22 +22,26 @@
 #ifndef ___DVBAPI_H
 #define ___DVBAPI_H
 
-
 #include <getopt.h>
 #include <vdr/plugin.h>
 #include "SCDVBDevice.h"
 
-
-
+static const char *VERSION        = "0.0.1";
+static const char *DESCRIPTION    = "DVBAPI type SOFTCAM";
 
 class DVBAPI : public cPlugin
 {
-
 public:
   DVBAPI(void);
   virtual ~DVBAPI();
-  virtual const char *Version(void) { return "0.0.1"; }
-  virtual const char *Description(void) { return  "DVBAPI type SOFTCAM"; }
+  virtual const char *Version(void)
+  {
+    return VERSION;
+  }
+  virtual const char *Description(void)
+  {
+    return DESCRIPTION;
+  }
   virtual const char *CommandLineHelp(void);
   virtual bool ProcessArgs(int argc, char *argv[]);
   virtual bool Initialize(void);
@@ -47,8 +51,14 @@ public:
   virtual void MainThreadHook(void);
   virtual cString Active(void);
   virtual time_t WakeupTime(void);
-  virtual const char *MainMenuEntry(void) { return NULL; }
-  virtual cOsdObject *MainMenuAction(void) { return NULL; }
+  virtual const char *MainMenuEntry(void)
+  {
+    return NULL;
+  }
+  virtual cOsdObject *MainMenuAction(void)
+  {
+    return NULL;
+  }
   virtual cMenuSetupPage *SetupMenu(void);
   virtual bool SetupParse(const char *Name, const char *Value);
   virtual bool Service(const char *Id, void *Data = NULL);

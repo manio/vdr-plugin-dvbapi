@@ -1,4 +1,3 @@
-
 #ifndef ___DECSA_H
 #define ___DECSA_H
 
@@ -10,13 +9,12 @@
 #define MAX_CSA_IDX  16
 #define MAX_STALL_MS 70
 
-#define MAX_REL_WAIT 100 // time to wait if key in used on set
-#define MAX_KEY_WAIT 500 // time to wait if key not ready on change
+#define MAX_REL_WAIT 100        // time to wait if key in used on set
+#define MAX_KEY_WAIT 500        // time to wait if key not ready on change
 
 #define FL_EVEN_GOOD 1
 #define FL_ODD_GOOD  2
 #define FL_ACTIVITY  4
-
 
 class DeCSA
 {
@@ -31,9 +29,9 @@ private:
   cTimeMs stall;
   bool active;
   int cardindex;
-  //
   bool GetKeyStruct(int idx);
   void ResetState(void);
+
 public:
   DeCSA(int CardIndex);
   ~DeCSA();
@@ -41,6 +39,6 @@ public:
   bool SetDescr(ca_descr_t *ca_descr, bool initial);
   bool SetCaPid(ca_pid_t *ca_pid);
   void SetActive(bool on);
-  };
+};
 
 #endif // ___DECSA_H

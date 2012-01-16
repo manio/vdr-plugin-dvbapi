@@ -18,20 +18,20 @@ class SCDVBDevice;
 class UDPSocket : public cThread
 {
 public:
-   static bool bindx(SCDVBDevice *pSCDVBDevice);
-   static void unbind(void);
-   virtual void Action(void);
-   bool bint;
+  static bool bindx(SCDVBDevice *pSCDVBDevice);
+  static void unbind(void);
+  virtual void Action(void);
+  bool bint;
+
 protected:
-   UDPSocket(SCDVBDevice *pSCDVBDevice);
-   ~UDPSocket();
+  UDPSocket(SCDVBDevice *pSCDVBDevice);
+  ~UDPSocket();
+
 private:
   SCDVBDevice *sCDVBDevice;
   int sock;
   ca_descr_t ca_descr;
   ca_pid_t ca_pid;
-
 };
 
 #endif // ___UDPSOCKET_H
-

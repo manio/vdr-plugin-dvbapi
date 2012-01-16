@@ -14,26 +14,24 @@
 #include "SCDeviceProbe.h"
 #include "SCDVBDevice.h"
 
-
-SCDeviceProbe *SCDeviceProbe::probe=0;
+SCDeviceProbe *SCDeviceProbe::probe = 0;
 
 void SCDeviceProbe::Install(void)
 {
-  if(!probe) probe=new SCDeviceProbe;
+  if (!probe)
+    probe = new SCDeviceProbe;
 }
 
 void SCDeviceProbe::Remove(void)
 {
-  if(probe!=0)
-   delete probe;
-  probe=0;
+  if (probe != 0)
+    delete probe;
+  probe = 0;
 }
 
 bool SCDeviceProbe::Probe(int Adapter, int Frontend)
 {
- isyslog("DVBAPI: SCDeviceProbe::Probe capturing device %d/%d",Adapter,Frontend);
-  new SCDVBDevice(Adapter,Frontend,SCDVBDevice::DvbOpen(DEV_DVB_CA,Adapter,Frontend,O_RDWR));
+  isyslog("DVBAPI: SCDeviceProbe::Probe capturing device %d/%d", Adapter, Frontend);
+  new SCDVBDevice(Adapter, Frontend, SCDVBDevice::DvbOpen(DEV_DVB_CA, Adapter, Frontend, O_RDWR));
   return true;
 }
-
- 

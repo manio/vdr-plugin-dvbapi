@@ -42,19 +42,7 @@ private:
   static int budget;
   bool isReady;
   CAPMT *cAPMT;
-  //
-  //
- /*
-#define MAX_LRU_CAID 10
-  struct LruCaid {
-    int src, tr, prg;
-    caid_t caids[MAXCAIDS+1];
-    } lrucaid[MAX_LRU_CAID];
-  cMutex lruMutex;
-*/
-  //
-  //int FindLRUPrg(int source, int transponder, int prg);
-//  bool GetPrgCaids(int source, int transponder, int prg, caid_t *c);
+
 protected:
   virtual void CiStartDecrypting(void);
   virtual bool CiAllowConcurrent(void) const;
@@ -62,6 +50,7 @@ protected:
   virtual bool OpenDvr(void);
   virtual void CloseDvr(void);
   virtual bool GetTSPacket(uchar *&Data);
+
 public:
   SCDVBDevice(int Adapter, int Frontend, int cafd);
   ~SCDVBDevice();
@@ -79,7 +68,7 @@ public:
   void EarlyShutdown(void);
   bool ScActive(void);
   static void DvbName(const char *Name, int a, int f, char *buffer, int len);
-  static int DvbOpen(const char *Name, int a, int f, int Mode, bool ReportError=false);
+  static int DvbOpen(const char *Name, int a, int f, int Mode, bool ReportError = false);
   static void OnPluginLoad(void);
   static void OnPluginUnload(void);
   bool SetChannelDevice(const cChannel *Channel, bool LiveView);
@@ -88,10 +77,6 @@ public:
   CAPMT *GetCAPMT();
   SCCIAdapter *GetSCCIAdapter();
   void SetReady(bool Ready);
-
-
-  };
-
-
+};
 
 #endif // ___SCDVBDEVICE_H

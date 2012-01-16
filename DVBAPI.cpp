@@ -3,16 +3,10 @@
 #include <linux/dvb/ca.h>
 #include "DVBAPI.h"
 #include "SCDVBDevice.h"
-//#include "SCCAMSlot.h"
-//#include "SCCIAdapter.h"
-
-//static cPlugin *dVBAPI;
-
-static const char *VERSION        = "1.0";
 
 DVBAPI::DVBAPI(void)
 {
- SCDVBDevice::OnPluginLoad();
+  SCDVBDevice::OnPluginLoad();
 }
 
 DVBAPI::~DVBAPI()
@@ -22,7 +16,7 @@ DVBAPI::~DVBAPI()
 
 const char *DVBAPI::CommandLineHelp(void)
 {
-    return "";
+  return "";
 }
 
 bool DVBAPI::ProcessArgs(int argc, char *argv[])
@@ -30,18 +24,17 @@ bool DVBAPI::ProcessArgs(int argc, char *argv[])
   return true;
 }
 
-
 bool DVBAPI::Initialize(void)
 {
-
   // Initialize any background activities the plugin shall perform.
   return SCDVBDevice::Initialize();
 }
+
 bool DVBAPI::Start(void)
 {
- SCDVBDevice::Startup();
- isyslog("DVBAPI started");
- return true;
+  SCDVBDevice::Startup();
+  isyslog("DVBAPI started");
+  return true;
 }
 
 void DVBAPI::Stop(void)
@@ -103,5 +96,4 @@ cString DVBAPI::SVDRPCommand(const char *Command, const char *Option, int &Reply
   return NULL;
 }
 
-VDRPLUGINCREATOR(DVBAPI); // Don't touch this!
-
+VDRPLUGINCREATOR(DVBAPI);       // Don't touch this!
