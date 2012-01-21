@@ -51,7 +51,7 @@ DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
 ### The object files (add further files here):
 
-OBJS = CAPMT.o DeCSA.o DeCsaTSBuffer.o DVBAPI.o SCDeviceProbe.o  SCDVBDevice.o UDPSocket.o SCCIAdapter.o Frame.o SCCAMSlot.o
+OBJS = CAPMT.o DeCSA.o DeCsaTSBuffer.o DVBAPI.o DVBAPISetup.o SCDeviceProbe.o SCDVBDevice.o UDPSocket.o SCCIAdapter.o Frame.o SCCAMSlot.o
 
 # FFdeCSA
 CPUOPT     ?= athlon64
