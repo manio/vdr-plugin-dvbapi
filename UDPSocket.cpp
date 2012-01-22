@@ -1,5 +1,6 @@
 #include <linux/ioctl.h>
 #include "UDPSocket.h"
+#include "Log.h"
 
 static UDPSocket *me = 0;
 
@@ -19,7 +20,7 @@ UDPSocket::~UDPSocket()
 
 UDPSocket::UDPSocket(SCDVBDevice *pSCDVBDevice)
 {
-  isyslog("DVBAPI: UDPSocket::UDPSocket");
+  DEBUGLOG("%s", __FUNCTION__);
   sCDVBDevice = pSCDVBDevice;
   struct sockaddr_in socketAddr;
   memset(&socketAddr, 0, sizeof(sockaddr_in));
@@ -28,21 +29,21 @@ UDPSocket::UDPSocket(SCDVBDevice *pSCDVBDevice)
   {
     unsigned int port;
     port = 9000 + sCDVBDevice->DeviceNumber();
-    isyslog("DVBAPI: Adapter %d\n", sCDVBDevice->DeviceNumber());
-    isyslog("DVBAPI: UDPSocket hostaddr port %d", port);
+    DEBUGLOG("%s: Adapter %d\n", __FUNCTION__, sCDVBDevice->DeviceNumber());
+    DEBUGLOG("%s: hostaddr port %d", __FUNCTION__, port);
     socketAddr.sin_family = AF_INET;
     socketAddr.sin_port = htons(port);
     socketAddr.sin_addr.s_addr = ((struct in_addr *) hostaddr->h_addr)->s_addr;
     const struct protoent *const ptrp = getprotobyname("udp");
     if (ptrp)
     {
-      isyslog("DVBAPI: UDPSocket ptrp");
+      DEBUGLOG("%s: ptrp", __FUNCTION__);
       sock = socket(PF_INET, SOCK_DGRAM, ptrp->p_proto);
       if (sock > 0)
       {
         bint = (bind(sock, (struct sockaddr *) &socketAddr, sizeof(socketAddr)) >= 0);
         if (bint >= 0)
-          isyslog("DVBAPI: UDPSocket bint=%d", bint);
+          DEBUGLOG("%s: bint=%d", __FUNCTION__, bint);
       }
     }
   }
@@ -55,7 +56,7 @@ void UDPSocket::unbind(void)
 
 void UDPSocket::Action(void)
 {
-  isyslog("DVBAPI: UDPSocket Action");
+  DEBUGLOG("%s", __FUNCTION__);
 
   while (bint)
   {
@@ -80,7 +81,7 @@ void UDPSocket::Action(void)
       }
       if (r == sizeof(ca_descr_t))
       {
-        isyslog("DVBAPI: UDPSocket Got CW");
+        DEBUGLOG("%s: Got CA_SET_DESCR request", __FUNCTION__);
         sCDVBDevice->SetCaDescr(&ca_descr);
       }
     }
@@ -96,7 +97,7 @@ void UDPSocket::Action(void)
       }
       if (r == sizeof(ca_pid_t))
       {
-        isyslog("DVBAPI: UDPSocket Got CPID");
+        DEBUGLOG("%s: Got CA_SET_PID request", __FUNCTION__);
         sCDVBDevice->SetCaPid(&ca_pid);
       }
     }

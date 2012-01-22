@@ -1,4 +1,5 @@
 #include "Frame.h"
+#include "Log.h"
 
 Frame::Frame(void)
 {
@@ -26,7 +27,7 @@ unsigned char *Frame::GetBuff(int l)
   len = l;
   if (!mem)
   {
-    isyslog("DVBAPI: ci-frame alloc failed");
+    ERRORLOG("ci-frame alloc failed");
     return 0;
   }
   return mem + LEN_OFF;

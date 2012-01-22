@@ -13,6 +13,7 @@
 #include <vdr/thread.h>
 #include "SCDeviceProbe.h"
 #include "SCDVBDevice.h"
+#include "Log.h"
 
 SCDeviceProbe *SCDeviceProbe::probe = 0;
 
@@ -31,7 +32,7 @@ void SCDeviceProbe::Remove(void)
 
 bool SCDeviceProbe::Probe(int Adapter, int Frontend)
 {
-  isyslog("DVBAPI: SCDeviceProbe::Probe capturing device %d/%d", Adapter, Frontend);
+  INFOLOG("%s: capturing device %d/%d", __FUNCTION__, Adapter, Frontend);
   new SCDVBDevice(Adapter, Frontend, SCDVBDevice::DvbOpen(DEV_DVB_CA, Adapter, Frontend, O_RDWR));
   return true;
 }

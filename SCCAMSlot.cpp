@@ -13,6 +13,7 @@
 #include <vdr/thread.h>
 #include "SCCIAdapter.h"
 #include "SCCAMSlot.h"
+#include "Log.h"
 
 // from vdr's ci.c
 #define AOT_CA_INFO_ENQ             0x9F8030
@@ -54,7 +55,7 @@ eModuleStatus SCCAMSlot::Status(void)
   if (status != lastStatus)
   {
     static const char *stext[] = { "none", "reset", "present", "ready" };
-    isyslog("DVBAPI: SCCAMSlot::Status %d.%d: status '%s'", cardIndex, slot, stext[status]);
+    INFOLOG("%d.%d: status '%s'", cardIndex, slot, stext[status]);
     lastStatus = status;
   }
   return status;
@@ -62,24 +63,23 @@ eModuleStatus SCCAMSlot::Status(void)
 
 bool SCCAMSlot::Reset(bool log)
 {
-  isyslog("DVBAPI: SCCAMSlot::Reset log=%i", log);
+  DEBUGLOG("%s: log=%i", __FUNCTION__, log);
   reset = true;
   resetTimer.Set(SLOT_RESET_TIME);
   rb.Clear();
-  //if(log) PRINTF(L_CORE_CI,"%d.%d: reset",cardIndex,slot);
-  isyslog("DVBAPI: SCCAMSlot::Reset Done");
+  if (log)
+    INFOLOG("%d.%d: reset", cardIndex, slot);
   return reset;
 }
 
 bool SCCAMSlot::Check(void)
 {
-  //isyslog("DVBAPI: SCCAMSlot::Check");
   bool res = false;
   bool dr = true;
   //bool dr = ciadapter->CamSoftCSA() || ScSetup.ConcurrentFF>0;
   if (dr != doReply && !IsDecrypting())
   {
-    isyslog("DVBAPI: SCCAMSlot::Check  %d.%d: doReply changed, reset triggered", cardIndex, slot);
+    INFOLOG("%d.%d: doReply changed, reset triggered", cardIndex, slot);
     Reset(false);
     doReply = dr;
   }
@@ -88,7 +88,7 @@ bool SCCAMSlot::Check(void)
     if (version != sCCIAdapter->GetCaids(slot, 0, 0))
     {
       version = sCCIAdapter->GetCaids(slot, caids, MAX_CI_SLOT_CAIDS);
-      //isyslog("DVBAPI: SCCAMSlot::Check %d.%d: now using CAIDs version %d", cardIndex, slot, version);
+      INFOLOG("%d.%d: now using CAIDs version %d", cardIndex, slot, version);
       res = true;
     }
     checkTimer.Set(SLOT_CAID_CHECK);
@@ -98,7 +98,6 @@ bool SCCAMSlot::Check(void)
 
 int SCCAMSlot::GetLength(const unsigned char *&data)
 {
-  //isyslog("DVBAPI: SCCAMSlot::GetLength");
   int len = *data++;
   if (len & TDPU_SIZE_INDICATOR)
   {
@@ -111,13 +110,11 @@ int SCCAMSlot::GetLength(const unsigned char *&data)
 
 int SCCAMSlot::LengthSize(int n)
 {
-  //isyslog("DVBAPI: SCCAMSlot::LengthSize");
   return n < TDPU_SIZE_INDICATOR ? 1 : 3;
 }
 
 void SCCAMSlot::SetSize(int n, unsigned char *&p)
 {
-  //isyslog("DVBAPI: SCCAMSlot::SetSize");
   if (n < TDPU_SIZE_INDICATOR)
     *p++ = n;
   else
@@ -154,7 +151,7 @@ void SCCAMSlot::CaInfo(int tcid, int cid)
     *p++ = caids[i] & 0xff;
   }
   frame.Put();
-  isyslog("DVBAPI: SCCAMSlot::CaInfo %i.%i sending CA info", cardIndex, slot);
+  INFOLOG("%s: %i.%i sending CA info", __FUNCTION__, cardIndex, slot);
 }
 
 void SCCAMSlot::Process(const unsigned char *data, int len)
@@ -168,11 +165,10 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
   int dlen = GetLength(data);
   if (dlen > len - (data - save))
   {
-    isyslog("DVBAPI: SCCAMSlot::Process %d.%d TDPU length exceeds data length", cardIndex, slot);
+    ERRORLOG("%d.%d TDPU length exceeds data length", cardIndex, slot);
     dlen = len - (data - save);
   }
   int tcid = data[0];
-  //isyslog("DVBAPI: SCCAMSlot::Process len=%d tcid=%i", len, tcid);
 
   if (Check())
     CaInfo(tcid, 0x01);
@@ -185,7 +181,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
   dlen = GetLength(data);
   if (dlen > len - (data - save))
   {
-    isyslog("DVBAPI: SCCAMSlot::Process %d.%d tag length exceeds data length", cardIndex, slot);
+    ERRORLOG("%d.%d tag length exceeds data length", cardIndex, slot);
     dlen = len - (data - save);
   }
   switch (tag)
@@ -204,7 +200,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
       int ci_cmd = -1;
       int sid = (data[1] << 8) + data[2];       // program number
       int ilen = (data[4] << 8) + data[5];      // program info length
-      isyslog("DVBAPI: SCCAMSlot::Process %d.%d CA_PMT decoding len=%x lm=%x prg=%d len=%x", cardIndex, slot, dlen, ca_lm, sid, ilen);
+      DEBUGLOG("%d.%d CA_PMT decoding len=%x lm=%x prg=%d len=%x", cardIndex, slot, dlen, ca_lm, sid, ilen);
       data += 6;
       dlen -= 6;
       if (ilen > 0 && dlen >= ilen)
@@ -212,14 +208,14 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
         ci_cmd = data[0];
         if (ilen > 1)
           HasCaDescriptors = true;
-        isyslog("DVBAPI: SCCAMSlot::Process ci_cmd(G)=%02x", ci_cmd);
+        DEBUGLOG("ci_cmd(G)=%02x", ci_cmd);
       }
       data += ilen;
       dlen -= ilen;
       while (dlen >= 5)
       {
         ilen = (data[3] << 8) + data[4];        // ES_Info_length
-        isyslog("DVBAPI: SCCAMSlot::Process pid=%d,%04x len=%d (0x%x)", data[0], (data[1] << 8) + data[2], ilen, ilen);
+        DEBUGLOG("pid=%d,%04x len=%d (0x%x)", data[0], (data[1] << 8) + data[2], ilen, ilen);
         data += 5;
         dlen -= 5;
         if (ilen > 0 && dlen >= ilen)
@@ -227,12 +223,12 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
           ci_cmd = data[0];
           if (ilen > 1)
             HasCaDescriptors = true;
-          isyslog("DVBAPI: SCCAMSlot::Process ci_cmd(S)=%x", ci_cmd);
+          DEBUGLOG("ci_cmd(S)=%02x", ci_cmd);
         }
         data += ilen;
         dlen -= ilen;
       }
-      isyslog("DVBAPI: SCCAMSlot::Process %d.%d got CA pmt ciCmd=%d caLm=%d", cardIndex, slot, ci_cmd, ca_lm);
+      DEBUGLOG("%d.%d got CA pmt ciCmd=%d caLm=%d", cardIndex, slot, ci_cmd, ca_lm);
       if (doReply && (ci_cmd == 0x03 || (ci_cmd == 0x01 && ca_lm == 0x03)))
       {
         unsigned char *b;
@@ -254,16 +250,16 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
           b[10] = 4;
           b[1] = 4 + 9;
           frame.Put();
-          isyslog("DVBAPI: SCCAMSlot::Process %d.%d answer to query", cardIndex, slot);
+          DEBUGLOG("%d.%d answer to query", cardIndex, slot);
         }
       }
       if (sid != 0)
       {
         if (ci_cmd == 0x04)
-          isyslog("DVBAPI: SCCAMSlot::Process %d.%d stop decrypt", cardIndex, slot);
+          INFOLOG("%d.%d stop decrypt", cardIndex, slot);
         if (ci_cmd == 0x01 || (ci_cmd == -1 && (ca_lm == 0x04 || ca_lm == 0x05)))
         {
-          isyslog("DVBAPI: SCCAMSlot::Process %d.%d set CAM decrypt (SID %d)", cardIndex, slot, sid);
+          INFOLOG("%d.%d set CAM decrypt (SID %d, caLm %d, HasCaDescriptors %d)", cardIndex, slot, sid, ca_lm, HasCaDescriptors);
 
           if (!HasCaDescriptors)
           {
@@ -274,7 +270,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
           if (dev)
             dev->GetSCCIAdapter()->ProcessSIDRequest(Device()->DeviceNumber(), sid, ca_lm, vdr_caPMT, vdr_caPMTLen);
           else
-            esyslog("DVBAPI: SCCAMSlot::Process %d.%d FATAL ERROR: cannot find CIAdapter for ProcessSIDRequest", cardIndex, slot);
+            ERRORLOG("%d.%d cannot find CIAdapter for ProcessSIDRequest", cardIndex, slot);
         }
       }
     }

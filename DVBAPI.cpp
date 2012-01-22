@@ -3,6 +3,8 @@
 #include <linux/dvb/ca.h>
 #include "DVBAPI.h"
 #include "SCDVBDevice.h"
+#include "DVBAPISetup.h"
+#include "Log.h"
 
 DVBAPI::DVBAPI(void)
 {
@@ -33,14 +35,14 @@ bool DVBAPI::Initialize(void)
 bool DVBAPI::Start(void)
 {
   SCDVBDevice::Startup();
-  isyslog("DVBAPI started");
+  INFOLOG("plugin started");
   return true;
 }
 
 void DVBAPI::Stop(void)
 {
   SCDVBDevice::Shutdown();
-  isyslog("DVBAPI stopped");
+  INFOLOG("plugin stopped");
 }
 
 void DVBAPI::Housekeeping(void)
@@ -69,7 +71,7 @@ time_t DVBAPI::WakeupTime(void)
 cMenuSetupPage *DVBAPI::SetupMenu(void)
 {
   // Return a setup menu in case the plugin supports one.
-  return NULL;
+  return new cMenuSetupDVBAPI;
 }
 
 bool DVBAPI::SetupParse(const char *Name, const char *Value)

@@ -1,4 +1,5 @@
 #include "DeCsaTSBuffer.h"
+#include "Log.h"
 
 DeCsaTsBuffer::DeCsaTsBuffer(int File, int Size, int CardIndex, DeCSA *DeCsa, bool ScActive)
 {
@@ -44,7 +45,7 @@ void DeCsaTsBuffer::Action(void)
         if (r < 0 && FATALERRNO)
         {
           if (errno == EOVERFLOW)
-            esyslog("ERROR: driver buffer overflow on device %d", cardIndex);
+            ERRORLOG("driver buffer overflow on device %d", cardIndex);
           else
           {
             LOG_ERROR;
@@ -76,7 +77,7 @@ uchar *DeCsaTsBuffer::Get(void)
           break;
         }
       ringBuffer->Del(Count);
-      esyslog("ERROR: skipped %d bytes to sync on TS packet on device %d", Count, cardIndex);
+      ERRORLOG("skipped %d bytes to sync on TS packet on device %d", Count, cardIndex);
       return NULL;
     }
 

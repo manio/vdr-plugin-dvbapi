@@ -13,6 +13,7 @@
 #include <vdr/thread.h>
 #include "SCCIAdapter.h"
 #include "Frame.h"
+#include "Log.h"
 
 // from vdr's ci.c
 #define T_CREATE_TC    0x82
@@ -27,7 +28,6 @@ SCCIAdapter::SCCIAdapter(SCDVBDevice *sCDVBDevice, int cardIndex)
     sockets[i] = 0;
   }
 
-  //isyslog("DVBAPI: SCCIAdapter::SCCIAdapter");
   this->sCDVBDevice = sCDVBDevice;
   this->cardIndex = cardIndex;
   memset(version, 1, sizeof(version));
@@ -49,7 +49,7 @@ SCCIAdapter::SCCIAdapter(SCDVBDevice *sCDVBDevice, int cardIndex)
     rb->SetTimeouts(0, CAM_READ_TIMEOUT);
     frame.SetRb(rb);
   }
-  isyslog("DVBAPI: SCCIAdapter::SCCIAdapter build caid table with %i caids for %i channels", caidsLength, Channels.Count());
+  INFOLOG("%s: built caid table with %i caids for %i channels", __FUNCTION__, caidsLength, Channels.Count());
   SetDescription("SC-CI adapter on device %d", cardIndex);
   for (int i = 0; i < MAX_CI_SLOTS && i * MAX_CI_SLOT_CAIDS < caidsLength; i++)
     slots[i] = new SCCAMSlot(this, cardIndex, i);
@@ -111,7 +111,6 @@ int SCCIAdapter::GetCaids(int slot, unsigned short *Caids, int max)
 
 int SCCIAdapter::Read(unsigned char *Buffer, int MaxLength)
 {
-  //isyslog("DVBAPI: SCCIAdapter::Read");
   cMutexLock lock(&ciMutex);
   if (rb && Buffer && MaxLength > 0)
   {
@@ -122,7 +121,7 @@ int SCCIAdapter::Read(unsigned char *Buffer, int MaxLength)
       if (s <= MaxLength)
         memcpy(Buffer, data, s);
       else
-        isyslog("DVBAPI: internal: sc-ci %d rb frame size exceeded %d", cardIndex, s);
+        ERRORLOG("internal: sc-ci %d rb frame size exceeded %d", cardIndex, s);
       frame.Del();
       if (Buffer[2] != 0x80)
         readTimer.Set();
@@ -209,7 +208,7 @@ void SCCIAdapter::Write(const unsigned char *buff, int len)
     }
   }
   else
-    esyslog("DVBAPI short write (cardIndex=%d buff=%d len=%d)", cardIndex, buff != 0, len);
+    DEBUGLOG("%d: short write (buff=%d len=%d)", cardIndex, buff != 0, len);
 }
 
 SCCIAdapter::~SCCIAdapter()
@@ -236,20 +235,17 @@ bool SCCIAdapter::Ready(void)
 
 bool SCCIAdapter::Reset(int Slot)
 {
-  //isyslog("DVBAPI: SCCIAdapter::Reset Slot=%i", Slot);
   return true;
   //return slots[Slot]->Reset();
 }
 
 eModuleStatus SCCIAdapter::ModuleStatus(int Slot)
 {
-  //isyslog("DVBAPI: SCCIAdapter::ModuleStatus");
   return (slots[Slot]) ? slots[Slot]->Status() : msNone;
 }
 
 bool SCCIAdapter::Assign(cDevice *Device, bool Query)
 {
-  //isyslog("DVBAPI: SCCIAdapter::Assign");
   return true;
 }
 
@@ -265,10 +261,10 @@ void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const un
   int i;
 
   //for (i = 0; i < MAX_SOCKETS; i++)
-    //esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest-SOCKETS TABLE DUMP [%d]: sid=%d socket=%d", i, sids[i], sockets[i]);
+    //DEBUGLOG("%s: SOCKETS TABLE DUMP [%d]: sid=%d socket=%d", __FUNCTION__, i, sids[i], sockets[i]);
   if (sid == 0)
   {
-    esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest got empty SID - returning from function");
+    DEBUGLOG("%s: got empty SID - returning from function", __FUNCTION__);
     return;
   }
   if (ca_lm == 0x04 || ca_lm == 0x03)   //adding new sid
@@ -284,7 +280,7 @@ void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const un
     }
 
     if (found)
-      esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest found sid, reusing socket, i=%d", i);
+      DEBUGLOG("%s: found sid, reusing socket, i=%d", __FUNCTION__, i);
     else                        //not found - adding to first free in table
     {
       for (i = 0; i < MAX_SOCKETS; i++)
@@ -298,13 +294,13 @@ void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const un
     }
     if (i == MAX_SOCKETS)
     {
-      esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest ERROR: no free space to new SID!!!");
+      ERRORLOG("%s: no free space for new SID!!!", __FUNCTION__);
       return;
     }
     else
     {
       sids[i] = sid;
-      esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest added: i=%d", i);
+      DEBUGLOG("%s: added: i=%d", __FUNCTION__, i);
     }
   }
   else if (ca_lm == 0x05)       //removing sid
@@ -316,12 +312,12 @@ void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const un
     }
     if (i == MAX_SOCKETS)
     {
-      esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest ERROR: socket to close not found");
+      ERRORLOG("%s: socket to close not found", __FUNCTION__);
       return;
     }
 
     //closing socket (oscam handles this as event and stop decrypting)
-    esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest closing socket i=%d, socket_fd=%d", i, sockets[i]);
+    DEBUGLOG("%s: closing socket i=%d, socket_fd=%d", __FUNCTION__, i, sockets[i]);
     sids[i] = 0;
     if (sockets[i] > 0)
       close(sockets[i]);
@@ -330,7 +326,7 @@ void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const un
   }
   else
   {
-    esyslog("DVPAPI: SCCAMSlot::ProcessSIDRequest error: unhandled request type = %d", ca_lm);
+    ERRORLOG("%s: unhandled ca_lm request type = %d", __FUNCTION__, ca_lm);
     return;
   }
 

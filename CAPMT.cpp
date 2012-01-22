@@ -6,6 +6,7 @@
 #include <sys/un.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "Log.h"
 
 int CAPMT::read_t(int fd, unsigned char *buffer)
 {
@@ -15,7 +16,7 @@ int CAPMT::read_t(int fd, unsigned char *buffer)
   p.revents = (POLLIN | POLLPRI);
   if (poll(&p, 1, TIMEOUT) <= 0)
   {
-    esyslog("DVPAPI: CAPMT::read poll timmed");
+    ERRORLOG("poll timed out");
     return -1;
   }
   buffer[0] = 0;
@@ -32,7 +33,7 @@ int CAPMT::set_filter(int fd, int pid)
   flt.pid = pid;
   if (ioctl(fd, DMX_SET_FILTER, &flt) < 0)
   {
-    esyslog("DVPAPI:  CAPMT::set_filter Error in setting section filter");
+    ERRORLOG("%s: Error setting section filter", __FUNCTION__);
     return -1;
   }
   return 0;
@@ -42,14 +43,14 @@ int CAPMT::get_pmt_pid(unsigned char *buffer, int sid)
 {
   int index = 0;
   int length = (buffer[index + 2] & 0x0F) << 8 | (buffer[index + 3] + 3);
-  //esyslog("DVPAPI: PAT length: '%d'", length);
+  DEBUGLOG("%s: PAT length: '%d'", __FUNCTION__, length);
   for (index = 9; index < length - 4; index += 4)
     if (((buffer[index] << 8) | buffer[index + 1]) > 0)
     {
       if (sid == ((buffer[index] << 8) | buffer[index + 1]))
       {
         int pmt_pid = (((buffer[index + 2] << 8) | buffer[index + 3]) & 0x1FFF);
-        esyslog("DVPAPI CAPMT::get_pmt_pid pid='0x%X (%d)'", pmt_pid, pmt_pid);
+        DEBUGLOG("%s: pid=0x%X (%d)", __FUNCTION__, pmt_pid, pmt_pid);
         return pmt_pid;
       }
     }
@@ -68,7 +69,7 @@ int CAPMT::set_filter_pmt(int fd, int pid)
   flt.pid = pid;
   if (ioctl(fd, DMX_SET_FILTER, &flt) < 0)
   {
-    esyslog("DVPAPI: CAPMT::set_filter_pmt Error in setting section filter");
+    ERRORLOG("%s: Error setting section filter", __FUNCTION__);
     return -1;
   }
   return 0;
@@ -84,28 +85,28 @@ bool CAPMT::get_pmt(const int adapter, const int sid, unsigned char *buffer)
   bool ret = false;
 
   asprintf(&demux_dev, "/dev/dvb/adapter%d/demux0", adapter);
-  esyslog("DVPAPI: opening demux: %s", demux_dev);
+  DEBUGLOG("opening demux: %s", demux_dev);
   if ((fd = open(demux_dev, O_RDWR)) < 0)
-    esyslog("DVPAPI: Error opening demux device");
+    ERRORLOG("Error opening demux device");
   else
   {
     if (set_filter(fd, 0) < 0)
-      esyslog("DVPAPI: Error in set filter pat");
+      ERRORLOG("Error in set filter pat");
     if ((length = read_t(fd, buffer)) < 0)
-      esyslog("DVPAPI: Error in read read_t (pat)");
+      ERRORLOG("Error in read read_t (pat)");
     else
     {
       pmt_pid = get_pmt_pid(buffer, sid);
       if (pmt_pid == 0)
-        esyslog("DVPAPI: Error pmt_pid not found");
+        ERRORLOG("pmt_pid not found");
       else
       {
         if (set_filter_pmt(fd, pmt_pid) < 0)
-          esyslog("DVPAPI: Error in set pmt filter");
+          ERRORLOG("Error in set pmt filter");
         for (k = 0; k < 64; k++)
         {
           if ((length = read_t(fd, buffer)) < 0)
-            esyslog("DVPAPI: Error in read pmt\n");
+            ERRORLOG("Error in read pmt");
           if (sid == ((buffer[4] << 8) + buffer[5]))
             break;
         }
@@ -139,7 +140,7 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
   {
     if (!get_pmt(adapter, sid, buffer))
     {
-      esyslog("DVPAPI: Error obtaining PMT data, returning");
+      ERRORLOG("Error obtaining PMT data, returning");
       return 0;
     }
   }
@@ -156,7 +157,7 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
 /////// preparing capmt data to send
   char *caPMT = (char *) malloc(1024);
   // http://cvs.tuxbox.org/lists/tuxbox-cvs-0208/msg00434.html
-  isyslog("DVBAPI: :: CAMPT channelSid =0x%x(%d) ", sid, sid);
+  DEBUGLOG("channelSid=0x%x(%d)", sid, sid);
 
   //ca_pmt_tag
   caPMT[0] = 0x9F;
@@ -224,19 +225,19 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
     snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
     if (connect(socket_fd, (const sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
     {
-      esyslog("DVPAPI: Canot connecto to /tmp/camd.socket, Do you have OSCam running?");
+      ERRORLOG("Canot connecto to /tmp/camd.socket, Do you have OSCam running?");
       socket_fd = 0;
     }
     else
-      esyslog("DVPAPI: created socket with socket_fd=%d", socket_fd);
+      DEBUGLOG("created socket with socket_fd=%d", socket_fd);
   }
   if (socket_fd != 0)
   {
     int wrote = write(socket_fd, caPMT, toWrite);
-    isyslog("DVBAPI: :: CAMPT socket_fd=%d length=%d toWrite=%d wrote=%d", socket_fd, length, toWrite, wrote);
+    DEBUGLOG("socket_fd=%d length=%d toWrite=%d wrote=%d", socket_fd, length, toWrite, wrote);
     if (wrote != toWrite)
     {
-      esyslog("DVPAPI: CAMPT:send failed");
+      ERRORLOG("%s: wrote != toWrite", __FUNCTION__);
       close(socket_fd);
       socket_fd = 0;
     }

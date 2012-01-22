@@ -13,12 +13,13 @@
 #include <vdr/thread.h>
 #include "SCDVBDevice.h"
 #include "SCDeviceProbe.h"
+#include "Log.h"
 
 SCDVBDevice::SCDVBDevice(int adapter, int frontend, int cafd)
  : cDvbDevice(adapter, frontend)
 {
   isReady = true;
-  isyslog("DVBAPI: SCDVBDevice::SCDVBDevice adapter=%d frontend=%d", adapter, frontend);
+  DEBUGLOG("%s: adapter=%d frontend=%d", __FUNCTION__, adapter, frontend);
   this->adapter = adapter;
   tsBuffer = 0;
   fullts = false;
@@ -30,7 +31,7 @@ SCDVBDevice::SCDVBDevice(int adapter, int frontend, int cafd)
   decsa = new DeCSA(adapter);
   cAPMT = new CAPMT;
   sCCIAdapter = new SCCIAdapter(this, adapter);
-  isyslog(" SCDVBDevice::SCDVBDevice Done.");
+  DEBUGLOG("%s: done", __FUNCTION__);
 }
 
 CAPMT *SCDVBDevice::GetCAPMT()
@@ -50,18 +51,18 @@ void SCDVBDevice::SetReady(bool Ready)
 
 void SCDVBDevice::CiStartDecrypting(void)
 {
-  isyslog("DVBAPI: SCDVBDevice::CiStartDecrypting");
+  DEBUGLOG("%s", __FUNCTION__);
 }
 
 bool SCDVBDevice::CiAllowConcurrent(void) const
 {
-  isyslog("DVBAPI: SCDVBDevice::CiAllowConcurrent");
+  DEBUGLOG("%s", __FUNCTION__);
   return true;
 }
 
 bool SCDVBDevice::HasCi()
 {
-  isyslog("DVBAPI: SCDVBDevice::HasCi");
+  DEBUGLOG("%s", __FUNCTION__);
   return true;
   //return sCCIAdapter || hWCIAdapter;
 }
@@ -74,27 +75,23 @@ bool SCDVBDevice::SetChannelDevice(const cChannel *Channel, bool LiveView)
 
   // doing it the old way - need to FIX it later - maybe some of following code is not needed
   isReady = false;
-  isyslog("DVBAPI: SCDVBDevice::SetChannelDevice");
+  DEBUGLOG("%s", __FUNCTION__);
   switchMutex.Lock();
-  isyslog("DVBAPI: SCDVBDevice::SetChannelDevice  SOFTCAM_SWITCH....");
   bool ret = cDvbDevice::SetChannelDevice(Channel, LiveView);
-  // HERE
-  isyslog("SOFTCAM_SWITCH Device: '%d' Channel: '%d' SID '%d' ", this->DeviceNumber(), Channel->Number(), Channel->Sid());
+  DEBUGLOG("%s: Device: '%d' Channel: '%d' SID '%d' ", __FUNCTION__, this->DeviceNumber(), Channel->Number(), Channel->Sid());
   if (HasLock(5000))
   {
-    isyslog("DVBAPI: SCDVBDevice::SetChannelDevice SOFTCAM_SWITCH HasLock");
+    DEBUGLOG("%s: HasLock", __FUNCTION__);
     initialCaDscr = true;
-    //cAPMT->send(Channel->Sid());
   }
-  isyslog("DVBAPI: SCDVBDevice::SetChannelDevice SOFTCAM_SWITCH Finished ret=%d", ret);
-  //isReady = true;
+  DEBUGLOG("%s: Finished ret=%d", __FUNCTION__, ret);
   switchMutex.Unlock();
   return ret;
 }
 
 bool SCDVBDevice::OpenDvr(void)
 {
-  isyslog("DVBAPI: SCDVBDevice::OpenDvr");
+  DEBUGLOG("%s", __FUNCTION__);
   CloseDvr();
   fd_dvr = DvbOpen(DEV_DVB_DVR, DVB_DEV_SPEC, O_RDONLY | O_NONBLOCK, true);
   if (fd_dvr >= 0)
@@ -109,7 +106,7 @@ bool SCDVBDevice::OpenDvr(void)
 
 void SCDVBDevice::CloseDvr(void)
 {
-  isyslog("DVBAPI: SCDVBDevice::CloseDvr");
+  DEBUGLOG("%s", __FUNCTION__);
   tsMutex.Lock();
   delete tsBuffer;
   tsBuffer = 0;
@@ -133,7 +130,7 @@ bool SCDVBDevice::GetTSPacket(uchar *&Data)
 
 SCDVBDevice::~SCDVBDevice()
 {
-  isyslog("DVBAPI: SCDVBDevice::~SCDVBDevice");
+  DEBUGLOG("%s", __FUNCTION__);
   DetachAllReceivers();
   Cancel(3);
   EarlyShutdown();
@@ -154,7 +151,7 @@ SCDVBDevice::~SCDVBDevice()
 
 void SCDVBDevice::EarlyShutdown()
 {
-  isyslog("DVBAPI: SCDVBDevice::EarlyShutdown");
+  DEBUGLOG("%s", __FUNCTION__);
   //if (cADevice != 0)
     //delete cADevice;
   //cADevice = 0;
@@ -166,7 +163,7 @@ void SCDVBDevice::EarlyShutdown()
 
 void SCDVBDevice::Shutdown(void)
 {
-  isyslog("DVBAPI: SCDVBDevice::Shutdown");
+  DEBUGLOG("%s", __FUNCTION__);
   for (int n = cDevice::NumDevices(); --n >= 0;)
   {
     SCDVBDevice *dev = dynamic_cast<SCDVBDevice *>(cDevice::GetDevice(n));
@@ -177,6 +174,7 @@ void SCDVBDevice::Shutdown(void)
 
 void SCDVBDevice::Startup(void)
 {
+  DEBUGLOG("%s", __FUNCTION__);
   //if(ScSetup.ForceTransfer)
     //SetTransferModeForDolbyDigital(2);
   for (int n = cDevice::NumDevices(); --n >= 0;)
@@ -185,28 +183,27 @@ void SCDVBDevice::Startup(void)
     if (dev)
       dev->LateInit();
   }
-  isyslog("DVBAPI: SCDVBDevice::Startup");
 }
 
 void SCDVBDevice::SetForceBudget(int n)
 {
-  isyslog("DVBAPI: SCDVBDevice::SetForceBudget");
+  DEBUGLOG("%s", __FUNCTION__);
 }
 
 void SCDVBDevice::LateInit()
 {
-  isyslog("DVBAPI: SCDVBDevice::LateInit");
+  DEBUGLOG("%s", __FUNCTION__);
   int n = CardIndex();
   if (DeviceNumber() != n)
-    isyslog("CardIndex - DeviceNumber mismatch! Put DVBAPI plugin first on VDR commandline!");
+    ERRORLOG("CardIndex - DeviceNumber mismatch! Put DVBAPI plugin first on VDR commandline!");
   if (softcsa)
   {
     if (HasDecoder())
-      isyslog("Card %d is a full-featured card but no ca device found!", n);
+      INFOLOG("Card %d is a full-featured card but no ca device found!", n);
   }
   else //if (cScDevices::ForceBudget(n))
   {
-    isyslog("Budget mode forced on card %d", n);
+    INFOLOG("Budget mode forced on card %d", n);
     softcsa = true;
   }
   //if (fd_ca2 >= 0)
@@ -218,23 +215,23 @@ void SCDVBDevice::LateInit()
   {
     if (IsPrimaryDevice() && HasDecoder())
     {
-      isyslog("Enabling hybrid full-ts mode on card %d", n);
+      INFOLOG("Enabling hybrid full-ts mode on card %d", n);
       fullts = true;
     }
     else
-      isyslog("Using software decryption on card %d", n);
+      INFOLOG("Using software decryption on card %d", n);
   }
 }
 
 bool SCDVBDevice::ForceBudget(int n)
 {
-  isyslog("DVBAPI: CDVBDevice::ForceBudget");
+  DEBUGLOG("%s", __FUNCTION__);
   return true;
 }
 
 void SCDVBDevice::Capture(void)
 {
-  isyslog("DVBAPI: SCDVBDevice::Capture");
+  DEBUGLOG("%s", __FUNCTION__);
 }
 
 void SCDVBDevice::DvbName(const char *Name, int a, int f, char *buffer, int len)
@@ -254,19 +251,18 @@ int SCDVBDevice::DvbOpen(const char *Name, int a, int f, int Mode, bool ReportEr
 
 void SCDVBDevice::OnPluginLoad(void)
 {
-  isyslog("SCDVBDevice::OnPluginLoad");
+  DEBUGLOG("%s", __FUNCTION__);
   SCDeviceProbe::Install();
 }
 
 void SCDVBDevice::OnPluginUnload(void)
 {
-  isyslog("SCDVBDevice::OnPluginUnload");
+  DEBUGLOG("%s", __FUNCTION__);
   SCDeviceProbe::Remove();
 }
 
 bool SCDVBDevice::Ready(void)
 {
-  //isyslog("SCDVBDevice::Ready");
   return true;
   //return (sCCIAdapter ? sCCIAdapter->Ready() : true) &&
   //       (hWCIAdapter ? hWCIAdapter->Ready() : true);
@@ -275,26 +271,26 @@ bool SCDVBDevice::Ready(void)
 
 bool SCDVBDevice::Initialize(void)
 {
-  isyslog("SCDVBDevice::Initialize");
+  DEBUGLOG("%s", __FUNCTION__);
   return true;
 }
 
 void SCDVBDevice::CaidsChanged(void)
 {
-  isyslog("SCDVBDevice::CaidsChanged");
+  DEBUGLOG("%s", __FUNCTION__);
   //if (sCCIAdapter)
     //sCCIAdapter->CaidsChanged();
 }
 
 bool SCDVBDevice::SoftCSA(bool live)
 {
-  isyslog("SCDVBDevice::SoftCSiA");
+  DEBUGLOG("%s", __FUNCTION__);
   return softcsa && (!fullts || !live);
 }
 
 bool SCDVBDevice::SetCaDescr(ca_descr_t *ca_descr)
 {
-  isyslog("SCDVBDevice::SetCaDescr index=%d, Ready()=%d", ca_descr->index, Ready());
+  DEBUGLOG("%s: index=%d, Ready()=%d", __FUNCTION__, ca_descr->index, Ready());
   //if (!softcsa || (fullts && ca_descr->index == 0))
   //{
     //cMutexLock lock(&cafdMutex);
@@ -302,7 +298,7 @@ bool SCDVBDevice::SetCaDescr(ca_descr_t *ca_descr)
   //}
   if (ca_descr->index == (unsigned) -1)
   {
-    isyslog("SCDVBDevice::SetCaDescr removal request - ignoring");
+    DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
     return true;
   }
   if (!Ready())
@@ -314,7 +310,7 @@ bool SCDVBDevice::SetCaDescr(ca_descr_t *ca_descr)
 
 bool SCDVBDevice::SetCaPid(ca_pid_t *ca_pid)
 {
-  isyslog("SCDVBDevice::SetCaPid PID=%d, index=%d, Ready()=%d", ca_pid->pid, ca_pid->index, Ready());
+  DEBUGLOG("%s: PID=%d, index=%d, Ready()=%d", __FUNCTION__, ca_pid->pid, ca_pid->index, Ready());
   //if (!softcsa || (fullts && ca_pid->index == 0))
   //{
     //cMutexLock lock(&cafdMutex);
@@ -322,7 +318,7 @@ bool SCDVBDevice::SetCaPid(ca_pid_t *ca_pid)
   //}
   if (ca_pid->index == -1)
   {
-    isyslog("SCDVBDevice::SetCaPid removal request - ignoring");
+    DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
     return true;
   }
   if (!Ready())
@@ -332,8 +328,7 @@ bool SCDVBDevice::SetCaPid(ca_pid_t *ca_pid)
 
 bool SCDVBDevice::SetPid(cPidHandle *Handle, int Type, bool On)
 {
-
-  isyslog("SCDVBDevice::SetPid on=%d", On);
+  DEBUGLOG("%s: on=%d", __FUNCTION__, On);
   //if (!On)
     //unlink(fnam);
   //if (cam)
@@ -347,7 +342,7 @@ bool SCDVBDevice::SetPid(cPidHandle *Handle, int Type, bool On)
 
 bool SCDVBDevice::ScActive(void)
 {
-  isyslog("SCDVBDevice::ScActive");
+  DEBUGLOG("%s", __FUNCTION__);
   return true;
   //return dynamic_cast<SCCAMSlot *>(CamSlot()) != 0;
 }

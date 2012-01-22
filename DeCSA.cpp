@@ -1,5 +1,6 @@
 #include "DeCSA.h"
 #include "FFdecsa/FFdecsa.h"
+#include "Log.h"
 
 bool CheckNull(const unsigned char *data, int len)
 {
@@ -14,7 +15,7 @@ DeCSA::DeCSA(int CardIndex)
 {
   cardindex = CardIndex;
   cs = get_suggested_cluster_size();
-  isyslog("DVBAPI: DeCSA::DeCSA %d: clustersize=%d rangesize=%d", cardindex, cs, cs * 2 + 5);
+  DEBUGLOG("%d: clustersize=%d rangesize=%d", cardindex, cs, cs * 2 + 5);
   range = MALLOC(unsigned char *, (cs * 2 + 5));
   memset(keys, 0, sizeof(keys));
   memset(pidmap, 0, sizeof(pidmap));
@@ -31,7 +32,7 @@ DeCSA::~DeCSA()
 
 void DeCSA::ResetState(void)
 {
-  isyslog("DVBAPI: DeCSA::DeCSA %d: reset state", cardindex);
+  DEBUGLOG("%d: reset state", cardindex);
   memset(even_odd, 0, sizeof(even_odd));
   memset(flags, 0, sizeof(flags));
   lastData = 0;
@@ -42,7 +43,7 @@ void DeCSA::SetActive(bool on)
   if (!on && active)
     ResetState();
   active = on;
-  isyslog("DVBAPI: DeCSA::DeCSA  %d: set active %s", cardindex, active ? "on" : "off");
+  DEBUGLOG("%d: set active %s", cardindex, active ? "on" : "off");
 }
 
 bool DeCSA::GetKeyStruct(int idx)
@@ -54,7 +55,7 @@ bool DeCSA::GetKeyStruct(int idx)
 
 bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
 {
-  isyslog("DeCSA::SetCaDescr ...");
+  DEBUGLOG("%s", __FUNCTION__);
   cMutexLock lock(&mutex);
   int idx = ca_descr->index;
   if (idx < MAX_CSA_IDX && GetKeyStruct(idx))
@@ -63,23 +64,23 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
     {
       if (flags[idx] & (ca_descr->parity ? FL_ODD_GOOD : FL_EVEN_GOOD))
       {
-        isyslog("DVBAPI: DeCSA::DeCSA %d.%d: %s key in use (%d ms)", cardindex, idx, ca_descr->parity ? "odd" : "even", MAX_REL_WAIT);
+        DEBUGLOG("%d.%d: %s key in use (%d ms)", cardindex, idx, ca_descr->parity ? "odd" : "even", MAX_REL_WAIT);
         if (wait.TimedWait(mutex, MAX_REL_WAIT))
-          isyslog("DVBAPI: DeCSA::DeCSA %d.%d: successfully waited for release", cardindex, idx);
+          DEBUGLOG("%d.%d: successfully waited for release", cardindex, idx);
         else
-          isyslog("DVBAPI: DeCSA::DeCSA %d.%d: timed out. setting anyways", cardindex, idx);
+          ERRORLOG("%d.%d: timed out. setting anyways", cardindex, idx);
       }
       else
-        isyslog("DVBAPI: DeCSA::DeCSA %d.%d: late key set...", cardindex, idx);
+        DEBUGLOG("%d.%d: late key set...", cardindex, idx);
     }
-    isyslog("DVBAPI: DeCSA::DeCSA %d.%d: %4s key set", cardindex, idx, ca_descr->parity ? "odd" : "even");
+    DEBUGLOG("%d.%d: %4s key set", cardindex, idx, ca_descr->parity ? "odd" : "even");
     if (ca_descr->parity == 0)
     {
       set_even_control_word(keys[idx], ca_descr->cw);
       if (!CheckNull(ca_descr->cw, 8))
         flags[idx] |= FL_EVEN_GOOD | FL_ACTIVITY;
       else
-        isyslog("DVBAPI: DeCSA::DeCSA %d.%d: zero even CW", cardindex, idx);
+        DEBUGLOG("%d.%d: zero even CW", cardindex, idx);
       wait.Broadcast();
     }
     else
@@ -88,7 +89,7 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
       if (!CheckNull(ca_descr->cw, 8))
         flags[idx] |= FL_ODD_GOOD | FL_ACTIVITY;
       else
-        isyslog("DVBAPI: DeCSA::DeCSA %d.%d: zero odd CW", cardindex, idx);
+        DEBUGLOG("%d.%d: zero odd CW", cardindex, idx);
       wait.Broadcast();
     }
   }
@@ -101,7 +102,7 @@ bool DeCSA::SetCaPid(ca_pid_t *ca_pid)
   if (ca_pid->index < MAX_CSA_IDX && ca_pid->pid < MAX_CSA_PIDS)
   {
     pidmap[ca_pid->pid] = ca_pid->index;
-    isyslog("DVBAPI: DeCSA::DeCSA %d.%d: set pid %04x", cardindex, ca_pid->index, ca_pid->pid);
+    DEBUGLOG("%d.%d: set pid %04x", cardindex, ca_pid->index, ca_pid->pid);
   }
   return true;
 }
@@ -152,9 +153,9 @@ bool DeCSA::Decrypt(unsigned char *data, int len, bool force)
             {
               flags[idx] &= ~FL_ACTIVITY;
               if (wait.TimedWait(mutex, MAX_KEY_WAIT))
-                isyslog("DVBAPI: %d.%d: successfully waited for key", cardindex, idx);
+                DEBUGLOG("%d.%d: successfully waited for key", cardindex, idx);
               else
-                isyslog("DVBAPI: %d.%d: timed out. proceeding anyways", cardindex, idx);
+                DEBUGLOG("%d.%d: timed out. proceeding anyways", cardindex, idx);
             }
           }
         }
