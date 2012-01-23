@@ -12,5 +12,5 @@ void cMenuSetupDVBAPI::Store(void)
 {
   if (newLogLevel > 3)
     newLogLevel = 3;
-  SetupStore("LogLevel", LogLevel = newLogLevel);
+  SetupStore(CONFNAME_LOGLEVEL, LogLevel = newLogLevel);
 }

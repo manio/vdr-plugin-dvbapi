@@ -77,7 +77,11 @@ cMenuSetupPage *DVBAPI::SetupMenu(void)
 bool DVBAPI::SetupParse(const char *Name, const char *Value)
 {
   // Parse your own setup parameters and store their values.
-  return false;
+  if (!strcasecmp(Name, CONFNAME_LOGLEVEL))
+    LogLevel = atoi(Value);
+  else
+    return false;
+  return true;
 }
 
 bool DVBAPI::Service(const char *Id, void *Data)

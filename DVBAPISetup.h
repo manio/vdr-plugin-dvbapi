@@ -24,6 +24,8 @@
 
 #include <vdr/plugin.h>
 
+#define CONFNAME_LOGLEVEL  "LogLevel"
+
 class cMenuSetupDVBAPI : public cMenuSetupPage
 {
 private:
