@@ -1,13 +1,13 @@
-To Aigars for creating this simplefied plugin.
+To Aigars for creating this simplified plugin.
 To Narog for implementing the multiple adapter support
 
 Version 1.0.5 - 20111210:
 
-Manio fixed a bug on CAPMT.cpp, Too many open files.  
+Manio fixed a bug on CAPMT.cpp, Too many open files.
 
 Version 1.0.4 - 20111207:
 
-Narog adapted the CAPMT message to support demux/adapter information, moving the PMT information 2 bytes down 
+Narog adapted the CAPMT message to support demux/adapter information, moving the PMT information 2 bytes down
 on the CAPMT frame.
 
 Version 1.0.3 - 20111202:
@@ -23,7 +23,6 @@ This code didnt work correctly and was dumped.
 Version 1.0.1 - 20110615:
 
 Aigars fix some problem with the dvbapi_ca.so shared library
-
 
 Version 1.0.0 - 20110614:
 

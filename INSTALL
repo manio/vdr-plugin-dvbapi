@@ -9,31 +9,26 @@ without warranty of any kind.
 Basic Installation
 ==================
 
-   Briefly, the shell commands `./configure; make; make install' should
-configure, build, and install this package. 
+ 1) Compile the plugin like any other vdr plugin - if you have vdr sources
+    then put the sources in the PLUGINS/src/dvbapi subdirectory and type
+    'make plugins' in vdr main source directory - the plugin should compile
+    and install
 
- Run`configure --help' for more details.
-
-Using:
- 1) Start the softcam with LD_PRELOAD:
- LD_PRELOAD=/usr/local/lib/dvbapi_ca.so /usr/local/bin/oscam -b
- 
- 2) Start the VDR with dvbpi plugin
- /usr/local/bin/vdr -c /etc/vdr -E /var/vdr -L /usr/local/lib/vdr -P dvbapi 
+ 2) Start the VDR with dvbpi plugin, sample command:
+ /usr/local/bin/vdr -c /etc/vdr -E /var/vdr -L /usr/local/lib/vdr -P dvbapi
 
  3) In the oscam.conf file add following options
-	[dvbapi]
-	enabled = 1
-	au = 1
-	boxtype = pc    
-	user = vdr
-	pmt_mode = 1
-	request_mode = 1
+        [dvbapi]
+        enabled = 1
+        au = 1
+        boxtype = pc
+        user = vdr
+        pmt_mode = 1
+        request_mode = 1
 
    boxtype to "pc" will allow oscam to take adapter/demux information from CAPMT frame.
    pmt_mode to "1" will allow oscam to use camd.socket in /tmp/ dir
 
- 4) Apply patch in patches directory to oscam source code
-    
-	$ cd oscam
-        $ patch -p1 < /usr/local/src/vdr/PLUGINS/src/dvbapi/patches/oscam-trunk-vdr.diff
+ 4) Apply patches from patches directory to oscam source code
+        $ cd oscam
+        $ patch -p1 < /usr/local/src/vdr/PLUGINS/src/dvbapi/patches/oscam-vdr.diff

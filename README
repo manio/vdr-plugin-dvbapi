@@ -2,8 +2,9 @@ TOC
 1. Introduction
 2. Getting the source code
 3. Basic Installation
-4. Thanks area
-5. Important links
+4. Plugin setup
+5. Thanks area
+6. Important links
 
 -----------------------------------------------------------------------------
 1. Introduction
@@ -12,7 +13,7 @@ TOC
 DVBAPI plugin for VDR
 
   The plugin is simplified version of VDR-SC plugin, with modifications from dvbapi-patch.tar.gz.
-  
+
 Refer to INSTALL/README for installation and usage procedure
 
 Can be freely distributed and modified under GPL lincense.
@@ -21,7 +22,6 @@ NOTE TO NEW LINUX USERS: All lines that are prefixed with the '$'
 character are commands that need to be typed into a terminal window /
 console (similar to the command prompt for Windows). Note that the '$'
 character itself should NOT be typed as part of the command.
-
 
 -----------------------------------------------------------------------------
 2. Getting the source code
@@ -35,54 +35,47 @@ package provided by your distribution. Then from a terminal, type:
    $ ln -s vdr-plugin-dvbapi dvbapi
 
 -----------------------------------------------------------------------------
-3. Basic Installation 
+3. Basic Installation
 -----------------------------------------------------------------------------
 
-   Briefly, the shell commands `./configure; make; make install' should
-configure, build, and install this package. 
-
- Run`configure --help' for more details.
-
-Using:
- 1) Start the VDR with dvbpi plugin
- /usr/local/bin/vdr -c /etc/vdr -E /var/vdr -L /usr/local/lib/vdr -P dvbapi 
-
- 2) In the oscam.conf file add following options
-	[dvbapi]
-	enabled = 1
-	au = 1
-	boxtype = pc    
-	user = vdr
-	pmt_mode = 1
-	request_mode = 1
-
-   boxtype to "pc" will allow oscam to take adapter/demux information from CAPMT frame.
-   pmt_mode to "1" will allow oscam to use camd.socket in /tmp/ dir
-
- 3) Apply patches from patches directory to oscam source code
-    
-	$ cd oscam
-        $ patch -p1 < /usr/local/src/vdr/PLUGINS/src/dvbapi/patches/oscam-vdr.diff
+For sample installation instructions refer to INSTALL file.
 
 -----------------------------------------------------------------------------
-4. Thanks area
+4. Plugin setup
 -----------------------------------------------------------------------------
 
-I will like to give a big thanks to a number of people over the Oscam/eurocardsharing forum for 
+The log level parameter of the plugin can be configured either from VDR
+menu or manually editing the VDR's setup.conf file (remember to change
+the file when VDR is not running).
+
+The parameter line for the plugin is:
+dvbapi.LogLevel = 2
+
+The values for the log level are:
+  0 - totally disable debug
+  1 - only error messages
+  2 - information and error messages (default)
+  3 - all information including debug
+
+-----------------------------------------------------------------------------
+5. Thanks area
+-----------------------------------------------------------------------------
+
+I will like to give a big thanks to a number of people over the Oscam/eurocardsharing forum for
 there great help and support.
 
- To Aigars for creating this simplefied plugin.
+ To Aigars for creating this simplified plugin.
 
  To Narog for implementing the multiple adapter support
- 
+
  To Peje/Unixer/Copper/Manio for there patience, support and testing.
- 
+
  To the authors of SC plugin, FFdecsa and Oscam for there greate work and dedication
 
  In last to all other forum members that have/will contribute to this plugin.
 
 -----------------------------------------------------------------------------
-5. Important links
+6. Important links
 -----------------------------------------------------------------------------
 
 Remember to read the full threads on the OScam forum:
