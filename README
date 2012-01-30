@@ -12,11 +12,18 @@ TOC
 
 DVBAPI plugin for VDR
 
-  The plugin is simplified version of VDR-SC plugin, with modifications from dvbapi-patch.tar.gz.
+  This plugin is simplified version of VDR-SC plugin. The main purpose of the
+plugin is to act as a bridge between VDR and OScam.
 
 Refer to INSTALL/README for installation and usage procedure
 
-Can be freely distributed and modified under GPL lincense.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+See the file COPYING for more information.
+
+Latest version available at: https://github.com/manio/vdr-plugin-dvbapi
 
 NOTE TO NEW LINUX USERS: All lines that are prefixed with the '$'
 character are commands that need to be typed into a terminal window /
@@ -61,16 +68,18 @@ The values for the log level are:
 5. Thanks area
 -----------------------------------------------------------------------------
 
-I will like to give a big thanks to a number of people over the Oscam/eurocardsharing forum for
-there great help and support.
+ I would like to give a big thanks to a number of people from the OScam Board
+ (oscam.to) and eurocardsharing forum for their great help and support.
 
- To Aigars for creating this simplified plugin.
+ To Aigars for creating the first simplified version of this plugin using
+ VDR-SC and with modifications from dvbapi-patch.tar.gz
 
  To Narog for implementing the multiple adapter support
 
- To Peje/Unixer/Copper/Manio for there patience, support and testing.
+ To Peje/Unixer/Copper for their patience, support and testing.
 
- To the authors of SC plugin, FFdecsa and Oscam for there greate work and dedication
+ To the authors of VDR-SC plugin, FFdecsa and Oscam for their great work and
+ dedication
 
  In last to all other forum members that have/will contribute to this plugin.
 

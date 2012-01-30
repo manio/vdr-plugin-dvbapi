@@ -23,8 +23,8 @@ Basic Installation
         au = 1
         boxtype = pc
         user = vdr
-        pmt_mode = 1
+        pmt_mode = 4
         request_mode = 1
 
    boxtype to "pc" will allow oscam to take adapter/demux information from CAPMT frame.
-   pmt_mode to "1" will allow oscam to use camd.socket in /tmp/ dir
+   pmt_mode to "4" will allow oscam to use camd.socket in /tmp/ dir
