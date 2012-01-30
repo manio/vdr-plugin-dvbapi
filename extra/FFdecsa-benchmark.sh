@@ -18,7 +18,7 @@ echo ""
 
 
 # customize here
-FFdecsaDIR="./FFdecsa"
+FFdecsaDIR="../FFdecsa"
 OwnFlags=""
 
 # compiler
