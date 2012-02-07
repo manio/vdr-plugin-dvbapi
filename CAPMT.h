@@ -20,4 +20,4 @@ public:
   int send(const int adapter, const int sid, int socket_fd, const unsigned char *vdr_caPMT, int vdr_caPMTLen);
 };
 
-#endif // ___DECSA_H
+#endif // ___CAPMT_H

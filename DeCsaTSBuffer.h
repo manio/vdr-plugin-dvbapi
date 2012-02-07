@@ -1,5 +1,5 @@
-#ifndef ___DeCsaTsBuffer_H
-#define ___DeCsaTsBuffer_H
+#ifndef ___DECSATSBUFFER_H
+#define ___DECSATSBUFFER_H
 
 #include <linux/dvb/ca.h>
 #include <vdr/dvbdevice.h>
@@ -25,4 +25,4 @@ public:
   void SetActive(bool ScActive);
 };
 
-#endif // ___DeCsaTsBuffer_H
+#endif // ___DECSATSBUFFER_H
