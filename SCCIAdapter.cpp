@@ -250,12 +250,6 @@ SCCIAdapter::~SCCIAdapter()
   ciMutex.Unlock();
 }
 
-
-bool SCCIAdapter::Ready(void)
-{
-  return true;
-}
-
 bool SCCIAdapter::Reset(int Slot)
 {
   cMutexLock lock(&ciMutex);
