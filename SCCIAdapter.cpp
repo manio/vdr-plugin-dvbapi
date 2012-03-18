@@ -50,6 +50,7 @@ SCCIAdapter::SCCIAdapter(SCDVBDevice *sCDVBDevice, int cardIndex)
   this->cardIndex = cardIndex;
   memset(version, 1, sizeof(version));
   memset(slots, 0, sizeof(slots));
+  memset(caids, 0, sizeof(caids));
   caidsLength = 0;
   Channels.Lock(false);
   for (cChannel *channel = Channels.First(); channel; channel = Channels.Next(channel))
