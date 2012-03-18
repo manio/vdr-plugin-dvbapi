@@ -159,9 +159,6 @@ SCDVBDevice::~SCDVBDevice()
     close(fd_ca);
   if (fd_ca2 >= 0)
     close(fd_ca2);
-  //if (cADevice != 0)
-    //delete cADevice;
-  //cADevice = 0;
   if (cAPMT != 0)
     delete cAPMT;
   cAPMT = 0;
@@ -170,13 +167,10 @@ SCDVBDevice::~SCDVBDevice()
 void SCDVBDevice::EarlyShutdown()
 {
   DEBUGLOG("%s", __FUNCTION__);
-  //if (cADevice != 0)
-    //delete cADevice;
-  //cADevice = 0;
-  if (cAPMT != 0)
-    delete cAPMT;
-  cAPMT = 0;
-
+  SetCamSlot(0);
+  if (sCCIAdapter)
+    delete sCCIAdapter;
+  sCCIAdapter = 0;
 }
 
 void SCDVBDevice::Shutdown(void)

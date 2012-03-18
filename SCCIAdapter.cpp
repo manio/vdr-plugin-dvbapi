@@ -231,6 +231,10 @@ void SCCIAdapter::Write(const unsigned char *buff, int len)
 
 SCCIAdapter::~SCCIAdapter()
 {
+  DEBUGLOG("%s", __FUNCTION__);
+
+  Cancel(3);
+
   for (int i = 0; i < MAX_SOCKETS; i++)
   {
     if (sockets[i] != 0)
@@ -253,12 +257,14 @@ bool SCCIAdapter::Ready(void)
 
 bool SCCIAdapter::Reset(int Slot)
 {
+  cMutexLock lock(&ciMutex);
   return true;
   //return slots[Slot]->Reset();
 }
 
 eModuleStatus SCCIAdapter::ModuleStatus(int Slot)
 {
+  cMutexLock lock(&ciMutex);
   return (slots[Slot]) ? slots[Slot]->Status() : msNone;
 }
 
