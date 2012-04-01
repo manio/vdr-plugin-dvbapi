@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+MAKE_OPTIONS = VDRDIR=/usr/include/vdr LIBDIR=. LOCALEDIR=locale
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	dh_auto_build -- all $(MAKE_OPTIONS)
+
+override_dh_auto_clean:
+	$(MAKE) -o .dependencies clean $(MAKE_OPTIONS)
+	rm -rf locale libvdr-*.so.*
+
+override_dh_gencontrol:
+	sh /usr/share/vdr-dev/dependencies.sh
+	dh_gencontrol

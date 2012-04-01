@@ -1,0 +1,13 @@
+Source: vdr-plugin-dvbapi
+Section: video
+Priority: extra
+Maintainer: Dominic Evans <oldmanuk@gmail.com>
+Build-Depends: debhelper (>= 7.0.50~), vdr-dev (>= 1.7.18), gettext, automake, autoconf
+Standards-Version: 3.9.1
+
+Package: vdr-plugin-dvbapi
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${vdr:Depends}
+Description: DVBAPI plugin for VDR
+ This plugin is simplified version of VDR-SC plugin. The main purpose of the
+ plugin is to act as a bridge between VDR and OScam.
