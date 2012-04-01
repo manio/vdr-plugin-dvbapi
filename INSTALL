@@ -1,0 +1,30 @@
+Installation Instructions
+*************************
+
+   Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.  This file is offered as-is,
+without warranty of any kind.
+
+Basic Installation
+==================
+
+ 1) Compile the plugin like any other vdr plugin - if you have vdr sources
+    then put the sources in the PLUGINS/src/dvbapi subdirectory and type
+    'make plugins' in vdr main source directory - the plugin should compile
+    and install
+
+ 2) Start the VDR with dvbpi plugin, sample command:
+ /usr/local/bin/vdr -c /etc/vdr -E /var/vdr -L /usr/local/lib/vdr -P dvbapi
+
+ 3) In the oscam.conf file add following options
+        [dvbapi]
+        enabled = 1
+        au = 1
+        boxtype = pc
+        user = vdr
+        pmt_mode = 4
+        request_mode = 1
+
+   boxtype to "pc" will allow oscam to take adapter/demux information from CAPMT frame.
+   pmt_mode to "4" will allow oscam to use camd.socket in /tmp/ dir
