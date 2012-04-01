@@ -46,8 +46,13 @@ UDPSocket::UDPSocket(SCDVBDevice *pSCDVBDevice)
   if (hostaddr)
   {
     unsigned int port;
+#if VDRVERSNUM >= 10723
+    port = 9000 + sCDVBDevice->Adapter();
+    DEBUGLOG("%s: Adapter %d\n", __FUNCTION__, sCDVBDevice->Adapter());
+#else
     port = 9000 + sCDVBDevice->DeviceNumber();
     DEBUGLOG("%s: Adapter %d\n", __FUNCTION__, sCDVBDevice->DeviceNumber());
+#endif
     DEBUGLOG("%s: hostaddr port %d", __FUNCTION__, port);
     socketAddr.sin_family = AF_INET;
     socketAddr.sin_port = htons(port);
