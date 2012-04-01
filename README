@@ -1,0 +1,91 @@
+TOC
+1. Introduction
+2. Getting the source code
+3. Basic Installation
+4. Plugin setup
+5. Thanks area
+6. Important links
+
+-----------------------------------------------------------------------------
+1. Introduction
+-----------------------------------------------------------------------------
+
+DVBAPI plugin for VDR
+
+  This plugin is simplified version of VDR-SC plugin. The main purpose of the
+plugin is to act as a bridge between VDR and OScam.
+
+Refer to INSTALL/README for installation and usage procedure
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+See the file COPYING for more information.
+
+Latest version available at: https://github.com/manio/vdr-plugin-dvbapi
+
+NOTE TO NEW LINUX USERS: All lines that are prefixed with the '$'
+character are commands that need to be typed into a terminal window /
+console (similar to the command prompt for Windows). Note that the '$'
+character itself should NOT be typed as part of the command.
+
+-----------------------------------------------------------------------------
+2. Getting the source code
+-----------------------------------------------------------------------------
+
+You will have to grab the source code of course. First install the git
+package provided by your distribution. Then from a terminal, type:
+
+   $ cd /usr/local/src/vdr/PLUGINS/src
+   $ git clone git://github.com/manio/vdr-plugin-dvbapi.git
+   $ ln -s vdr-plugin-dvbapi dvbapi
+
+-----------------------------------------------------------------------------
+3. Basic Installation
+-----------------------------------------------------------------------------
+
+For sample installation instructions refer to INSTALL file.
+
+-----------------------------------------------------------------------------
+4. Plugin setup
+-----------------------------------------------------------------------------
+
+The log level parameter of the plugin can be configured either from VDR
+menu or manually editing the VDR's setup.conf file (remember to change
+the file when VDR is not running).
+
+The parameter line for the plugin is:
+dvbapi.LogLevel = 2
+
+The values for the log level are:
+  0 - totally disable debug
+  1 - only error messages
+  2 - information and error messages (default)
+  3 - all information including debug
+
+-----------------------------------------------------------------------------
+5. Thanks area
+-----------------------------------------------------------------------------
+
+ I would like to give a big thanks to a number of people from the OScam Board
+ (oscam.to) and eurocardsharing forum for their great help and support.
+
+ To Aigars for creating the first simplified version of this plugin using
+ VDR-SC and with modifications from dvbapi-patch.tar.gz
+
+ To Narog for implementing the multiple adapter support
+
+ To Peje/Unixer/Copper for their patience, support and testing.
+
+ To the authors of VDR-SC plugin, FFdecsa and Oscam for their great work and
+ dedication
+
+ In last to all other forum members that have/will contribute to this plugin.
+
+-----------------------------------------------------------------------------
+6. Important links
+-----------------------------------------------------------------------------
+
+Remember to read the full threads on the OScam forum:
+http://www.oscam.to/wbb3/index.php?page=Thread&threadID=12340
