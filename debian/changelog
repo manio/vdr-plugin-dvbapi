@@ -1,3 +1,9 @@
+vdr-plugin-dvbapi (1.0.1-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Dominic Evans <oldmanuk@gmail.com>  Sun, 01 Apr 2012 11:03:46 +0100
+
 vdr-plugin-dvbapi (1.0.0-1) unstable; urgency=low
 
   * Initial release.
