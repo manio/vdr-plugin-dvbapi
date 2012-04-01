@@ -448,7 +448,7 @@ if [ $is_x86_64 -eq 1 ]; then
     fi
 fi
 
-# complete flags for FFdesca_Test
+# complete flags for FFdecsa_Test
 if [ "$OwnFlags" != "" ]; then
   IFLAGS=$OwnFlags
 elif [ "$OLevel" == "" ]; then

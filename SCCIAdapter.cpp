@@ -50,6 +50,7 @@ SCCIAdapter::SCCIAdapter(SCDVBDevice *sCDVBDevice, int cardIndex)
   this->cardIndex = cardIndex;
   memset(version, 1, sizeof(version));
   memset(slots, 0, sizeof(slots));
+  memset(caids, 0, sizeof(caids));
   caidsLength = 0;
   Channels.Lock(false);
   for (cChannel *channel = Channels.First(); channel; channel = Channels.Next(channel))
@@ -231,6 +232,10 @@ void SCCIAdapter::Write(const unsigned char *buff, int len)
 
 SCCIAdapter::~SCCIAdapter()
 {
+  DEBUGLOG("%s", __FUNCTION__);
+
+  Cancel(3);
+
   for (int i = 0; i < MAX_SOCKETS; i++)
   {
     if (sockets[i] != 0)
@@ -245,20 +250,16 @@ SCCIAdapter::~SCCIAdapter()
   ciMutex.Unlock();
 }
 
-
-bool SCCIAdapter::Ready(void)
-{
-  return true;
-}
-
 bool SCCIAdapter::Reset(int Slot)
 {
+  cMutexLock lock(&ciMutex);
   return true;
   //return slots[Slot]->Reset();
 }
 
 eModuleStatus SCCIAdapter::ModuleStatus(int Slot)
 {
+  cMutexLock lock(&ciMutex);
   return (slots[Slot]) ? slots[Slot]->Status() : msNone;
 }
 
