@@ -275,9 +275,7 @@ void SCDVBDevice::OnPluginUnload(void)
 
 bool SCDVBDevice::Ready(void)
 {
-  return true;
-  //return (sCCIAdapter ? sCCIAdapter->Ready() : true) &&
-  //       (hWCIAdapter ? hWCIAdapter->Ready() : true);
+  return (sCCIAdapter ? sCCIAdapter->Ready() : true);
 }
 
 
