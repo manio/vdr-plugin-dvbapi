@@ -19,11 +19,12 @@
 #ifndef ___SCCIADAPTER_H
 #define ___SCCIADAPTER_H
 
-#include "SCDVBDevice.h"
 #include "SCCAMSlot.h"
 #include "Frame.h"
+#include "CAPMT.h"
+#include "DeCSA.h"
+#include "UDPSocket.h"
 
-class SCDVBDevice;
 class SCCAMSlot;
 
 #define MAX_CI_SLOTS        8
@@ -43,7 +44,10 @@ struct TPDU
 class SCCIAdapter : public cCiAdapter
 {
 private:
-  SCDVBDevice *sCDVBDevice;
+  DeCSA *decsa;
+  CAPMT *capmt;
+  cDevice *device;
+  bool initialCaDscr;
   unsigned short caids[1024];
   int caidsLength;
   int cardIndex;
@@ -60,15 +64,24 @@ private:
   int addCaid(int offset, int limit, unsigned short caid);
 
 public:
-  SCCIAdapter(SCDVBDevice *sCDVBDevice, int CardIndex);
+  SCCIAdapter(cDevice *Device, int CardIndex);
   ~SCCIAdapter();
+  int Adapter()
+  {
+    return cardIndex;
+  }
   virtual int Read(unsigned char *Buffer, int MaxLength);
   virtual void Write(const unsigned char *Buffer, int Length);
   virtual bool Reset(int Slot);
   virtual eModuleStatus ModuleStatus(int Slot);
   virtual bool Assign(cDevice *Device, bool Query = false);
   int GetCaids(int slot, unsigned short *Caids, int max);
-  SCDVBDevice *GetDevice();
+  DeCSA *GetDeCSA()
+  {
+    return decsa;
+  }
+  bool DeCSASetCaDescr(ca_descr_t *ca_descr);
+  bool DeCSASetCaPid(ca_pid_t *ca_pid);
   void ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen);
 };
 

@@ -29,24 +29,22 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <vdr/thread.h>
-#include "SCDVBDevice.h"
-
-class SCDVBDevice;
+#include "SCCIAdapter.h"
 
 class UDPSocket : public cThread
 {
 public:
-  static bool bindx(SCDVBDevice *pSCDVBDevice);
+  static bool bindx(SCCIAdapter *sCCIAdapter);
   static void unbind(void);
   virtual void Action(void);
   bool bint;
 
 protected:
-  UDPSocket(SCDVBDevice *pSCDVBDevice);
+  UDPSocket(SCCIAdapter *sCCIAdapter);
   ~UDPSocket();
 
 private:
-  SCDVBDevice *sCDVBDevice;
+  SCCIAdapter *sCCIAdapter;
   int sock;
   ca_descr_t ca_descr;
   ca_pid_t ca_pid;

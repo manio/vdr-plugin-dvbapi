@@ -16,20 +16,36 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef ___SCDEVICEPROBE_H
-#define ___SCDEVICEPROBE_H
+#ifndef ___DEVICE_H
+#define ___DEVICE_H
 
-#include "device.h"
+#include <vdr/dvbdevice.h>
+#include "deviceplugin.h"
 
-class cScDeviceProbe : public cDvbDeviceProbe
+#define DEV_DVB_ADAPTER  "/dev/dvb/adapter"
+#define DEV_DVB_FRONTEND "frontend"
+#define DEV_DVB_DVR      "dvr"
+#define DEV_DVB_DEMUX    "demux"
+#define DEV_DVB_CA       "ca"
+#define DEV_DVB_OSD      "osd"
+
+#define DVB_DEV_SPEC adapter,frontend
+
+class cScDevices : public cDvbDevice
 {
 private:
-  static cScDeviceProbe *probe;
+  static int budget;
 
 public:
-  virtual bool Probe(int Adapter, int Frontend);
-  static void Install(void);
-  static void Remove(void);
+  static void OnPluginLoad(void);
+  static void OnPluginUnload(void);
+  static bool Initialize(void);
+  static void Startup(void);
+  static void Shutdown(void);
+  static void SetForceBudget(int n);
+  static bool ForceBudget(int n);
+  static void DvbName(const char *Name, int a, int f, char *buffer, int len);
+  static int DvbOpen(const char *Name, int a, int f, int Mode, bool ReportError = false);
 };
 
-#endif // ___SCDEVICEPROBE_H
+#endif // ___DEVICE_H

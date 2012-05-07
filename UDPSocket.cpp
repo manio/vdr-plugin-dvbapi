@@ -22,9 +22,9 @@
 
 static UDPSocket *me = 0;
 
-bool UDPSocket::bindx(SCDVBDevice *pSCDVBDevice)
+bool UDPSocket::bindx(SCCIAdapter *sCCIAdapter)
 {
-  me = new UDPSocket(pSCDVBDevice);
+  me = new UDPSocket(sCCIAdapter);
   if (me->bint)
     me->Start();
   return me->bint;
@@ -36,23 +36,18 @@ UDPSocket::~UDPSocket()
   close(sock);
 }
 
-UDPSocket::UDPSocket(SCDVBDevice *pSCDVBDevice)
+UDPSocket::UDPSocket(SCCIAdapter *sCCIAdapter)
 {
   DEBUGLOG("%s", __FUNCTION__);
-  sCDVBDevice = pSCDVBDevice;
+  this->sCCIAdapter = sCCIAdapter;
   struct sockaddr_in socketAddr;
   memset(&socketAddr, 0, sizeof(sockaddr_in));
   const struct hostent *const hostaddr = gethostbyname("127.0.0.1");
   if (hostaddr)
   {
     unsigned int port;
-#if VDRVERSNUM >= 10723
-    port = 9000 + sCDVBDevice->Adapter();
-    DEBUGLOG("%s: Adapter %d\n", __FUNCTION__, sCDVBDevice->Adapter());
-#else
-    port = 9000 + sCDVBDevice->DeviceNumber();
-    DEBUGLOG("%s: Adapter %d\n", __FUNCTION__, sCDVBDevice->DeviceNumber());
-#endif
+    port = 9000 + sCCIAdapter->Adapter();
+    DEBUGLOG("%s: Adapter %d\n", __FUNCTION__, sCCIAdapter->Adapter());
     DEBUGLOG("%s: hostaddr port %d", __FUNCTION__, port);
     socketAddr.sin_family = AF_INET;
     socketAddr.sin_port = htons(port);
@@ -105,7 +100,7 @@ void UDPSocket::Action(void)
       if (r == sizeof(ca_descr_t))
       {
         DEBUGLOG("%s: Got CA_SET_DESCR request", __FUNCTION__);
-        sCDVBDevice->SetCaDescr(&ca_descr);
+        sCCIAdapter->DeCSASetCaDescr(&ca_descr);
       }
     }
     if (request == CA_SET_PID)
@@ -121,7 +116,7 @@ void UDPSocket::Action(void)
       if (r == sizeof(ca_pid_t))
       {
         DEBUGLOG("%s: Got CA_SET_PID request", __FUNCTION__);
-        sCDVBDevice->SetCaPid(&ca_pid);
+        sCCIAdapter->DeCSASetCaPid(&ca_pid);
       }
     }
   }

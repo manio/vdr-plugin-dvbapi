@@ -284,15 +284,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
             vdr_caPMT = NULL;
             vdr_caPMTLen = 0;
           }
-          SCDVBDevice *dev = dynamic_cast<SCDVBDevice *>(Device());
-          if (dev)
-#if VDRVERSNUM >= 10723
-            dev->GetSCCIAdapter()->ProcessSIDRequest(dev->Adapter(), sid, ca_lm, vdr_caPMT, vdr_caPMTLen);
-#else
-            dev->GetSCCIAdapter()->ProcessSIDRequest(Device()->DeviceNumber(), sid, ca_lm, vdr_caPMT, vdr_caPMTLen);
-#endif
-          else
-            ERRORLOG("%d.%d cannot find CIAdapter for ProcessSIDRequest", cardIndex, slot);
+          sCCIAdapter->ProcessSIDRequest(sCCIAdapter->Adapter(), sid, ca_lm, vdr_caPMT, vdr_caPMTLen);
         }
       }
     }

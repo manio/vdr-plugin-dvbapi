@@ -30,27 +30,28 @@
 #include <vdr/dvbci.h>
 #include <vdr/thread.h>
 #include "SCDeviceProbe.h"
-#include "SCDVBDevice.h"
 #include "Log.h"
 
-SCDeviceProbe *SCDeviceProbe::probe = 0;
+cScDeviceProbe *cScDeviceProbe::probe = 0;
 
-void SCDeviceProbe::Install(void)
+void cScDeviceProbe::Install(void)
 {
   if (!probe)
-    probe = new SCDeviceProbe;
+    probe = new cScDeviceProbe;
 }
 
-void SCDeviceProbe::Remove(void)
+void cScDeviceProbe::Remove(void)
 {
-  if (probe != 0)
-    delete probe;
+  delete probe;
   probe = 0;
 }
 
-bool SCDeviceProbe::Probe(int Adapter, int Frontend)
+bool cScDeviceProbe::Probe(int Adapter, int Frontend)
 {
-  INFOLOG("%s: capturing device %d/%d", __FUNCTION__, Adapter, Frontend);
-  new SCDVBDevice(Adapter, Frontend, SCDVBDevice::DvbOpen(DEV_DVB_CA, Adapter, Frontend, O_RDWR));
-  return true;
+  uint32_t subid = GetSubsystemId(Adapter, Frontend);
+  INFOLOG("%s: capturing device %d/%d (subsystem ID %08x)", __FUNCTION__, Adapter, Frontend, subid);
+  for (cScDevicePlugin *dp = devplugins.First(); dp; dp = devplugins.Next(dp))
+    if (dp->Probe(Adapter, Frontend, subid))
+      return true;
+  return false;
 }
