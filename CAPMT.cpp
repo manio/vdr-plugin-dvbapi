@@ -248,7 +248,7 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
     snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
     if (connect(socket_fd, (const sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
     {
-      ERRORLOG("Canot connecto to /tmp/camd.socket, Do you have OSCam running?");
+      ERRORLOG("Cannot connect to /tmp/camd.socket, Do you have OSCam running?");
       socket_fd = 0;
     }
     else
