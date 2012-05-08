@@ -63,7 +63,7 @@ int cScDevices::budget = 0;
 
 void cScDevices::DvbName(const char *Name, int a, int f, char *buffer, int len)
 {
-  snprintf(buffer, len, "%s%d/%s%d", DEV_DVB_ADAPTER, a, Name, f);
+  snprintf(buffer, len, "%s/%s%d/%s%d", DEV_DVB_BASE, DEV_DVB_ADAPTER, a, Name, f);
 }
 
 int cScDevices::DvbOpen(const char *Name, int a, int f, int Mode, bool ReportError)
