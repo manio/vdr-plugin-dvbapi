@@ -52,19 +52,20 @@ UDPSocket::UDPSocket(SCCIAdapter *sCCIAdapter)
     socketAddr.sin_family = AF_INET;
     socketAddr.sin_port = htons(port);
     socketAddr.sin_addr.s_addr = ((struct in_addr *) hostaddr->h_addr)->s_addr;
-    const struct protoent *const ptrp = getprotobyname("udp");
-    if (ptrp)
+    sock = socket(PF_INET, SOCK_DGRAM, 0);
+    if (sock > 0)
     {
-      DEBUGLOG("%s: ptrp", __FUNCTION__);
-      sock = socket(PF_INET, SOCK_DGRAM, ptrp->p_proto);
-      if (sock > 0)
-      {
-        bint = (bind(sock, (struct sockaddr *) &socketAddr, sizeof(socketAddr)) >= 0);
-        if (bint >= 0)
-          DEBUGLOG("%s: bint=%d", __FUNCTION__, bint);
-      }
+      bint = (bind(sock, (struct sockaddr *) &socketAddr, sizeof(socketAddr)) >= 0);
+      if (bint >= 0)
+        DEBUGLOG("%s: bint=%d", __FUNCTION__, bint);
+      else
+        ERRORLOG("%s: bind failed: %s", __FUNCTION__, strerror(errno));
     }
+    else
+      ERRORLOG("%s: socket failed: %s", __FUNCTION__, strerror(errno));
   }
+  else
+    ERRORLOG("%s: gethostbyname failed", __FUNCTION__);
 }
 
 void UDPSocket::unbind(void)
