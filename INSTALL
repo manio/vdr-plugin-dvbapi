@@ -28,3 +28,11 @@ Basic Installation
 
    boxtype to "pc" will allow oscam to take adapter/demux information from CAPMT frame.
    pmt_mode to "4" will allow oscam to use camd.socket in /tmp/ dir
+
+libdvbcsa library support
+=========================
+
+ If you want to compile the plugin against libdvbcsa instead of default FFdecsa
+ then you need to pass additinal argument when compiling the plugin, eg:
+
+   make LIBDVBCSA=1

@@ -23,6 +23,12 @@
 #include <vdr/dvbdevice.h>
 #include <vdr/thread.h>
 
+#ifdef LIBDVBCSA
+extern "C" {
+#include <dvbcsa/dvbcsa.h>
+}
+#endif
+
 #define MAX_CSA_PIDS 8192
 #define MAX_CSA_IDX  16
 #define MAX_STALL_MS 70
@@ -38,9 +44,16 @@ class DeCSA
 {
 private:
   int cs;
+#ifndef LIBDVBCSA
   unsigned char **range, *lastData;
-  unsigned char pidmap[MAX_CSA_PIDS];
   void *keys[MAX_CSA_IDX];
+#else
+  struct dvbcsa_bs_batch_s *cs_tsbbatch_even;
+  struct dvbcsa_bs_batch_s *cs_tsbbatch_odd;
+  struct dvbcsa_bs_key_s *cs_key_even[MAX_CSA_IDX];
+  struct dvbcsa_bs_key_s *cs_key_odd[MAX_CSA_IDX];
+#endif
+  unsigned char pidmap[MAX_CSA_PIDS];
   unsigned int even_odd[MAX_CSA_IDX], flags[MAX_CSA_IDX];
   cMutex mutex;
   cCondVar wait;

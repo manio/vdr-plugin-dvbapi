@@ -25,6 +25,12 @@
 #include <vdr/ringbuffer.h>
 #include "DeCSA.h"
 
+#ifndef LIBDVBCSA
+#define RINGBUFFERNAME "FFdecsa-TS"
+#else
+#define RINGBUFFERNAME "libdvbcsa-ts"
+#endif
+
 extern int DeCsaTsBuffSize;
 
 class DeCsaTsBuffer : public cThread

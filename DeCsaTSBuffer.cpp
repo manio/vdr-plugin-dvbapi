@@ -27,7 +27,7 @@ DeCsaTsBuffer::DeCsaTsBuffer(int File, int Size, int CardIndex, DeCSA *DeCsa, bo
   cardIndex = CardIndex;
   decsa = DeCsa;
   delivered = false;
-  ringBuffer = new cRingBufferLinear(Size, TS_SIZE, true, "FFdecsa-TS");
+  ringBuffer = new cRingBufferLinear(Size, TS_SIZE, true, RINGBUFFERNAME);
   ringBuffer->SetTimeouts(100, 100);
   if (decsa)
     decsa->SetActive(true);

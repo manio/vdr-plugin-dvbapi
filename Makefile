@@ -83,11 +83,18 @@ DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
 OBJS = CAPMT.o DeCSA.o DeCsaTSBuffer.o dll.o DVBAPI.o DVBAPISetup.o SCDeviceProbe.o simplelist.o device.o deviceplugin.o UDPSocket.o SCCIAdapter.o Frame.o SCCAMSlot.o
 
+ifndef LIBDVBCSA
 # FFdeCSA
 PARALLEL   ?= PARALLEL_128_SSE2
 CSAFLAGS   ?= -fexpensive-optimizations -funroll-loops -mmmx -msse -msse2 -msse3
 FFDECSADIR  = FFdecsa
 FFDECSA     = $(FFDECSADIR)/FFdecsa.o
+DECSALIB    = $(FFDECSA)
+else
+# libdvbcsa
+DECSALIB    = -ldvbcsa
+DEFINES    += -DLIBDVBCSA
+endif
 
 HAVE_SD := $(wildcard ../dvbsddevice/dvbsddevice.c)
 ifneq ($(strip $(HAVE_SD)),)
@@ -136,7 +143,7 @@ $(DEPFILE): Makefile
 ### Targets:
 
 $(SOFILE): $(OBJS) $(FFDECSA)
-	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(FFDECSA) -o $@
+	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(DECSALIB) -o $@
 
 libdvbapi-dvbsddevice.so: device-sd.o
 	$(CXX) $(CXXFLAGS) -shared $< -o $@
@@ -147,8 +154,10 @@ libdvbapi-dvbhddevice.so: device-hd.o
 libdvbapi-dvbufs9xx.so: device-ufs9xx.o
 	$(CXX) $(CXXFLAGS) -shared $< -o $@
 
+ifndef LIBDVBCSA
 $(FFDECSA): $(FFDECSADIR)/*.c $(FFDECSADIR)/*.h
 	@$(MAKE) COMPILER="$(CXX)" FLAGS="$(CXXFLAGS) $(CSAFLAGS)" PARALLEL_MODE=$(PARALLEL) -C $(FFDECSADIR) all
+endif
 
 install-lib: $(SOFILE)
 	install -D $^ $(LIBDIR)/$^.$(APIVERSION)
@@ -174,4 +183,6 @@ dist: clean
 
 clean:
 	@-rm -f $(OBJS) device-sd.o device-hd.o device-ufs9xx.o $(DEPFILE) *.so *.tgz core* *~
+ifndef LIBDVBCSA
 	@$(MAKE) -C $(FFDECSADIR) clean
+endif
