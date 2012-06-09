@@ -47,6 +47,7 @@ package provided by your distribution. Then from a terminal, type:
 -----------------------------------------------------------------------------
 
 For sample installation instructions refer to INSTALL file.
+For Kathrein UFS 9xx support refer to extra/sh4-ufs9xx/README file.
 
 -----------------------------------------------------------------------------
 4. Plugin setup
@@ -84,8 +85,8 @@ plugin in case of problems.
 
  To Narog for implementing the multiple adapter support
 
- To Peje, Unixer, Copper, HALLO01, udobroemme for their patience, support and
- testing on own hardware.
+ To Peje, Unixer, Copper, HALLO01, udobroemme, ninjagp for their patience,
+ support and testing on own hardware.
 
  To the authors of VDR-SC plugin, FFdecsa and Oscam for their great work and
  dedication

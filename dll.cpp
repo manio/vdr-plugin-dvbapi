@@ -122,6 +122,20 @@ bool cScDlls::Load(void)
     }
   }
 #endif //WITH_HDDVB
+#ifdef WITH_UFS9XX
+  {
+    snprintf(pat, sizeof(pat), "%s%s%s%s", LIBVDR_PREFIX, "dvbufs9xx", SO_INDICATOR, APIVERSION);
+    cScDll *dll = new cScDll(AddDirectory(path, pat));
+    if (dll)
+    {
+      if (dll->Load(false))
+      {
+        INFOLOG("VDR dvbufs9xx plugin loaded as subplugin");
+      }
+      Ins(dll);
+    }
+  }
+#endif //WITH_UFS9XX
 
   snprintf(pat, sizeof(pat), "%s*%s%s", LIBDVBAPI_PREFIX, SO_INDICATOR, APIVERSION);
   bool res = true;

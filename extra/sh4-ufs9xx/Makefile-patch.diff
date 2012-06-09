@@ -1,0 +1,36 @@
+diff --git a/FFdecsa/Makefile b/FFdecsa/Makefile
+index 463ecb7..7678f99 100644
+--- a/FFdecsa/Makefile
++++ b/FFdecsa/Makefile
+@@ -49,7 +49,6 @@ FFdecsa_test.o: FFdecsa_test.c FFdecsa.h FFdecsa_test_testcases.h
+ FFdecsa.o: 	FFdecsa.c stream.c $(H_FILES)
+ 
+ FFdecsa_test.done: FFdecsa_test
+-	@./FFdecsa_test
+ 	@touch FFdecsa_test.done
+ 
+ clean:
+diff --git a/Makefile b/Makefile
+index fc1f4a5..c9d0437 100644
+--- a/Makefile
++++ b/Makefile
+@@ -55,8 +55,8 @@ OBJS = CAPMT.o DeCSA.o DeCsaTSBuffer.o dll.o DVBAPI.o DVBAPISetup.o SCDeviceProb
+ 
+ # FFdeCSA
+ CPUOPT     ?= athlon64
+-PARALLEL   ?= PARALLEL_128_SSE
+-CSAFLAGS   ?= -fPIC -O3 -fexpensive-optimizations -funroll-loops -mmmx -msse -msse2 -msse3
++PARALLEL   ?= PARALLEL_128_16CHAR
++CSAFLAGS   ?= -fPIC -O3 -fexpensive-optimizations -funroll-loops
+ FFDECSADIR  = FFdecsa
+ FFDECSA     = $(FFDECSADIR)/FFdecsa.o
+ FFDECSATEST = $(FFDECSADIR)/FFdecsa_test.done
+@@ -108,7 +108,7 @@ $(LIBDIR)/libdvbapi-dvbufs9xxdevice.so.$(APIVERSION): libdvbapi-dvbufs9xxdevice.
+ 	@cp -p $< $@
+ 
+ $(FFDECSA): $(FFDECSADIR)/*.c $(FFDECSADIR)/*.h
+-	@$(MAKE) COMPILER="$(CXX)" FLAGS="$(CSAFLAGS) -march=$(CPUOPT)" PARALLEL_MODE=$(PARALLEL) -C $(FFDECSADIR) all
++	@$(MAKE) COMPILER="$(CXX)" FLAGS="$(CSAFLAGS)" PARALLEL_MODE=$(PARALLEL) -C $(FFDECSADIR) all
+ 
+ dist: clean
+ 	@-rm -rf $(TMPDIR)/$(ARCHIVE)

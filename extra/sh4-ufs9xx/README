@@ -1,0 +1,15 @@
+Kathrein UFS 9xx support
+========================
+
+  The plugin was tested on Kathrein UFS 9xx receiver with dvbufs9xx vdr
+output device plugin by Uwe Hanke (http://www.egal-vdr.de/ufs910).
+
+A changes in Makefile was necessary to correctly build it.
+The changes are in Makefile-patch.diff. You need to apply this patch
+in order to build the plugin without problems.
+
+Use the following command when you are in plugin root directory:
+  $ patch -p1 < extra/sh4-ufs9xx/Makefile-patch.diff
+
+The sources was crosscompiled using the script named sample-buildsh4.sh
+in this directory.

@@ -1,0 +1,21 @@
+PATH=$PATH:/opt/STM/STLinux-2.4/devkit/sh4/sh4-linux/bin/
+ CC=sh4-linux-gcc \
+ CXX=sh4-linux-g++ \
+ LD=sh4-linux-ld \
+ NM=sh4-linux-nm \
+ AR=sh4-linux-ar \
+ AS=sh4-linux-as \
+ RANLIB=sh4-linux-ranlib \
+ STRIP=sh4-linux-strip \
+ OBJCOPY=sh4-linux-objcopy \
+ OBJDUMP=sh4-linux-objdump \
+ LN_S="ln -s" \
+ CFLAGS="-O2" \
+ CXXFLAGS="-O2" \
+ LDFLAGS="" \
+ PKG_CONFIG_PATH="/opt/STM/STLinux-2.4/devkit/sh4/target/usr/lib/pkgconfig" \
+ make all plugins install-bin install-conf install-plugins install-i18n \
+                DESTDIR=/vdr/ \
+                VIDEODIR=/hdd/movie \
+                CONFDIR=/usr/local/share/vdr \
+                PLUGINLIBDIR=/usr/lib/vdr
