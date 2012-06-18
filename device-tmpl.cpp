@@ -30,7 +30,6 @@ private:
   cTimeMs lastDump;
   SCCIAdapter *sCCIAdapter;
   int fd_dvr, fd_ca, fd_ca2;
-  cMutex cafdMutex;
   bool softcsa;
   char devId[8];
   bool ScActive(void);
@@ -66,7 +65,7 @@ SCDEVICE::SCDEVICE(cScDevicePlugin *DevPlugin, int Adapter, int Frontend, int ca
   fd_ca2 = dup(fd_ca);
   fd_dvr = -1;
   snprintf(devId, sizeof(devId), "%d/%d", Adapter, Frontend);
-  sCCIAdapter = new SCCIAdapter(this, Adapter);
+  sCCIAdapter = new SCCIAdapter(this, Adapter, cafd);
   DEBUGLOG("%s: done", __FUNCTION__);
 }
 
