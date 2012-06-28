@@ -362,11 +362,13 @@ void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const un
 bool SCCIAdapter::DeCSASetCaDescr(ca_descr_t *ca_descr)
 {
   DEBUGLOG("%s: index=%d", __FUNCTION__, ca_descr->index);
+#ifdef WITH_UFS9XX
   if (fd_ca >= 0)
   {
     cMutexLock lock(&cafdMutex);
     return ioctl(fd_ca, CA_SET_DESCR, ca_descr) >= 0;
   }
+#endif
   if (ca_descr->index == (unsigned) -1)
   {
     DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
@@ -380,11 +382,13 @@ bool SCCIAdapter::DeCSASetCaDescr(ca_descr_t *ca_descr)
 bool SCCIAdapter::DeCSASetCaPid(ca_pid_t *ca_pid)
 {
   DEBUGLOG("%s: PID=%d, index=%d", __FUNCTION__, ca_pid->pid, ca_pid->index);
+#ifdef WITH_UFS9XX
   if (fd_ca >= 0)
   {
     cMutexLock lock(&cafdMutex);
     return ioctl(fd_ca, CA_SET_PID, ca_pid) >= 0;
   }
+#endif
   if (ca_pid->index == -1)
   {
     DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
