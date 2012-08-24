@@ -16,20 +16,45 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef ___SCDEVICEPROBE_H
-#define ___SCDEVICEPROBE_H
+#ifndef ___DLL_H
+#define ___DLL_H
 
-#include "device.h"
+#include <string.h>
+#include <vdr/tools.h>
+#include <vdr/config.h>
+#include <dlfcn.h>
+#include <fnmatch.h>
+#include "simplelist.h"
 
-class cScDeviceProbe : public cDvbDeviceProbe
+// --- cScDll ------------------------------------------------------------------
+
+class cScDll : public cSimpleItem
 {
 private:
-  static cScDeviceProbe *probe;
+  char *fileName;
+  void *handle;
 
 public:
-  virtual bool Probe(int Adapter, int Frontend);
-  static void Install(void);
-  static void Remove(void);
+  cScDll(const char *FileName);
+  ~cScDll();
+  bool Load(bool check);
 };
 
-#endif // ___SCDEVICEPROBE_H
+// --- cScDlls -----------------------------------------------------------------
+
+#define LIBVDR_PREFIX     "libvdr-"
+#define LIBDVBAPI_PREFIX  "libdvbapi-"
+#define SO_INDICATOR      ".so."
+
+class cScDlls : public cSimpleList<cScDll>
+{
+private:
+  void *handle;
+
+public:
+  cScDlls(void);
+  ~cScDlls();
+  bool Load(void);
+};
+
+#endif // ___DLL_H

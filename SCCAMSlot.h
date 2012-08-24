@@ -19,6 +19,7 @@
 #ifndef ___SCCAMSLOT_H
 #define ___SCCAMSLOT_H
 
+#include <vdr/dvbdevice.h>
 #include "SCCIAdapter.h"
 #include "Frame.h"
 

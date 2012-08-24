@@ -128,6 +128,12 @@ bool DeCSA::SetCaPid(ca_pid_t *ca_pid)
 bool DeCSA::Decrypt(unsigned char *data, int len, bool force)
 {
   cMutexLock lock(&mutex);
+  if (!range)
+  {
+    ERRORLOG("%s: Error allocating memory for DeCSA", __FUNCTION__);
+    return false;
+  }
+
   int r = -2, ccs = 0, currIdx = -1;
   bool newRange = true;
   range[0] = 0;

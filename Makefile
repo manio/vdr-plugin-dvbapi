@@ -51,7 +51,7 @@ DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
 ### The object files (add further files here):
 
-OBJS = CAPMT.o DeCSA.o DeCsaTSBuffer.o DVBAPI.o DVBAPISetup.o SCDeviceProbe.o SCDVBDevice.o UDPSocket.o SCCIAdapter.o Frame.o SCCAMSlot.o
+OBJS = CAPMT.o DeCSA.o DeCsaTSBuffer.o dll.o DVBAPI.o DVBAPISetup.o SCDeviceProbe.o simplelist.o device.o deviceplugin.o UDPSocket.o SCCIAdapter.o Frame.o SCCAMSlot.o
 
 # FFdeCSA
 CPUOPT     ?= athlon64
@@ -60,6 +60,17 @@ CSAFLAGS   ?= -fPIC -O3 -fexpensive-optimizations -funroll-loops -mmmx -msse -ms
 FFDECSADIR  = FFdecsa
 FFDECSA     = $(FFDECSADIR)/FFdecsa.o
 FFDECSATEST = $(FFDECSADIR)/FFdecsa_test.done
+
+HAVE_SD := $(wildcard ../dvbsddevice/dvbsddevice.c)
+ifneq ($(strip $(HAVE_SD)),)
+  DEFINES += -DWITH_SDDVB
+  DEVPLUGTARGETS += $(LIBDIR)/libdvbapi-dvbsddevice.so.$(APIVERSION)
+endif
+HAVE_HD := $(wildcard ../dvbhddevice/dvbhddevice.c)
+ifneq ($(strip $(HAVE_HD)),)
+  DEFINES += -DWITH_HDDVB
+  DEVPLUGTARGETS += $(LIBDIR)/libdvbapi-dvbhddevice.so.$(APIVERSION)
+endif
 
 ### The main target:
 
@@ -72,9 +83,19 @@ all: libvdr-$(PLUGIN).so
 
 ### Targets:
 
-libvdr-$(PLUGIN).so: $(OBJS) $(FFDECSA)
+libvdr-$(PLUGIN).so: $(OBJS) $(FFDECSA) $(DEVPLUGTARGETS)
 	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(FFDECSA) -o $@
 	@cp --remove-destination $@ $(LIBDIR)/$@.$(APIVERSION)
+
+libdvbapi-dvbsddevice.so: device-sd.o
+	$(CXX) $(CXXFLAGS) -shared $< $(SHAREDLIBS) -o $@
+$(LIBDIR)/libdvbapi-dvbsddevice.so.$(APIVERSION): libdvbapi-dvbsddevice.so
+	@cp -p $< $@
+
+libdvbapi-dvbhddevice.so: device-hd.o
+	$(CXX) $(CXXFLAGS) -shared $< $(SHAREDLIBS) -o $@
+$(LIBDIR)/libdvbapi-dvbhddevice.so.$(APIVERSION): libdvbapi-dvbhddevice.so
+	@cp -p $< $@
 
 $(FFDECSA): $(FFDECSADIR)/*.c $(FFDECSADIR)/*.h
 	@$(MAKE) COMPILER="$(CXX)" FLAGS="$(CSAFLAGS) -march=$(CPUOPT)" PARALLEL_MODE=$(PARALLEL) -C $(FFDECSADIR) all
@@ -89,5 +110,5 @@ dist: clean
 
 clean:
 	@-rm -f $(PODIR)/*.mo $(PODIR)/*.pot
-	@-rm -f $(OBJS)  $(DEPFILE) *.so *.tgz core* *~ $(PODIR)/*.mo $(PODIR)/*.pot
+	@-rm -f $(OBJS) device-sd.o device-hd.o $(DEPFILE) *.so *.tgz core* *~ $(PODIR)/*.mo $(PODIR)/*.pot
 	@$(MAKE) -C $(FFDECSADIR) clean

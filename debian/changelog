@@ -1,3 +1,9 @@
+vdr-plugin-dvbapi (1.0.2-1) precise; urgency=low
+
+  * New upstream version.
+
+ -- macmenot <notmemac@gmail.com>  Fri, 24 Aug 2012 13:38:22 +0100
+
 vdr-plugin-dvbapi (1.0.1-1) unstable; urgency=low
 
   * New upstream version.
