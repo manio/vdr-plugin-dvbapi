@@ -21,13 +21,17 @@
 
 #include <getopt.h>
 #include <vdr/plugin.h>
-#include "SCDVBDevice.h"
+#include "device.h"
+#include "dll.h"
 
-static const char *VERSION        = "1.0.1";
+static const char *VERSION        = "1.0.2";
 static const char *DESCRIPTION    = "DVBAPI type SOFTCAM";
 
 class DVBAPI : public cPlugin
 {
+private:
+  cScDlls dlls;
+
 public:
   DVBAPI(void);
   virtual ~DVBAPI();

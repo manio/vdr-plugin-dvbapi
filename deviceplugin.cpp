@@ -16,20 +16,16 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef ___SCDEVICEPROBE_H
-#define ___SCDEVICEPROBE_H
+#include "deviceplugin.h"
 
-#include "device.h"
+cSimpleList<cScDevicePlugin> devplugins;
 
-class cScDeviceProbe : public cDvbDeviceProbe
+cScDevicePlugin::cScDevicePlugin(void)
 {
-private:
-  static cScDeviceProbe *probe;
+  devplugins.Add(this);
+}
 
-public:
-  virtual bool Probe(int Adapter, int Frontend);
-  static void Install(void);
-  static void Remove(void);
-};
-
-#endif // ___SCDEVICEPROBE_H
+cScDevicePlugin::~cScDevicePlugin()
+{
+  devplugins.Del(this, false);
+}
