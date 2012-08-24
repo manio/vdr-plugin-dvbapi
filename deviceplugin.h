@@ -16,20 +16,23 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef ___SCDEVICEPROBE_H
-#define ___SCDEVICEPROBE_H
+#ifndef ___DEVICEPLUGIN_H
+#define ___DEVICEPLUGIN_H
 
-#include "device.h"
+#include "simplelist.h"
+#include "SCDeviceProbe.h"
 
-class cScDeviceProbe : public cDvbDeviceProbe
+class cScDevicePlugin : public cSimpleItem
 {
-private:
-  static cScDeviceProbe *probe;
-
 public:
-  virtual bool Probe(int Adapter, int Frontend);
-  static void Install(void);
-  static void Remove(void);
+  void SetInitialCaDescr();
+  cScDevicePlugin(void);
+  virtual ~cScDevicePlugin();
+  virtual cDevice *Probe(int Adapter, int Frontend, uint32_t SubSystemId) = 0;
+  virtual bool LateInit(cDevice *dev) = 0;
+  virtual bool EarlyShutdown(cDevice *dev) = 0;
 };
 
-#endif // ___SCDEVICEPROBE_H
+extern cSimpleList<cScDevicePlugin> devplugins;
+
+#endif // ___DEVICEPLUGIN_H

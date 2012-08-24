@@ -38,7 +38,7 @@
 #define T_RCV          0x81
 #define T_DATA_LAST    0xA0
 
-SCCIAdapter::SCCIAdapter(SCDVBDevice *sCDVBDevice, int cardIndex)
+SCCIAdapter::SCCIAdapter(cDevice *Device, int cardIndex)
 {
   for (int i = 0; i < MAX_SOCKETS; i++)
   {
@@ -46,8 +46,12 @@ SCCIAdapter::SCCIAdapter(SCDVBDevice *sCDVBDevice, int cardIndex)
     sockets[i] = 0;
   }
 
-  this->sCDVBDevice = sCDVBDevice;
   this->cardIndex = cardIndex;
+  device = Device;
+  capmt = new CAPMT;
+  decsa = new DeCSA(cardIndex);
+  UDPSocket::bindx(this);
+
   memset(version, 1, sizeof(version));
   memset(slots, 0, sizeof(slots));
   memset(caids, 0, sizeof(caids));
@@ -73,11 +77,6 @@ SCCIAdapter::SCCIAdapter(SCDVBDevice *sCDVBDevice, int cardIndex)
   for (int i = 0; i < MAX_CI_SLOTS && i * MAX_CI_SLOT_CAIDS < caidsLength; i++)
     slots[i] = new SCCAMSlot(this, cardIndex, i);
   Start();
-}
-
-SCDVBDevice *SCCIAdapter::GetDevice()
-{
-  return sCDVBDevice;
 }
 
 int SCCIAdapter::addCaid(int offset, int limit, unsigned short caid)
@@ -248,6 +247,12 @@ SCCIAdapter::~SCCIAdapter()
   delete rb;
   rb = 0;
   ciMutex.Unlock();
+
+  if (decsa)
+    delete decsa;
+  if (capmt != 0)
+    delete capmt;
+  capmt = 0;
 }
 
 bool SCCIAdapter::Reset(int Slot)
@@ -265,7 +270,7 @@ eModuleStatus SCCIAdapter::ModuleStatus(int Slot)
 
 bool SCCIAdapter::Assign(cDevice *Device, bool Query)
 {
-  return true;
+  return Device ? (Device == device) : true;
 }
 
 void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen)
@@ -349,6 +354,30 @@ void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const un
     return;
   }
 
-  sockets[i] = GetDevice()->GetCAPMT()->send(card_index, sid, sockets[i], vdr_caPMT, vdr_caPMTLen);
-  GetDevice()->SetReady(true);
+  sockets[i] = capmt->send(card_index, sid, sockets[i], vdr_caPMT, vdr_caPMTLen);
+  initialCaDscr = true;
+}
+
+bool SCCIAdapter::DeCSASetCaDescr(ca_descr_t *ca_descr)
+{
+  DEBUGLOG("%s: index=%d", __FUNCTION__, ca_descr->index);
+  if (ca_descr->index == (unsigned) -1)
+  {
+    DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
+    return true;
+  }
+  bool ret = decsa->SetDescr(ca_descr, initialCaDscr);
+  initialCaDscr = false;
+  return ret;
+}
+
+bool SCCIAdapter::DeCSASetCaPid(ca_pid_t *ca_pid)
+{
+  DEBUGLOG("%s: PID=%d, index=%d", __FUNCTION__, ca_pid->pid, ca_pid->index);
+  if (ca_pid->index == -1)
+  {
+    DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
+    return true;
+  }
+  return decsa->SetCaPid(ca_pid);
 }

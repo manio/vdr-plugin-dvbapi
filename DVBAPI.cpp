@@ -20,18 +20,18 @@
 #include <vdr/plugin.h>
 #include <linux/dvb/ca.h>
 #include "DVBAPI.h"
-#include "SCDVBDevice.h"
 #include "DVBAPISetup.h"
 #include "Log.h"
 
 DVBAPI::DVBAPI(void)
 {
-  SCDVBDevice::OnPluginLoad();
+  dlls.Load();
+  cScDevices::OnPluginLoad();
 }
 
 DVBAPI::~DVBAPI()
 {
-  SCDVBDevice::OnPluginUnload();
+  cScDevices::OnPluginUnload();
 }
 
 const char *DVBAPI::CommandLineHelp(void)
@@ -47,19 +47,20 @@ bool DVBAPI::ProcessArgs(int argc, char *argv[])
 bool DVBAPI::Initialize(void)
 {
   // Initialize any background activities the plugin shall perform.
-  return SCDVBDevice::Initialize();
+  INFOLOG("plugin version %s initializing (VDR %s)", VERSION, VDRVERSION);
+  return cScDevices::Initialize();
 }
 
 bool DVBAPI::Start(void)
 {
-  SCDVBDevice::Startup();
+  cScDevices::Startup();
   INFOLOG("plugin started");
   return true;
 }
 
 void DVBAPI::Stop(void)
 {
-  SCDVBDevice::Shutdown();
+  cScDevices::Shutdown();
   INFOLOG("plugin stopped");
 }
 

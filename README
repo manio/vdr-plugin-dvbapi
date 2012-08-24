@@ -3,8 +3,9 @@ TOC
 2. Getting the source code
 3. Basic Installation
 4. Plugin setup
-5. Thanks area
-6. Important links
+5. Known problems
+6. Thanks area
+7. Important links
 
 -----------------------------------------------------------------------------
 1. Introduction
@@ -65,7 +66,14 @@ The values for the log level are:
   3 - all information including debug
 
 -----------------------------------------------------------------------------
-5. Thanks area
+5. Known problems
+-----------------------------------------------------------------------------
+
+The plugin may conflict with dynamite plugin. You need to disable dynamite
+plugin in case of problems.
+
+-----------------------------------------------------------------------------
+6. Thanks area
 -----------------------------------------------------------------------------
 
  I would like to give a big thanks to a number of people from the OScam Board
@@ -76,7 +84,8 @@ The values for the log level are:
 
  To Narog for implementing the multiple adapter support
 
- To Peje/Unixer/Copper for their patience, support and testing.
+ To Peje, Unixer, Copper, HALLO01, udobroemme for their patience, support and
+ testing on own hardware.
 
  To the authors of VDR-SC plugin, FFdecsa and Oscam for their great work and
  dedication
@@ -84,7 +93,7 @@ The values for the log level are:
  In last to all other forum members that have/will contribute to this plugin.
 
 -----------------------------------------------------------------------------
-6. Important links
+7. Important links
 -----------------------------------------------------------------------------
 
 Remember to read the full threads on the OScam forum:
