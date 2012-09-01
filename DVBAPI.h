@@ -27,6 +27,8 @@
 static const char *VERSION        = "1.0.2";
 static const char *DESCRIPTION    = "DVBAPI type SOFTCAM";
 
+extern int DeCsaTsBuffSize;
+
 class DVBAPI : public cPlugin
 {
 private:

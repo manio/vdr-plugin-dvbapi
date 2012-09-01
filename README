@@ -66,6 +66,11 @@ The values for the log level are:
   2 - information and error messages (default)
   3 - all information including debug
 
+
+The size of DeCSA TS buffer can also be changed using this config line:
+dvbapi.DeCsaTsBuffSize = 4
+The default is 4 MB.
+
 -----------------------------------------------------------------------------
 5. Known problems
 -----------------------------------------------------------------------------

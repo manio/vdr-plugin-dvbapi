@@ -160,7 +160,7 @@ bool SCDEVICE::OpenDvr(void)
   if (fd_dvr >= 0)
   {
     tsMutex.Lock();
-    tsBuffer = new DeCsaTsBuffer(fd_dvr, MEGABYTE(4), CardIndex() + 1, sCCIAdapter->GetDeCSA(), ScActive());
+    tsBuffer = new DeCsaTsBuffer(fd_dvr, MEGABYTE(DeCsaTsBuffSize), CardIndex() + 1, sCCIAdapter->GetDeCSA(), ScActive());
     tsMutex.Unlock();
   }
   return fd_dvr >= 0;

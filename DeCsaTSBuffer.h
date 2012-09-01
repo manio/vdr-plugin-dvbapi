@@ -25,6 +25,8 @@
 #include <vdr/ringbuffer.h>
 #include "DeCSA.h"
 
+extern int DeCsaTsBuffSize;
+
 class DeCsaTsBuffer : public cThread
 {
 private:

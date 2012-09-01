@@ -98,6 +98,8 @@ bool DVBAPI::SetupParse(const char *Name, const char *Value)
   // Parse your own setup parameters and store their values.
   if (!strcasecmp(Name, CONFNAME_LOGLEVEL))
     LogLevel = atoi(Value);
+  else if (!strcasecmp(Name, CONFNAME_DECSABUFSIZE))
+    DeCsaTsBuffSize = atoi(Value);
   else
     return false;
   return true;

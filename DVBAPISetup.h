@@ -21,12 +21,14 @@
 
 #include <vdr/plugin.h>
 
-#define CONFNAME_LOGLEVEL  "LogLevel"
+#define CONFNAME_LOGLEVEL      "LogLevel"
+#define CONFNAME_DECSABUFSIZE  "DeCsaTsBuffSize"
 
 class cMenuSetupDVBAPI : public cMenuSetupPage
 {
 private:
   int newLogLevel;
+  int newDeCsaTsBuffSize;
 protected:
   virtual void Store(void);
 public:
