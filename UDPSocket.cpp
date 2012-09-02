@@ -76,49 +76,26 @@ void UDPSocket::unbind(void)
 void UDPSocket::Action(void)
 {
   DEBUGLOG("%s", __FUNCTION__);
+  unsigned char buff[sizeof(int) + sizeof(ca_descr_t)];
+  int cRead, *request;
 
   while (bint)
   {
-    unsigned int r = 0;
-    int request = 0;
-    while (r < sizeof(request))
+    cRead = read(sock, &buff, sizeof(buff));
+    if (cRead <= 0)
+      break;
+    request = (int *) &buff;
+    if (*request == CA_SET_PID)
     {
-      int cRead = read(sock, (&request) + r, sizeof(request));
-      if (cRead <= 0)
-        break;
-      r = +cRead;
+      DEBUGLOG("%s: Got CA_SET_PID request", __FUNCTION__);
+      memcpy(&ca_pid, &buff[sizeof(int)], sizeof(ca_pid_t));
+      sCCIAdapter->DeCSASetCaPid(&ca_pid);
     }
-    if (request == CA_SET_DESCR)
+    else if (*request == CA_SET_DESCR)
     {
-      while (r < sizeof(ca_descr_t))
-      {
-        r = 0;
-        int cRead = read(sock, (&ca_descr) + r, sizeof(ca_descr_t));
-        if (cRead <= 0)
-          break;
-        r = +cRead;
-      }
-      if (r == sizeof(ca_descr_t))
-      {
-        DEBUGLOG("%s: Got CA_SET_DESCR request", __FUNCTION__);
-        sCCIAdapter->DeCSASetCaDescr(&ca_descr);
-      }
-    }
-    if (request == CA_SET_PID)
-    {
-      r = 0;
-      while (r < sizeof(ca_pid_t))
-      {
-        int cRead = read(sock, (&ca_pid) + r, sizeof(ca_pid_t));
-        if (cRead <= 0)
-          break;
-        r = +cRead;
-      }
-      if (r == sizeof(ca_pid_t))
-      {
-        DEBUGLOG("%s: Got CA_SET_PID request", __FUNCTION__);
-        sCCIAdapter->DeCSASetCaPid(&ca_pid);
-      }
+      DEBUGLOG("%s: Got CA_SET_DESCR request", __FUNCTION__);
+      memcpy(&ca_descr, &buff[sizeof(int)], sizeof(ca_descr_t));
+      sCCIAdapter->DeCSASetCaDescr(&ca_descr);
     }
   }
 }
