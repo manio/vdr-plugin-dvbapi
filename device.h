@@ -22,7 +22,7 @@
 #include <vdr/dvbdevice.h>
 #include "deviceplugin.h"
 
-#if APIVERSNUM < 10723
+#if APIVERSNUM < 10724
 #define DEV_DVB_BASE     "/dev/dvb"
 #define DEV_DVB_ADAPTER  "adapter"
 #define DEV_DVB_FRONTEND "frontend"
