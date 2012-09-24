@@ -47,6 +47,7 @@ private:
   DeCSA *decsa;
   CAPMT *capmt;
   cDevice *device;
+  bool softcsa, fullts;
   bool initialCaDscr;
   unsigned short caids[1024];
   int caidsLength;
@@ -66,7 +67,7 @@ private:
   int addCaid(int offset, int limit, unsigned short caid);
 
 public:
-  SCCIAdapter(cDevice *Device, int CardIndex, int cafd);
+  SCCIAdapter(cDevice *Device, int CardIndex, int cafd, bool SoftCSA, bool FullTS);
   ~SCCIAdapter();
   int Adapter()
   {

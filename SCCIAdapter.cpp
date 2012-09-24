@@ -38,7 +38,7 @@
 #define T_RCV          0x81
 #define T_DATA_LAST    0xA0
 
-SCCIAdapter::SCCIAdapter(cDevice *Device, int cardIndex, int cafd)
+SCCIAdapter::SCCIAdapter(cDevice *Device, int cardIndex, int cafd, bool SoftCSA, bool FullTS)
 {
   for (int i = 0; i < MAX_SOCKETS; i++)
   {
@@ -50,6 +50,9 @@ SCCIAdapter::SCCIAdapter(cDevice *Device, int cardIndex, int cafd)
   device = Device;
   capmt = new CAPMT;
   fd_ca = cafd;
+  softcsa = SoftCSA;
+  fullts = FullTS;
+
   decsa = new DeCSA(cardIndex);
   UDPSocket::bindx(this);
 
@@ -362,13 +365,11 @@ void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const un
 bool SCCIAdapter::DeCSASetCaDescr(ca_descr_t *ca_descr)
 {
   DEBUGLOG("%s: index=%d", __FUNCTION__, ca_descr->index);
-#ifdef WITH_UFS9XX
-  if (fd_ca >= 0)
+  if (!softcsa || (fullts && ca_descr->index == 0))
   {
     cMutexLock lock(&cafdMutex);
     return ioctl(fd_ca, CA_SET_DESCR, ca_descr) >= 0;
   }
-#endif
   if (ca_descr->index == (unsigned) -1)
   {
     DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
@@ -382,13 +383,11 @@ bool SCCIAdapter::DeCSASetCaDescr(ca_descr_t *ca_descr)
 bool SCCIAdapter::DeCSASetCaPid(ca_pid_t *ca_pid)
 {
   DEBUGLOG("%s: PID=%d, index=%d", __FUNCTION__, ca_pid->pid, ca_pid->index);
-#ifdef WITH_UFS9XX
-  if (fd_ca >= 0)
+  if (!softcsa || (fullts && ca_pid->index == 0))
   {
     cMutexLock lock(&cafdMutex);
     return ioctl(fd_ca, CA_SET_PID, ca_pid) >= 0;
   }
-#endif
   if (ca_pid->index == -1)
   {
     DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);

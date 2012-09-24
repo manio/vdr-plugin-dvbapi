@@ -66,7 +66,6 @@ SCDEVICE::SCDEVICE(cScDevicePlugin *DevPlugin, int Adapter, int Frontend, int ca
   fd_ca2 = dup(fd_ca);
   fd_dvr = -1;
   snprintf(devId, sizeof(devId), "%d/%d", Adapter, Frontend);
-  sCCIAdapter = new SCCIAdapter(this, Adapter, cafd);
   DEBUGLOG("%s: done", __FUNCTION__);
 }
 
@@ -123,6 +122,7 @@ void SCDEVICE::LateInit(void)
     else
       INFOLOG("Using software decryption on card %s", devId);
   }
+  sCCIAdapter = new SCCIAdapter(this, n, fd_ca, softcsa, fullts);
 }
 
 bool SCDEVICE::HasCi(void)
