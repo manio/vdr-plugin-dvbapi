@@ -26,10 +26,16 @@
 #include "../dvbsddevice/dvbsdffdevice.h"
 #define SCDEVICE cScDvbSdFfDevice
 #define DVBDEVICE cDvbSdFfDevice
+#define OWN_FULLTS
 #if APIVERSNUM >= 10721
 #define OWN_DEVPARAMS false
 #endif
 #include "device-tmpl.cpp"
+
+bool cScDvbSdFfDevice::CheckFullTs(void)
+{
+  return IsPrimaryDevice() && HasDecoder();
+}
 
 // -- cScSdDevicePlugin --------------------------------------------------------
 

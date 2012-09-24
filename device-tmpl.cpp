@@ -30,7 +30,7 @@ private:
   cTimeMs lastDump;
   SCCIAdapter *sCCIAdapter;
   int fd_dvr, fd_ca, fd_ca2;
-  bool softcsa;
+  bool softcsa, fullts;
   char devId[8];
   bool ScActive(void);
 
@@ -48,6 +48,7 @@ public:
   virtual bool HasCi(void);
   void LateInit(void);
   void EarlyShutdown(void);
+  bool CheckFullTs(void);
 };
 
 SCDEVICE::SCDEVICE(cScDevicePlugin *DevPlugin, int Adapter, int Frontend, int cafd)
@@ -60,7 +61,7 @@ SCDEVICE::SCDEVICE(cScDevicePlugin *DevPlugin, int Adapter, int Frontend, int ca
   DEBUGLOG("%s: adapter=%d frontend=%d", __FUNCTION__, Adapter, Frontend);
   tsBuffer = 0;
   devplugin = DevPlugin;
-  softcsa = false;
+  softcsa = fullts = false;
   fd_ca = cafd;
   fd_ca2 = dup(fd_ca);
   fd_dvr = -1;
@@ -90,6 +91,13 @@ void SCDEVICE::EarlyShutdown(void)
   sCCIAdapter = 0;
 }
 
+#ifndef OWN_FULLTS
+bool SCDEVICE::CheckFullTs(void)
+{
+  return false;
+}
+#endif //!OWN_FULLTS
+
 void SCDEVICE::LateInit(void)
 {
   DEBUGLOG("%s", __FUNCTION__);
@@ -109,7 +117,11 @@ void SCDEVICE::LateInit(void)
   }
   if (softcsa)
   {
-    INFOLOG("Using software decryption on card %s", devId);
+    fullts = CheckFullTs();
+    if (fullts)
+      INFOLOG("Enabling hybrid full-ts mode on card %s", devId);
+    else
+      INFOLOG("Using software decryption on card %s", devId);
   }
 }
 
@@ -138,7 +150,7 @@ bool SCDEVICE::SetChannelDevice(const cChannel *Channel, bool LiveView)
 {
   DEBUGLOG("%s", __FUNCTION__);
   bool ret = DVBDEVICE::SetChannelDevice(Channel, LiveView);
-  if (LiveView && IsPrimaryDevice() && Channel->Ca() >= CA_ENCRYPTED_MIN && !Transferring() && softcsa)
+  if (LiveView && IsPrimaryDevice() && Channel->Ca() >= CA_ENCRYPTED_MIN && !Transferring() && softcsa && !fullts)
   {
     INFOLOG("Forcing transfermode on card %s", devId);
     DVBDEVICE::SetChannelDevice(Channel, false); // force transfermode
@@ -192,4 +204,5 @@ bool SCDEVICE::GetTSPacket(uchar *&Data)
 
 #undef SCDEVICE
 #undef DVBDEVICE
+#undef OWN_FULLTS
 #undef OWN_DEVPARAMS
