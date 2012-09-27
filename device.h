@@ -20,6 +20,7 @@
 #define ___DEVICE_H
 
 #include <vdr/dvbdevice.h>
+#include <vdr/dvbci.h>
 #include "deviceplugin.h"
 
 #if APIVERSNUM < 10724

@@ -27,6 +27,7 @@ private:
   DeCsaTsBuffer *tsBuffer;
   cMutex tsMutex;
   cScDevicePlugin *devplugin;
+  cCiAdapter *hwciadapter;
   cTimeMs lastDump;
   SCCIAdapter *sCCIAdapter;
   int fd_dvr, fd_ca, fd_ca2;
@@ -60,6 +61,7 @@ SCDEVICE::SCDEVICE(cScDevicePlugin *DevPlugin, int Adapter, int Frontend, int ca
 {
   DEBUGLOG("%s: adapter=%d frontend=%d", __FUNCTION__, Adapter, Frontend);
   tsBuffer = 0;
+  hwciadapter = 0;
   devplugin = DevPlugin;
   softcsa = fullts = false;
   fd_ca = cafd;
@@ -88,6 +90,8 @@ void SCDEVICE::EarlyShutdown(void)
   if (sCCIAdapter)
     delete sCCIAdapter;
   sCCIAdapter = 0;
+  delete hwciadapter;
+  hwciadapter = 0;
 }
 
 #ifndef OWN_FULLTS
@@ -122,18 +126,21 @@ void SCDEVICE::LateInit(void)
     else
       INFOLOG("Using software decryption on card %s", devId);
   }
+  if (fd_ca2 >= 0)
+    hwciadapter = cDvbCiAdapter::CreateCiAdapter(this, fd_ca2);
   sCCIAdapter = new SCCIAdapter(this, n, fd_ca, softcsa, fullts);
 }
 
 bool SCDEVICE::HasCi(void)
 {
   DEBUGLOG("%s", __FUNCTION__);
-  return sCCIAdapter;
+  return sCCIAdapter || hwciadapter;
 }
 
 bool SCDEVICE::Ready(void)
 {
-  return (sCCIAdapter ? sCCIAdapter->Ready() : true);
+  return (sCCIAdapter ? sCCIAdapter->Ready() : true) &&
+         (hwciadapter ? hwciadapter->Ready() : true);
 }
 
 bool SCDEVICE::SetPid(cPidHandle *Handle, int Type, bool On)
