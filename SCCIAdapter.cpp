@@ -53,7 +53,7 @@ SCCIAdapter::SCCIAdapter(cDevice *Device, int cardIndex, int cafd, bool SoftCSA,
   softcsa = SoftCSA;
   fullts = FullTS;
 
-  decsa = new DeCSA(cardIndex);
+  decsa = softcsa ? new DeCSA(cardIndex) : 0;
   UDPSocket::bindx(this);
 
   memset(version, 1, sizeof(version));
