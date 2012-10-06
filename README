@@ -2,10 +2,11 @@ TOC
 1. Introduction
 2. Getting the source code
 3. Basic Installation
-4. Plugin setup
-5. Known problems
-6. Thanks area
-7. Important links
+4. OScam compatibility
+5. Plugin setup
+6. Known problems
+7. Thanks area
+8. Important links
 
 -----------------------------------------------------------------------------
 1. Introduction
@@ -50,7 +51,18 @@ For sample installation instructions refer to INSTALL file.
 For Kathrein UFS 9xx support refer to extra/sh4-ufs9xx/README file.
 
 -----------------------------------------------------------------------------
-4. Plugin setup
+4. OScam compatibility
+-----------------------------------------------------------------------------
+
+If you are building newest oscam from sources, then just use newest plugin
+git revision. The following table explain details.
+
+OScam version        dvbapi plugin version
+svn rev >= 7314      1.0.3 or recent git versions
+svn rev < 7314       1.0.2
+
+-----------------------------------------------------------------------------
+5. Plugin setup
 -----------------------------------------------------------------------------
 
 The log level parameter of the plugin can be configured either from VDR
@@ -72,14 +84,14 @@ dvbapi.DeCsaTsBuffSize = 4
 The default is 4 MB.
 
 -----------------------------------------------------------------------------
-5. Known problems
+6. Known problems
 -----------------------------------------------------------------------------
 
 The plugin may conflict with dynamite plugin. You need to disable dynamite
 plugin in case of problems.
 
 -----------------------------------------------------------------------------
-6. Thanks area
+7. Thanks area
 -----------------------------------------------------------------------------
 
  I would like to give a big thanks to a number of people from the OScam Board
@@ -99,7 +111,7 @@ plugin in case of problems.
  In last to all other forum members that have/will contribute to this plugin.
 
 -----------------------------------------------------------------------------
-7. Important links
+8. Important links
 -----------------------------------------------------------------------------
 
 Remember to read the full threads on the OScam forum:
