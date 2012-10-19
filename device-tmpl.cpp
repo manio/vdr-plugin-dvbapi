@@ -63,11 +63,15 @@ SCDEVICE::SCDEVICE(cScDevicePlugin *DevPlugin, int Adapter, int Frontend, int ca
   tsBuffer = 0;
   hwciadapter = 0;
   devplugin = DevPlugin;
-  softcsa = fullts = false;
+  fullts = false;
+  softcsa = (cafd < 0);
+  if (softcsa)
+    fullts = CheckFullTs();
   fd_ca = cafd;
   fd_ca2 = dup(fd_ca);
   fd_dvr = -1;
   snprintf(devId, sizeof(devId), "%d/%d", Adapter, Frontend);
+  sCCIAdapter = new SCCIAdapter(this, Adapter, cafd, softcsa, fullts);
   DEBUGLOG("%s: done", __FUNCTION__);
 }
 
@@ -107,7 +111,6 @@ void SCDEVICE::LateInit(void)
   int n = CardIndex();
   if (DeviceNumber() != n)
     ERRORLOG("CardIndex - DeviceNumber mismatch! Put DVBAPI plugin first on VDR commandline!");
-  softcsa = (fd_ca < 0);
   if (softcsa)
   {
     if (HasDecoder())
@@ -120,7 +123,6 @@ void SCDEVICE::LateInit(void)
   }
   if (softcsa)
   {
-    fullts = CheckFullTs();
     if (fullts)
       INFOLOG("Enabling hybrid full-ts mode on card %s", devId);
     else
@@ -128,7 +130,6 @@ void SCDEVICE::LateInit(void)
   }
   if (fd_ca2 >= 0)
     hwciadapter = cDvbCiAdapter::CreateCiAdapter(this, fd_ca2);
-  sCCIAdapter = new SCCIAdapter(this, n, fd_ca, softcsa, fullts);
 }
 
 bool SCDEVICE::HasCi(void)
