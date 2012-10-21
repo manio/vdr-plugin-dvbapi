@@ -60,17 +60,37 @@ SCDEVICE::SCDEVICE(cScDevicePlugin *DevPlugin, int Adapter, int Frontend, int ca
 #endif //OWN_DEVPARAMS
 {
   DEBUGLOG("%s: adapter=%d frontend=%d", __FUNCTION__, Adapter, Frontend);
+  snprintf(devId, sizeof(devId), "%d/%d", Adapter, Frontend);
+
   tsBuffer = 0;
   hwciadapter = 0;
   devplugin = DevPlugin;
-  fullts = false;
-  softcsa = (cafd < 0);
-  if (softcsa)
-    fullts = CheckFullTs();
+  softcsa = fullts = false;
   fd_ca = cafd;
   fd_ca2 = dup(fd_ca);
   fd_dvr = -1;
-  snprintf(devId, sizeof(devId), "%d/%d", Adapter, Frontend);
+
+  int n = Adapter;
+  softcsa = (fd_ca < 0);
+  if (softcsa)
+  {
+    if (HasDecoder())
+      INFOLOG("Card %s is a full-featured card but no ca device found!", devId);
+  }
+  else if (cScDevices::ForceBudget(n))
+  {
+    INFOLOG("Budget mode forced on card %s", devId);
+    softcsa = true;
+  }
+  if (softcsa)
+  {
+    fullts = CheckFullTs();
+    if (fullts)
+      INFOLOG("Enabling hybrid full-ts mode on card %s", devId);
+    else
+      INFOLOG("Using software decryption on card %s", devId);
+  }
+
   sCCIAdapter = new SCCIAdapter(this, Adapter, cafd, softcsa, fullts);
   DEBUGLOG("%s: done", __FUNCTION__);
 }
@@ -108,26 +128,8 @@ bool SCDEVICE::CheckFullTs(void)
 void SCDEVICE::LateInit(void)
 {
   DEBUGLOG("%s", __FUNCTION__);
-  int n = CardIndex();
-  if (DeviceNumber() != n)
+  if (DeviceNumber() != CardIndex())
     ERRORLOG("CardIndex - DeviceNumber mismatch! Put DVBAPI plugin first on VDR commandline!");
-  if (softcsa)
-  {
-    if (HasDecoder())
-      INFOLOG("Card %s is a full-featured card but no ca device found!", devId);
-  }
-  else if (cScDevices::ForceBudget(n))
-  {
-    INFOLOG("Budget mode forced on card %s", devId);
-    softcsa = true;
-  }
-  if (softcsa)
-  {
-    if (fullts)
-      INFOLOG("Enabling hybrid full-ts mode on card %s", devId);
-    else
-      INFOLOG("Using software decryption on card %s", devId);
-  }
   if (fd_ca2 >= 0)
     hwciadapter = cDvbCiAdapter::CreateCiAdapter(this, fd_ca2);
 }

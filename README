@@ -4,9 +4,10 @@ TOC
 3. Basic Installation
 4. OScam compatibility
 5. Plugin setup
-6. Known problems
-7. Thanks area
-8. Important links
+6. Commandline options
+7. Known problems
+8. Thanks area
+9. Important links
 
 -----------------------------------------------------------------------------
 1. Introduction
@@ -84,14 +85,27 @@ dvbapi.DeCsaTsBuffSize = 4
 The default is 4 MB.
 
 -----------------------------------------------------------------------------
-6. Known problems
+6. Commandline options
+-----------------------------------------------------------------------------
+
+Some budget card drivers provide a CA device (eg: /dev/dvb/adapter0/ca0).
+This leads the plugin to detect the card as a full-featured one, thus
+disabling software CSA. You should use commandline option -B to force
+detection as a budget card in such a case.
+
+If you want to enable budget mode on adapter 0 and 1 you need to run vdr
+like this:
+  vdr -P"dvbapi -B0 -B1"
+
+-----------------------------------------------------------------------------
+7. Known problems
 -----------------------------------------------------------------------------
 
 The plugin may conflict with dynamite plugin. You need to disable dynamite
 plugin in case of problems.
 
 -----------------------------------------------------------------------------
-7. Thanks area
+8. Thanks area
 -----------------------------------------------------------------------------
 
  I would like to give a big thanks to a number of people from the OScam Board
@@ -111,7 +125,7 @@ plugin in case of problems.
  In last to all other forum members that have/will contribute to this plugin.
 
 -----------------------------------------------------------------------------
-8. Important links
+9. Important links
 -----------------------------------------------------------------------------
 
 Remember to read the full threads on the OScam forum:
