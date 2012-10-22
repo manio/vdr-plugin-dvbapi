@@ -26,116 +26,112 @@
 #include <stdio.h>
 #include "Log.h"
 
-int CAPMT::read_t(int fd, unsigned char *buffer)
+bool CAPMT::get_pmt(const int adapter, const int sid, unsigned char *buft)
 {
-  struct pollfd p;
-  p.fd = fd;
-  p.events = (POLLIN | POLLPRI);
-  p.revents = (POLLIN | POLLPRI);
-  if (poll(&p, 1, TIMEOUT) <= 0)
-  {
-    ERRORLOG("poll timed out");
-    return -1;
-  }
-  buffer[0] = 0;
-  return (read(fd, &buffer[1], 1024));
-}
-
-int CAPMT::set_filter(int fd, int pid)
-{
-  struct dmx_sct_filter_params flt;
-  ioctl(fd, DMX_STOP);
-  memset(&flt, 0, sizeof(struct dmx_sct_filter_params));
-  flt.timeout = 1000;
-  flt.flags = DMX_IMMEDIATE_START;
-  flt.pid = pid;
-  if (ioctl(fd, DMX_SET_FILTER, &flt) < 0)
-  {
-    ERRORLOG("%s: Error setting section filter", __FUNCTION__);
-    return -1;
-  }
-  return 0;
-}
-
-int CAPMT::get_pmt_pid(unsigned char *buffer, int sid)
-{
-  int index = 0;
-  int length = (buffer[index + 2] & 0x0F) << 8 | (buffer[index + 3] + 3);
-  DEBUGLOG("%s: PAT length: '%d'", __FUNCTION__, length);
-  for (index = 9; index < length - 4; index += 4)
-    if (((buffer[index] << 8) | buffer[index + 1]) > 0)
-    {
-      if (sid == ((buffer[index] << 8) | buffer[index + 1]))
-      {
-        int pmt_pid = (((buffer[index + 2] << 8) | buffer[index + 3]) & 0x1FFF);
-        DEBUGLOG("%s: pid=0x%X (%d)", __FUNCTION__, pmt_pid, pmt_pid);
-        return pmt_pid;
-      }
-    }
-  return 0;
-}
-
-int CAPMT::set_filter_pmt(int fd, int pid)
-{
-  struct dmx_sct_filter_params flt;
-  ioctl(fd, DMX_STOP);
-  memset(&flt, 0, sizeof(struct dmx_sct_filter_params));
-  flt.filter.filter[0] = 0x02;
-  flt.filter.mask[0] = 0xff;
-  flt.timeout = 1000;
-  flt.flags = DMX_IMMEDIATE_START;
-  flt.pid = pid;
-  if (ioctl(fd, DMX_SET_FILTER, &flt) < 0)
-  {
-    ERRORLOG("%s: Error setting section filter", __FUNCTION__);
-    return -1;
-  }
-  return 0;
-}
-
-bool CAPMT::get_pmt(const int adapter, const int sid, unsigned char *buffer)
-{
-  int fd = -1;
-  int length;
-  int k;
+  int dmxfd, count;
   int pmt_pid = 0;
-  char *demux_dev = NULL;
+  int patread = 0;
+  int section_length;
+  char *demux_path = NULL;
+  unsigned char *buf = buft;
+  struct dmx_sct_filter_params f;
   bool ret = false;
+  int k;
 
-  asprintf(&demux_dev, "/dev/dvb/adapter%d/demux0", adapter);
-  DEBUGLOG("opening demux: %s", demux_dev);
-  if ((fd = open(demux_dev, O_RDWR)) < 0)
-    ERRORLOG("Error opening demux device");
-  else
+  memset(&f, 0, sizeof(f));
+  f.pid = 0;
+  f.filter.filter[0] = 0x00;
+  f.filter.mask[0] = 0xff;
+  f.timeout = DEMUX_FILTER_TIMEOUT;
+  f.flags = DMX_IMMEDIATE_START | DMX_CHECK_CRC;
+
+  asprintf(&demux_path, "/dev/dvb/adapter%d/demux0", adapter);
+  if ((dmxfd = open(demux_path, O_RDWR)) < 0)
   {
-    if (set_filter(fd, 0) < 0)
-      ERRORLOG("Error in set filter pat");
-    if ((length = read_t(fd, buffer)) < 0)
-      ERRORLOG("Error in read read_t (pat)");
+    ERRORLOG("%s: openening demux failed: %s", __FUNCTION__, strerror(errno));
+    return ret;
+  }
+  if (demux_path)
+    free(demux_path);
+
+  if (ioctl(dmxfd, DMX_SET_FILTER, &f) == -1)
+  {
+    ERRORLOG("%s: ioctl DMX_SET_FILTER failed: %s", __FUNCTION__, strerror(errno));
+    close(dmxfd);
+    return ret;
+  }
+
+  //obtaining PMT PID
+  while (!patread)
+  {
+    if (((count = read(dmxfd, buf, DEMUX_BUFFER_SIZE)) < 0) && errno == EOVERFLOW)
+      count = read(dmxfd, buf, DEMUX_BUFFER_SIZE);
+    if (count < 0)
+    {
+      ERRORLOG("%s: read_sections: read error: %s", __FUNCTION__, strerror(errno));
+      close(dmxfd);
+      return ret;
+    }
+
+    section_length = ((buf[1] & 0x0f) << 8) | buf[2];
+    if (count != section_length + 3)
+      continue;
+
+    buf += 8;
+    section_length -= 8;
+
+    patread = 1;                /* assumes one section contains the whole pat */
+    while (section_length > 0)
+    {
+      int service_id = (buf[0] << 8) | buf[1];
+      if (service_id == sid)
+      {
+        pmt_pid = ((buf[2] & 0x1f) << 8) | buf[3];
+        section_length = 0;
+      }
+      buf += 4;
+      section_length -= 4;
+    }
+  }
+  DEBUGLOG("%s: PMT pid=0x%X (%d)", __FUNCTION__, pmt_pid, pmt_pid);
+
+  f.pid = pmt_pid;
+  f.filter.filter[0] = 0x02;
+  if (ioctl(dmxfd, DMX_SET_FILTER, &f) == -1)
+  {
+    ERRORLOG("%s: ioctl DMX_SET_FILTER failed: %s", __FUNCTION__, strerror(errno));
+    close(dmxfd);
+    return ret;
+  }
+  buf = buft;
+
+  //obtaining PMT data for our SID
+  for (k = 0; k < 64; k++)
+  {
+    if (((count = read(dmxfd, buf, DEMUX_BUFFER_SIZE)) < 0) && errno == EOVERFLOW)
+      count = read(dmxfd, buf, DEMUX_BUFFER_SIZE);
+    if (count < 0)
+    {
+      ERRORLOG("%s: read_sections: read error: %s", __FUNCTION__, strerror(errno));
+      close(dmxfd);
+      return ret;
+    }
+
+    section_length = ((buf[1] & 0x0f) << 8) | buf[2];
+    if (count != section_length + 3)
+      continue;
     else
     {
-      pmt_pid = get_pmt_pid(buffer, sid);
-      if (pmt_pid == 0)
-        ERRORLOG("pmt_pid not found");
-      else
+      int service_id = (buf[3] << 8) | buf[4];
+      if (service_id == sid)
       {
-        if (set_filter_pmt(fd, pmt_pid) < 0)
-          ERRORLOG("Error in set pmt filter");
-        for (k = 0; k < 64; k++)
-        {
-          if ((length = read_t(fd, buffer)) < 0)
-            ERRORLOG("Error in read pmt");
-          if (sid == ((buffer[4] << 8) + buffer[5]))
-            break;
-        }
         ret = true;
+        break;
       }
     }
   }
-  if (demux_dev)
-    free(demux_dev);
-  if (fd > 0)
-    close(fd);
+
+  close(dmxfd);
   return ret;
 }
 
@@ -151,7 +147,7 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
   int offset = 0;
   int toWrite;
   //FILE *fout;
-  unsigned char buffer[4096];
+  unsigned char buffer[DEMUX_BUFFER_SIZE];
 
   //obtain PMT data only if we don't have caDescriptors
   if (!vdr_caPMT)
@@ -180,7 +176,7 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
     return 0;
   }
   // http://cvs.tuxbox.org/lists/tuxbox-cvs-0208/msg00434.html
-  DEBUGLOG("channelSid=0x%x(%d)", sid, sid);
+  DEBUGLOG("%s: channelSid=0x%x (%d)", __FUNCTION__, sid, sid);
 
   //ca_pmt_tag
   caPMT[0] = 0x9F;
@@ -221,11 +217,11 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
   }
   else                          //adding full PMT data obtained from demux
   {
-    caPMT[10] = buffer[11];     //reserved+program_info_length
-    caPMT[11] = buffer[12] + 1 + 4;     //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
+    caPMT[10] = buffer[10];     //reserved+program_info_length
+    caPMT[11] = buffer[11] + 1 + 4;     //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
 
-    length = ((buffer[2] & 0xf) << 8) + buffer[3] + 3;  //section_length (including 4 byte CRC)
-    memcpy(caPMT + 17, buffer + 13, length - 12 - 4);   //copy PMT data without (-12 bytes for header, -4 byte for CRC_32)
+    length = ((buffer[1] & 0xf) << 8) + buffer[2] + 3;  //section_length (including 4 byte CRC)
+    memcpy(caPMT + 17, buffer + 12, length - 12 - 4);   //copy PMT data without (-12 bytes for header, -4 byte for CRC_32)
 
     length_field = 17 + (length - 12 - 4) - 6;  //-6 = 3 bytes for AOT_CA_PMT and 3 for size
   }
