@@ -110,6 +110,7 @@ SCDEVICE::~SCDEVICE()
 void SCDEVICE::EarlyShutdown(void)
 {
   DEBUGLOG("%s", __FUNCTION__);
+  DetachAllReceivers();
   SetCamSlot(0);
   if (sCCIAdapter)
     delete sCCIAdapter;
