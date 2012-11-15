@@ -68,8 +68,11 @@ ifneq ($(strip $(HAVE_SD)),)
 endif
 HAVE_HD := $(wildcard ../dvbhddevice/dvbhddevice.c)
 ifneq ($(strip $(HAVE_HD)),)
-  DEFINES += -DWITH_HDDVB
-  DEVPLUGTARGETS += $(LIBDIR)/libdvbapi-dvbhddevice.so.$(APIVERSION)
+  HDVERS := $(shell sed -ne '/*VERSION/ s/^.*=.*"\(.*\)".*$$/\1/p' ../dvbhddevice/dvbhddevice.c)
+  ifeq ($(findstring dag,$(HDVERS)),)
+    DEFINES += -DWITH_HDDVB
+    DEVPLUGTARGETS += $(LIBDIR)/libdvbapi-dvbhddevice.so.$(APIVERSION)
+  endif
 endif
 HAVE_UFS9XX := $(wildcard ../dvbufs9xx/dvbhddevice.c)
 ifneq ($(strip $(HAVE_UFS9XX)),)
