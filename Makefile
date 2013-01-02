@@ -98,7 +98,7 @@ $(DEPFILE): Makefile
 
 ### Targets:
 
-libvdr-$(PLUGIN).so: $(OBJS) $(FFDECSA)
+$(SOFILE): $(OBJS) $(FFDECSA)
 	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(FFDECSA) -o $@
 
 libdvbapi-dvbsddevice.so: device-sd.o
@@ -107,23 +107,23 @@ libdvbapi-dvbsddevice.so: device-sd.o
 libdvbapi-dvbhddevice.so: device-hd.o
 	$(CXX) $(CXXFLAGS) -shared $< -o $@
 
-libdvbapi-dvbufs9xxdevice.so: device-ufs9xx.o
+libdvbapi-dvbufs9xx.so: device-ufs9xx.o
 	$(CXX) $(CXXFLAGS) -shared $< -o $@
 
 $(FFDECSA): $(FFDECSADIR)/*.c $(FFDECSADIR)/*.h
 	@$(MAKE) COMPILER="$(CXX)" FLAGS="$(CXXFLAGS) $(CSAFLAGS)" PARALLEL_MODE=$(PARALLEL) -C $(FFDECSADIR) all
 
 install-lib: $(SOFILE)
-	@install -Dm755 $^ $(LIBDIR)/$^.$(APIVERSION)
+	install -D $^ $(LIBDIR)/$^.$(APIVERSION)
 
 install-devplug-sddvb: libdvbapi-dvbsddevice.so
-	@install -Dm755 libdvbapi-dvbsddevice.so $(LIBDIR)/libdvbapi-dvbsddevice.so.$(APIVERSION)
+	install -D $^ $(LIBDIR)/$^.$(APIVERSION)
 
 install-devplug-hddvb: libdvbapi-dvbhddevice.so
-	@install -Dm755 libdvbapi-dvbhddevice.so $(LIBDIR)/libdvbapi-dvbsddevice.so.$(APIVERSION)
+	install -D $^ $(LIBDIR)/$^.$(APIVERSION)
 
-install-devplug-ufs9xx: libdvbapi-ufs9xx.so
-	@install -Dm755 libdvbapi-ufs9xx.so $(LIBDIR)/libdvbapi-ufs9xx.so.$(APIVERSION)
+install-devplug-ufs9xx: libdvbapi-dvbufs9xx.so
+	install -D $^ $(LIBDIR)/$^.$(APIVERSION)
 
 install: install-lib $(DEVPLUGINSTALL)
 
