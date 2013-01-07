@@ -19,6 +19,7 @@ VERSION = $(shell grep 'static const char \*VERSION *=' DVBAPI.h | awk '{ print 
 PKGCFG  = $(if $(VDRDIR),$(shell pkg-config --variable=$(1) $(VDRDIR)/vdr.pc),$(shell pkg-config --variable=$(1) vdr || pkg-config --variable=$(1) ../../../vdr.pc))
 LIBDIR  = $(DESTDIR)/$(call PKGCFG,libdir)
 LOCDIR  = $(DESTDIR)/$(call PKGCFG,locdir)
+PLGCFG  = $(call PKGCFG,plgcfg)
 #
 TMPDIR ?= /tmp
 
@@ -26,6 +27,10 @@ TMPDIR ?= /tmp
 
 export CFLAGS   = $(call PKGCFG,cflags)
 export CXXFLAGS = $(call PKGCFG,cxxflags)
+
+### Allow user defined options to overwrite defaults:
+
+-include $(PLGCFG)
 
 ### The version number of VDR's plugin API:
 
