@@ -17,8 +17,8 @@ VERSION = $(shell grep 'static const char \*VERSION *=' DVBAPI.h | awk '{ print 
 
 # Use package data if installed...otherwise assume we're under the VDR source directory:
 PKGCFG  = $(if $(VDRDIR),$(shell pkg-config --variable=$(1) $(VDRDIR)/vdr.pc),$(shell pkg-config --variable=$(1) vdr || pkg-config --variable=$(1) ../../../vdr.pc))
-LIBDIR  = $(DESTDIR)/$(call PKGCFG,libdir)
-LOCDIR  = $(DESTDIR)/$(call PKGCFG,locdir)
+LIBDIR  = $(DESTDIR)$(call PKGCFG,libdir)
+LOCDIR  = $(DESTDIR)$(call PKGCFG,locdir)
 PLGCFG  = $(call PKGCFG,plgcfg)
 #
 TMPDIR ?= /tmp
