@@ -17,8 +17,8 @@ VERSION = $(shell grep 'static const char \*VERSION *=' DVBAPI.h | awk '{ print 
 
 # Use package data if installed...otherwise assume we're under the VDR source directory:
 PKGCFG  = $(if $(VDRDIR),$(shell pkg-config --variable=$(1) $(VDRDIR)/vdr.pc),$(shell pkg-config --variable=$(1) vdr || pkg-config --variable=$(1) ../../../vdr.pc))
-LIBDIR  = $(DESTDIR)$(call PKGCFG,libdir)
-LOCDIR  = $(DESTDIR)$(call PKGCFG,locdir)
+LIBDIR  = $(call PKGCFG,libdir)
+LOCDIR  = $(call PKGCFG,locdir)
 PLGCFG  = $(call PKGCFG,plgcfg)
 #
 TMPDIR ?= /tmp
@@ -129,47 +129,47 @@ endif
 ### Implicit rules:
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $(DEFINES) $(INCLUDES) $<
+	$(CXX) $(CXXFLAGS) -c $(DEFINES) $(INCLUDES) -o $@ $<
 
 ### Dependencies:
 
 MAKEDEP = $(CXX) -MM -MG
 DEPFILE = .dependencies
 $(DEPFILE): Makefile
-	@$(MAKEDEP) $(DEFINES) $(INCLUDES) $(OBJS:%.o=%.cpp) > $@
+	@$(MAKEDEP) $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(OBJS:%.o=%.cpp) > $@
 
 -include $(DEPFILE)
 
 ### Targets:
 
 $(SOFILE): $(OBJS) $(FFDECSA)
-	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(DECSALIB) -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $(OBJS) $(DECSALIB) -o $@
 
 libdvbapi-dvbsddevice.so: device-sd.o
-	$(CXX) $(CXXFLAGS) -shared $< -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $< -o $@
 
 libdvbapi-dvbhddevice.so: device-hd.o
-	$(CXX) $(CXXFLAGS) -shared $< -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $< -o $@
 
 libdvbapi-dvbufs9xx.so: device-ufs9xx.o
-	$(CXX) $(CXXFLAGS) -shared $< -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $< -o $@
 
 ifndef LIBDVBCSA
 $(FFDECSA): $(FFDECSADIR)/*.c $(FFDECSADIR)/*.h
-	@$(MAKE) COMPILER="$(CXX)" FLAGS="$(CXXFLAGS) $(CSAFLAGS)" PARALLEL_MODE=$(PARALLEL) -C $(FFDECSADIR) all
+	@$(MAKE) COMPILER="$(CXX)" FLAGS="$(CXXFLAGS) $(LDFLAGS) $(CSAFLAGS)" PARALLEL_MODE=$(PARALLEL) -C $(FFDECSADIR) all
 endif
 
 install-lib: $(SOFILE)
-	install -D $^ $(LIBDIR)/$^.$(APIVERSION)
+	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
 
 install-devplug-sddvb: libdvbapi-dvbsddevice.so
-	install -D $^ $(LIBDIR)/$^.$(APIVERSION)
+	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
 
 install-devplug-hddvb: libdvbapi-dvbhddevice.so
-	install -D $^ $(LIBDIR)/$^.$(APIVERSION)
+	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
 
 install-devplug-ufs9xx: libdvbapi-dvbufs9xx.so
-	install -D $^ $(LIBDIR)/$^.$(APIVERSION)
+	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
 
 install: install-lib $(DEVPLUGINSTALL)
 
