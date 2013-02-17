@@ -181,8 +181,10 @@ dist: clean
 	@-rm -rf $(TMPDIR)/$(ARCHIVE)
 	@echo Distribution package created as $(PACKAGE).tgz
 
-clean:
+clean: clean-ffdecsa
 	@-rm -f $(OBJS) device-sd.o device-hd.o device-ufs9xx.o $(DEPFILE) *.so *.tgz core* *~
+
+clean-ffdecsa:
 ifndef LIBDVBCSA
 	@$(MAKE) -C $(FFDECSADIR) clean
 endif
