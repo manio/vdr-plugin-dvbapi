@@ -149,6 +149,23 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
   //FILE *fout;
   unsigned char buffer[DEMUX_BUFFER_SIZE];
 
+  //create socket connection to oscam first
+  if (socket_fd == 0)
+  {
+    socket_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
+    sockaddr_un serv_addr_un;
+    memset(&serv_addr_un, 0, sizeof(serv_addr_un));
+    serv_addr_un.sun_family = AF_LOCAL;
+    snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
+    if (connect(socket_fd, (const sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
+    {
+      ERRORLOG("Cannot connect to /tmp/camd.socket, Do you have OSCam running?");
+      return 0;
+    }
+    else
+      DEBUGLOG("created socket with socket_fd=%d", socket_fd);
+  }
+
   //obtain PMT data only if we don't have caDescriptors
   if (!vdr_caPMT)
   {
@@ -235,21 +252,6 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
 
 
 /////// sending data
-  if (socket_fd == 0)
-  {
-    socket_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
-    sockaddr_un serv_addr_un;
-    memset(&serv_addr_un, 0, sizeof(serv_addr_un));
-    serv_addr_un.sun_family = AF_LOCAL;
-    snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
-    if (connect(socket_fd, (const sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
-    {
-      ERRORLOG("Cannot connect to /tmp/camd.socket, Do you have OSCam running?");
-      socket_fd = 0;
-    }
-    else
-      DEBUGLOG("created socket with socket_fd=%d", socket_fd);
-  }
   if (socket_fd != 0)
   {
     int wrote = write(socket_fd, caPMT, toWrite);
