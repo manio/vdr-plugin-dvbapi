@@ -65,6 +65,8 @@ private:
   int sids[MAX_SOCKETS];
   int sockets[MAX_SOCKETS];
   int addCaid(int offset, int limit, unsigned short caid);
+  cTimeMs checkTimer;
+  void OSCamCheck();
 
 public:
   SCCIAdapter(cDevice *Device, int CardIndex, int cafd, bool SoftCSA, bool FullTS);
