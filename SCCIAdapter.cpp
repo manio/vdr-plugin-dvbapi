@@ -328,7 +328,21 @@ void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const un
     DEBUGLOG("%s: got empty SID - returning from function", __FUNCTION__);
     return;
   }
-  if (ca_lm == 0x04 || ca_lm == 0x03)   //adding new sid
+  if (ca_lm == 0x03)        //LIST_ONLY - we have to close all other sockets
+  {
+    for (i = 0; i < MAX_SOCKETS; i++)
+    {
+      sids[i] = 0;
+      if (sockets[i] > 0)
+        close(sockets[i]);
+      sockets[i] = 0;
+    }
+    //adding as the only socket for this adapter
+    i = 0;
+    sids[i] = sid;
+    DEBUGLOG("%s: added: i=%d", __FUNCTION__, i);
+  }
+  else if (ca_lm == 0x04)   //adding new sid
   {
     int found = 0;
     for (i = 0; i < MAX_SOCKETS; i++)
