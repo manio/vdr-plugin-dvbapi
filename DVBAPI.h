@@ -24,7 +24,7 @@
 #include "device.h"
 #include "dll.h"
 
-static const char *VERSION        = "1.0.4";
+static const char *VERSION        = "1.0.5";
 static const char *DESCRIPTION    = "DVBAPI type SOFTCAM";
 
 extern int DeCsaTsBuffSize;
