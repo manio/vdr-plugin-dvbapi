@@ -55,7 +55,8 @@ void Frame::Put(void)
 {
   if (rb && mem)
   {
-    *((short *) mem) = len;
+    *mem     = len & 0xff;
+    *(mem+1) = len >> 8;
     rb->Put(mem, len + LEN_OFF);
   }
 }
@@ -70,7 +71,7 @@ unsigned char *Frame::Get(int &l)
     {
       if (c > LEN_OFF)
       {
-        int s = *((short *) data);
+        int s = *data + (*(data+1) << 8);
         if (c >= s + LEN_OFF)
         {
           l = glen = s;
