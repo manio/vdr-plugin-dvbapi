@@ -138,6 +138,23 @@ bool CAPMT::get_pmt(const int adapter, const int sid, unsigned char *buft)
 //oscam also reads PMT file, but it is much slower
 //#define PMT_FILE
 
+int CAPMT::oscam_socket_connect()
+{
+  int socket_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
+  sockaddr_un serv_addr_un;
+  memset(&serv_addr_un, 0, sizeof(serv_addr_un));
+  serv_addr_un.sun_family = AF_LOCAL;
+  snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
+  if (connect(socket_fd, (const sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
+  {
+    ERRORLOG("Cannot connect to /tmp/camd.socket, Do you have OSCam running?");
+    socket_fd = -1;
+  }
+  else
+    DEBUGLOG("created socket with socket_fd=%d", socket_fd);
+  return socket_fd;
+}
+
 int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned char *vdr_caPMT, int vdr_caPMTLen)
 {
 #ifdef PMT_FILE
@@ -148,6 +165,14 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
   int toWrite;
   //FILE *fout;
   unsigned char buffer[DEMUX_BUFFER_SIZE];
+
+  //try to reconnect to oscam if there is no connection
+  if (socket_fd == -1)
+  {
+    socket_fd = oscam_socket_connect();
+    if (socket_fd == -1)
+      return socket_fd;
+  }
 
   //obtain PMT data only if we don't have caDescriptors
   if (!vdr_caPMT)
@@ -236,21 +261,8 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
 
 /////// sending data
   if (socket_fd == 0)
-  {
-    socket_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
-    sockaddr_un serv_addr_un;
-    memset(&serv_addr_un, 0, sizeof(serv_addr_un));
-    serv_addr_un.sun_family = AF_LOCAL;
-    snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
-    if (connect(socket_fd, (const sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
-    {
-      ERRORLOG("Cannot connect to /tmp/camd.socket, Do you have OSCam running?");
-      socket_fd = 0;
-    }
-    else
-      DEBUGLOG("created socket with socket_fd=%d", socket_fd);
-  }
-  if (socket_fd != 0)
+    socket_fd = oscam_socket_connect();
+  if (socket_fd > 0)
   {
     int wrote = write(socket_fd, caPMT, toWrite);
     DEBUGLOG("socket_fd=%d length=%d toWrite=%d wrote=%d", socket_fd, length, toWrite, wrote);

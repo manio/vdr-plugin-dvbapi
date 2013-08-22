@@ -29,6 +29,7 @@ class CAPMT
 {
 private:
   bool get_pmt(const int adapter, const int sid, unsigned char *buft);
+  int oscam_socket_connect();
 
 public:
   int send(const int adapter, const int sid, int socket_fd, const unsigned char *vdr_caPMT, int vdr_caPMTLen);
