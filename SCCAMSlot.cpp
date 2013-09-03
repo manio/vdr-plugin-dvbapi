@@ -275,7 +275,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
       {
         if (ci_cmd == 0x04)
           INFOLOG("%d.%d stop decrypt", cardIndex, slot);
-        if (ci_cmd == 0x01 || (ci_cmd == -1 && (ca_lm == 0x03 || ca_lm == 0x04 || ca_lm == 0x05)))
+        if (ci_cmd == 0x01 || (ci_cmd == -1 && (ca_lm == 0x04 || ca_lm == 0x05)))
         {
           INFOLOG("%d.%d set CAM decrypt (SID %d, caLm %d, HasCaDescriptors %d)", cardIndex, slot, sid, ca_lm, HasCaDescriptors);
 
