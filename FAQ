@@ -1,0 +1,41 @@
+Q: When I switch to a channel I've got black screen and in the log:
+   DVBAPI-Error: get_pmt: read_sections: read error: Connection timed out
+   DVBAPI-Error: Error obtaining PMT data, returning
+
+A: If VDR doesn't pass the PMT data, then the plugin is trying to obtain
+   it itself (it's necessary for oscam to obtain ECMs).
+   When a card driver cannot obtain this data then the above error appear
+   in the log.
+   The real case of the problem could be various, but most probably the card
+   has failed to lock to specified frequency, eg for the following reason:
+   - channel has wrong tune parameters (after some time you'll probably
+     see in the syslog a line from vdr similar to this:
+     'frontend 0/0 timed out while tuning to channel 0, tp 211817')
+   - problems with faulty DVB driver, which cannot obtain a LOCK
+   - problems with DiSEqC
+   - weak signal
+
+
+Q: The plugin is not sending EMMs to my card, and my card is not working
+   after some period.
+
+A: When you're using dvbapi plugin, then EMM (and also ECM) handling is done
+   totally on oscam side. So the EMM doesn't even reach the plugin, because
+   oscam in dvbapi mode is opening demux and filter EMMs, which are then passed
+   to oscam readers.
+   When you enable 128 debug in oscam you'll see that after channel switch it
+   prints eg:
+   [DVBAPI] Demuxer #0 has 6 ecmpids, 2 streampids, 1 ecmfilters and 0 emmfilters
+
+   but after some time oscam is starting to filter EMM and the similar lines
+   appear in the oscam log:
+   [EMM Filter] starting emm filter type UNIQUE, pid: 0x00B6
+   [EMM Filter] starting emm filter type GLOBAL, pid: 0x00B6
+   [EMM Filter] starting emm filter type SHARED, pid: 0x00B7
+
+   and after this it prints the summary:
+   [DVBAPI] Demuxer #0 has 6 ecmpids, 2 streampids, 1 ecmfilters and 14 emmfilters
+   As you can see this time it has 14 emmfilters.
+
+   When oscam is writing EMM to the card, then similar log entries appear:
+   745DD0 r pho [conax] vdr emmtype=shared, len=180, idx=118, cnt=3: written (546 ms)

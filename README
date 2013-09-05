@@ -18,6 +18,7 @@ DVBAPI plugin for VDR
 plugin is to act as a bridge between VDR and OScam.
 
 Refer to INSTALL/README for installation and usage procedure
+Refer to FAQ for frequently asked questions
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -81,7 +82,9 @@ The values for the log level are:
 
 The size of DeCSA TS buffer can also be changed using this config line:
 dvbapi.DeCsaTsBuffSize = 4
-The default is 4 MB.
+The default is 4 MB which should be sufficient, but if you have overflow
+errors in the log and/or the output stream has errors, you can try to adjust
+this value experimentally.
 
 -----------------------------------------------------------------------------
 6. Commandline options
