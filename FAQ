@@ -39,3 +39,11 @@ A: When you're using dvbapi plugin, then EMM (and also ECM) handling is done
 
    When oscam is writing EMM to the card, then similar log entries appear:
    745DD0 r pho [conax] vdr emmtype=shared, len=180, idx=118, cnt=3: written (546 ms)
+
+
+Q: The plugin works fine when I am watching a single channel, but when I am using
+   more cards simultaneously (eg. several adapters are recording, one is used for
+   watching) then live-tv and recordings are "pixelated" and CPU load is high.
+
+A: It could be the problem of your CSA performance, if you're using FFdecsa, then
+   refer to the INSTALL file, 'FFdecsa compilation flags' section.

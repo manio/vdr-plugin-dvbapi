@@ -1,6 +1,5 @@
 Installation Instructions
 *************************
-
    Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright
 notice and this notice are preserved.  This file is offered as-is,
@@ -8,7 +7,6 @@ without warranty of any kind.
 
 Basic Installation
 ==================
-
  1) Compile the plugin like any other vdr plugin - if you have vdr sources
     then put the sources in the PLUGINS/src/dvbapi subdirectory and type
     'make plugins' in vdr main source directory - the plugin should compile
@@ -29,9 +27,40 @@ Basic Installation
    boxtype to "pc" will allow oscam to take adapter/demux information from CAPMT frame.
    pmt_mode to "4" will allow oscam to use camd.socket in /tmp/ dir
 
+FFdecsa vs. libdvbcsa
+=====================
+This plugin is a SoftCAM - this means that it has to use Common Scrambling Algorithm
+to decrypt the transport stream on so-called 'budget' DVB cards.
+The plugin supports two common CSA implementations: FFdecsa and libdvbcsa.
+FFdecsa is very fast on standard PCs (x86, x86_64), while libdvbcsa may be a better
+choice for other platforms, such as ARM; little and big-endian architectures.
+The default for the plugin is FFdecsa.
+
+FFdecsa compilation flags
+=========================
+ Makefile from this plugin comes with predefined FFdecsa compilation flags. It's
+ generally a good idea to adjust it to gain the best performance on running hardware.
+
+ FFdecsa has a test of correctness and speed during compilation, eg:
+ FFdecsa 1.0: testing correctness and speed
+ speed=536.984569 Mbit/s
+
+ Keep in mind that above speed value should be sufficient for your needs and bandwidth
+ of channels you're watching and recording, especially when using multiple adapters
+ at the same time (for live tv or recording).
+
+ A helper bash script (extra/FFdecsa-benchmark.sh) is provided to help find optimal
+ compilation flags (PARALLEL, CSAFLAGS) for the best performance on your hardware.
+
+ You have three options to adjust these flags:
+ a) edit plugin's Makefile (find FFdecsa section)
+ b) pass it manually during compilation, eg. like this:
+    PARALLEL=PARALLEL_128_SSE2 CSAFLAGS="-O3 -fexpensive-optimizations -funroll-loops -mmmx -msse -msse2 -msse3" make plugins
+ c) use common Makefile for plugins using PLGCFG variable, refer to VDR documentation
+    for more info
+
 libdvbcsa library support
 =========================
-
  If you want to compile the plugin against libdvbcsa instead of default FFdecsa
  then you need to pass additinal argument when compiling the plugin, eg:
 
