@@ -28,7 +28,6 @@
 #define MAX_CW_IDX           16
 #define CAID_TIME        300000   // time between caid scans
 #define TRIGGER_TIME      10000   // min. time between caid scan trigger
-#define MAX_SOCKETS          16   // max sockets (simultaneus channels) per demux
 
 #define MAX_CI_SLOT_CAIDS    64
 

@@ -24,25 +24,8 @@
 #include "CAPMT.h"
 #include "DeCSA.h"
 #include "UDPSocket.h"
-#include <vector>
-
-using namespace std;
-
-struct pmtobj
-{
-  int sid;
-  int len;
-  unsigned char* data;
-};
 
 class SCCAMSlot;
-
-#define LIST_MORE           0x00
-#define LIST_FIRST          0x01
-#define LIST_LAST           0x02
-#define LIST_ONLY           0x03
-#define LIST_ADD            0x04
-#define LIST_UPDATE         0x05
 
 #define MAX_CI_SLOTS        8
 #define MAX_SPLIT_SID       16
@@ -62,11 +45,8 @@ class SCCIAdapter : public cCiAdapter
 {
 private:
   DeCSA *decsa;
-  CAPMT *capmt;
-  vector<pmtobj> pmt;
   cDevice *device;
   bool softcsa, fullts;
-  bool initialCaDscr;
   unsigned short caids[1024];
   int caidsLength;
   int cardIndex;
@@ -80,13 +60,12 @@ private:
   cTimeMs readTimer, writeTimer;
   Frame frame;
   cRingBufferLinear *rb;
-  int sids[MAX_SOCKETS];
-  int sockets[MAX_SOCKETS];
   int addCaid(int offset, int limit, unsigned short caid);
   cTimeMs checkTimer;
   void OSCamCheck();
 
 public:
+  CAPMT *capmt;
   SCCIAdapter(cDevice *Device, int CardIndex, int cafd, bool SoftCSA, bool FullTS);
   ~SCCIAdapter();
   int Adapter()
@@ -105,7 +84,6 @@ public:
   }
   bool DeCSASetCaDescr(ca_descr_t *ca_descr);
   bool DeCSASetCaPid(ca_pid_t *ca_pid);
-  void ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen);
 };
 
 #endif // ___SCCIADAPTER_H

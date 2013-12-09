@@ -42,12 +42,6 @@
 
 SCCIAdapter::SCCIAdapter(cDevice *Device, int cardIndex, int cafd, bool SoftCSA, bool FullTS)
 {
-  for (int i = 0; i < MAX_SOCKETS; i++)
-  {
-    sids[i] = 0;
-    sockets[i] = 0;
-  }
-
   this->cardIndex = cardIndex;
   device = Device;
   capmt = new CAPMT;
@@ -274,14 +268,6 @@ SCCIAdapter::~SCCIAdapter()
 
   Cancel(3);
 
-  vector<pmtobj>::iterator it;
-  for (it = pmt.begin(); it != pmt.end(); it++)
-  {
-    if (it->data)
-      delete[] it->data;
-  }
-  pmt.clear();
-
   ciMutex.Lock();
   delete rb;
   rb = 0;
@@ -312,78 +298,6 @@ bool SCCIAdapter::Assign(cDevice *Device, bool Query)
   return Device ? (Device == device) : true;
 }
 
-void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen)
-{
-/*
-    here is what i found so far analyzing AOT_CA_PMT frame from vdr
-    lm=4 prg=X: request for X SID to be decrypted (added)
-    lm=5 prg=X: request for X SID to stop decryption (removed)
-    lm=3 prg=0: this is sent when changing transponder or during epg scan (also before new channel but ONLY if it is on different transponder)
-    lm=3 prg=X: it seems that this is sent when starting vdr with active timers
-*/
-  if (sid == 0)
-  {
-    DEBUGLOG("%s: got empty SID - returning from function", __FUNCTION__);
-    return;
-  }
-
-  //removind the PMT if exists
-  vector<pmtobj>::iterator it;
-  for (it = pmt.begin(); it != pmt.end(); it++)
-  {
-    if (it->sid == sid)
-    {
-      if (it->data)
-        delete[] it->data;
-      pmt.erase(it);
-      break;
-    }
-  }
-  //adding new or updating existing PMT data
-  if (ca_lm == 0x04 || ca_lm == 0x03)
-  {
-    pmtobj pmto;
-    pmto.sid = sid;
-    pmto.len = vdr_caPMTLen;
-    if (vdr_caPMTLen > 0)
-    {
-      unsigned char *pmt_data = new unsigned char[vdr_caPMTLen];
-      memcpy(pmt_data, vdr_caPMT, vdr_caPMTLen);
-      pmto.data = pmt_data;
-    }
-    else
-      pmto.data = NULL;
-
-    pmt.push_back(pmto);
-  }
-
-  if (pmt.empty())
-  {
-    if ((sockets[0]) > 0)
-    {
-      close (sockets[0]);
-      sockets[0] = 0;
-    }
-  }
-  else
-  {
-    //sending complete PMT objects
-    int lm = LIST_FIRST;
-    for (it = pmt.begin(); it != pmt.end();)
-    {
-      int sid = it->sid;
-      int len = it->len;
-      unsigned char* pmt_data = it->data;
-      ++it;
-      if (it == pmt.end())
-        lm |= LIST_LAST;
-      sockets[0] = capmt->send(card_index, sid, sockets[0], lm, pmt_data, len);
-      lm = LIST_MORE;
-    }
-  }
-  initialCaDscr = true;
-}
-
 bool SCCIAdapter::DeCSASetCaDescr(ca_descr_t *ca_descr)
 {
   DEBUGLOG("%s: index=%d", __FUNCTION__, ca_descr->index);
@@ -397,8 +311,8 @@ bool SCCIAdapter::DeCSASetCaDescr(ca_descr_t *ca_descr)
     DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
     return true;
   }
-  bool ret = decsa->SetDescr(ca_descr, initialCaDscr);
-  initialCaDscr = false;
+  bool ret = decsa->SetDescr(ca_descr, true);
+  //initialCaDscr = false;
   return ret;
 }
 
