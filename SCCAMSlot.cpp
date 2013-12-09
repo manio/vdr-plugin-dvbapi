@@ -284,7 +284,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
             vdr_caPMT = NULL;
             vdr_caPMTLen = 0;
           }
-          capmt->ProcessSIDRequest(sCCIAdapter->Adapter(), sid, ca_lm, vdr_caPMT, vdr_caPMTLen);
+          capmt->ProcessSIDRequest(cardIndex, sid, ca_lm, vdr_caPMT, vdr_caPMTLen);
         }
       }
     }

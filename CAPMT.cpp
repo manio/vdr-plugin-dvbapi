@@ -189,6 +189,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     pmtobj pmto;
     pmto.sid = sid;
     pmto.len = vdr_caPMTLen;
+    pmto.adapter = card_index;
     if (vdr_caPMTLen > 0)
     {
       pmto.pilen[0] = vdr_caPMT[4];   //reserved+program_info_length
@@ -251,7 +252,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
       ++it;
       if (it == pmt.end())
         lm |= LIST_LAST;
-      sockets[0] = send(card_index, sid, sockets[0], lm, pmto);
+      sockets[0] = send(pmto->adapter, sid, sockets[0], lm, pmto);
       lm = LIST_MORE;
     }
   }

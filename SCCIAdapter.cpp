@@ -48,8 +48,6 @@ SCCIAdapter::SCCIAdapter(cDevice *Device, int cardIndex, int cafd, bool SoftCSA,
   softcsa = SoftCSA;
   fullts = FullTS;
 
-  UDPSocket::bindx(this);
-
   memset(version, 1, sizeof(version));
   memset(slots, 0, sizeof(slots));
   memset(caids, 0, sizeof(caids));
@@ -309,7 +307,7 @@ bool SCCIAdapter::DeCSASetCaDescr(ca_descr_t *ca_descr)
     DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
     return true;
   }
-  bool ret = decsa->SetDescr(ca_descr, true);
+  bool ret = decsa->SetDescr(ca_descr, false);
   //initialCaDscr = false;
   return ret;
 }

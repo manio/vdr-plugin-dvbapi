@@ -40,32 +40,7 @@ UDPSocket::UDPSocket(SCCIAdapter *sCCIAdapter)
 {
   DEBUGLOG("%s", __FUNCTION__);
   this->sCCIAdapter = sCCIAdapter;
-  struct sockaddr_in socketAddr;
-  memset(&socketAddr, 0, sizeof(sockaddr_in));
-  const struct hostent *const hostaddr = gethostbyname("127.0.0.1");
-  if (hostaddr)
-  {
-    unsigned int port;
-    port = 9000 + sCCIAdapter->Adapter();
-    DEBUGLOG("%s: Adapter %d\n", __FUNCTION__, sCCIAdapter->Adapter());
-    DEBUGLOG("%s: hostaddr port %d", __FUNCTION__, port);
-    socketAddr.sin_family = AF_INET;
-    socketAddr.sin_port = htons(port);
-    socketAddr.sin_addr.s_addr = ((struct in_addr *) hostaddr->h_addr)->s_addr;
-    sock = socket(PF_INET, SOCK_DGRAM, 0);
-    if (sock > 0)
-    {
-      bint = (bind(sock, (struct sockaddr *) &socketAddr, sizeof(socketAddr)) >= 0);
-      if (bint >= 0)
-        DEBUGLOG("%s: bint=%d", __FUNCTION__, bint);
-      else
-        ERRORLOG("%s: bind failed: %s", __FUNCTION__, strerror(errno));
-    }
-    else
-      ERRORLOG("%s: socket failed: %s", __FUNCTION__, strerror(errno));
-  }
-  else
-    ERRORLOG("%s: gethostbyname failed", __FUNCTION__);
+  bint = true;
 }
 
 void UDPSocket::unbind(void)
@@ -81,21 +56,43 @@ void UDPSocket::Action(void)
 
   while (bint)
   {
-    cRead = read(sock, &buff, sizeof(buff));
-    if (cRead <= 0)
-      break;
+    int connfd = capmt ? capmt->sockets[0] : 0;
+    if (connfd == 0)
+    {
+      cCondWait::SleepMs(20);
+      continue;
+    }
+    cRead = recv(connfd, &buff, sizeof(int), MSG_DONTWAIT);
     request = (int *) &buff;
+    if (*request == CA_SET_PID)
+      cRead = recv(connfd, buff+4, sizeof(ca_pid_t), MSG_DONTWAIT);
+    else if (*request == CA_SET_DESCR)
+      cRead = recv(connfd, buff+4, sizeof(ca_descr_t), MSG_DONTWAIT);
+    else
+    {
+      ERRORLOG("%s: read failed unknown command: %s", __FUNCTION__, strerror(errno));
+      cCondWait::SleepMs(20);
+      continue;
+    }
+
+    if (cRead <= 0)
+    {
+      cCondWait::SleepMs(20);
+      continue;
+    }
     if (*request == CA_SET_PID)
     {
       DEBUGLOG("%s: Got CA_SET_PID request", __FUNCTION__);
       memcpy(&ca_pid, &buff[sizeof(int)], sizeof(ca_pid_t));
-      sCCIAdapter->DeCSASetCaPid(&ca_pid);
+      decsa->SetCaPid(&ca_pid);
     }
     else if (*request == CA_SET_DESCR)
     {
       DEBUGLOG("%s: Got CA_SET_DESCR request", __FUNCTION__);
       memcpy(&ca_descr, &buff[sizeof(int)], sizeof(ca_descr_t));
-      sCCIAdapter->DeCSASetCaDescr(&ca_descr);
+      decsa->SetDescr(&ca_descr, false);
     }
+    else
+      DEBUGLOG("%s: unknown request", __FUNCTION__);
   }
 }

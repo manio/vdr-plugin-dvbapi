@@ -41,6 +41,7 @@ struct pmtobj
 {
   int sid;
   int len;
+  int adapter;
   char pilen[2];
   unsigned char* data;
 };
@@ -52,11 +53,11 @@ private:
   bool get_pmt(const int adapter, const int sid, unsigned char *buft);
   int oscam_socket_connect();
   int sids[MAX_SOCKETS];
-  int sockets[MAX_SOCKETS];
   vector<pmtobj> pmt;
   bool initialCaDscr;
 
 public:
+  int sockets[MAX_SOCKETS];
   CAPMT(void);
   ~CAPMT();
   int send(const int adapter, const int sid, int socket_fd, int ca_lm, const pmtobj *pmt);

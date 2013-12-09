@@ -22,6 +22,7 @@
 #include "DVBAPI.h"
 #include "DVBAPISetup.h"
 #include "Log.h"
+#include "UDPSocket.h"
 
 DVBAPI::DVBAPI(void)
 {
@@ -67,6 +68,7 @@ bool DVBAPI::Initialize(void)
   INFOLOG("plugin version %s initializing (VDR %s)", VERSION, VDRVERSION);
   decsa = new DeCSA(0);
   capmt = new CAPMT;
+  UDPSocket::bindx(NULL);
   return cScDevices::Initialize();
 }
 

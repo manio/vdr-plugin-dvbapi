@@ -83,9 +83,9 @@ void DeCSA::ResetState(void)
 
 void DeCSA::SetActive(bool on)
 {
-  if (!on && active)
-    ResetState();
-  active = on;
+//  if (!on && active)
+//    ResetState();
+  active = true;
   DEBUGLOG("%d: set active %s", cardindex, active ? "on" : "off");
 }
 

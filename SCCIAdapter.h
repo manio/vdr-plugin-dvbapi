@@ -23,7 +23,6 @@
 #include "Frame.h"
 #include "CAPMT.h"
 #include "DeCSA.h"
-#include "UDPSocket.h"
 
 class SCCAMSlot;
 

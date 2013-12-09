@@ -103,7 +103,7 @@ uchar *DeCsaTsBuffer::Get(void)
     {
       if (decsa)
       {
-        if (!decsa->Decrypt(p, Count, false))
+        if (!decsa->Decrypt(p, Count, true))
         {
           cCondWait::SleepMs(20);
           return NULL;
