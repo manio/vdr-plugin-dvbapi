@@ -194,12 +194,6 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
 #else
 
 /////// preparing capmt data to send
-  char *caPMT = (char *) malloc(1024);
-  if (!caPMT)
-  {
-    ERRORLOG("Error allocating memory for PMT data, returning");
-    return 0;
-  }
   // http://cvs.tuxbox.org/lists/tuxbox-cvs-0208/msg00434.html
   DEBUGLOG("%s: channelSid=0x%x (%d)", __FUNCTION__, sid, sid);
 
@@ -273,7 +267,6 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
       socket_fd = 0;
     }
   }
-  free(caPMT);
 #endif
   return socket_fd;
 }

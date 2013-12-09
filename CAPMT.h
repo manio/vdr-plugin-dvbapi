@@ -24,10 +24,12 @@
 #include <vdr/thread.h>
 #define DEMUX_BUFFER_SIZE    4096
 #define DEMUX_FILTER_TIMEOUT 2000  // ms
+#define CAPMT_BUFFER_SIZE    1024
 
 class CAPMT
 {
 private:
+  unsigned char caPMT[CAPMT_BUFFER_SIZE];
   bool get_pmt(const int adapter, const int sid, unsigned char *buft);
   int oscam_socket_connect();
 
