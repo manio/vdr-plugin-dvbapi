@@ -21,6 +21,8 @@
 #include "SCCIAdapter.h"
 #include "DeCsaTSBuffer.h"
 
+extern DeCSA *decsa;
+
 class SCDEVICE : public DVBDEVICE
 {
 private:
@@ -182,9 +184,8 @@ bool SCDEVICE::OpenDvr(void)
   fd_dvr = cScDevices::DvbOpen(DEV_DVB_DVR, DVB_DEV_SPEC, O_RDONLY | O_NONBLOCK, true);
   if (fd_dvr >= 0)
   {
-    DeCSA *decsa = sCCIAdapter ? sCCIAdapter->GetDeCSA() : 0;
     tsMutex.Lock();
-    tsBuffer = new DeCsaTsBuffer(fd_dvr, MEGABYTE(DeCsaTsBuffSize), CardIndex() + 1, decsa, ScActive());
+    tsBuffer = new DeCsaTsBuffer(fd_dvr, MEGABYTE(DeCsaTsBuffSize), CardIndex() + 1, sCCIAdapter ? decsa : 0, ScActive());
     tsMutex.Unlock();
   }
   return fd_dvr >= 0;

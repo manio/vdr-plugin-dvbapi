@@ -65,6 +65,8 @@ bool DVBAPI::Initialize(void)
 {
   // Initialize any background activities the plugin shall perform.
   INFOLOG("plugin version %s initializing (VDR %s)", VERSION, VDRVERSION);
+  decsa = new DeCSA(0);
+  capmt = new CAPMT;
   return cScDevices::Initialize();
 }
 

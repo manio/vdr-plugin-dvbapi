@@ -23,9 +23,13 @@
 #include <vdr/plugin.h>
 #include "device.h"
 #include "dll.h"
+#include "CAPMT.h"
+#include "DeCSA.h"
 
 static const char *VERSION        = "1.0.5";
 static const char *DESCRIPTION    = "DVBAPI type SOFTCAM";
+DeCSA *decsa;
+CAPMT *capmt;
 
 extern int DeCsaTsBuffSize;
 

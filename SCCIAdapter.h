@@ -32,6 +32,9 @@ class SCCAMSlot;
 
 #define TDPU_SIZE_INDICATOR 0x80
 
+extern DeCSA *decsa;
+extern CAPMT *capmt;
+
 struct TPDU
 {
   unsigned char slot;
@@ -44,7 +47,6 @@ struct TPDU
 class SCCIAdapter : public cCiAdapter
 {
 private:
-  DeCSA *decsa;
   cDevice *device;
   bool softcsa, fullts;
   unsigned short caids[1024];
@@ -65,7 +67,6 @@ private:
   void OSCamCheck();
 
 public:
-  CAPMT *capmt;
   SCCIAdapter(cDevice *Device, int CardIndex, int cafd, bool SoftCSA, bool FullTS);
   ~SCCIAdapter();
   int Adapter()
@@ -78,10 +79,6 @@ public:
   virtual eModuleStatus ModuleStatus(int Slot);
   virtual bool Assign(cDevice *Device, bool Query = false);
   int GetCaids(int slot, unsigned short *Caids, int max);
-  DeCSA *GetDeCSA()
-  {
-    return decsa;
-  }
   bool DeCSASetCaDescr(ca_descr_t *ca_descr);
   bool DeCSASetCaPid(ca_pid_t *ca_pid);
 };
