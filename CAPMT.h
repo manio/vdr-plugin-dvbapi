@@ -34,7 +34,7 @@ private:
   int oscam_socket_connect();
 
 public:
-  int send(const int adapter, const int sid, int socket_fd, const unsigned char *vdr_caPMT, int vdr_caPMTLen);
+  int send(const int adapter, const int sid, int socket_fd, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen);
 };
 
 #endif // ___CAPMT_H

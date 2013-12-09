@@ -243,6 +243,7 @@ void SCCIAdapter::Write(const unsigned char *buff, int len)
 
 void SCCIAdapter::OSCamCheck()
 {
+  /* temporarily disabled, will be done differently after rework
   for (int i = 0; i < MAX_SOCKETS; i++)
   {
     if (sockets[i] != 0)
@@ -263,7 +264,8 @@ void SCCIAdapter::OSCamCheck()
           sockets[i] = 0;
       }
     }
-  }
+  }*/
+  return;
 }
 
 SCCIAdapter::~SCCIAdapter()
@@ -272,12 +274,14 @@ SCCIAdapter::~SCCIAdapter()
 
   Cancel(3);
 
-  for (int i = 0; i < MAX_SOCKETS; i++)
+  vector<pmtobj>::iterator it;
+  for (it = pmt.begin(); it != pmt.end(); it++)
   {
-    if (sockets[i] > 0)
-      close(sockets[i]);
-    sockets[i] = 0;
+    if (it->data)
+      delete[] it->data;
   }
+  pmt.clear();
+
   ciMutex.Lock();
   delete rb;
   rb = 0;
@@ -317,79 +321,66 @@ void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const un
     lm=3 prg=0: this is sent when changing transponder or during epg scan (also before new channel but ONLY if it is on different transponder)
     lm=3 prg=X: it seems that this is sent when starting vdr with active timers
 */
-  int i;
-
-  //for (i = 0; i < MAX_SOCKETS; i++)
-    //DEBUGLOG("%s: SOCKETS TABLE DUMP [%d]: sid=%d socket=%d", __FUNCTION__, i, sids[i], sockets[i]);
   if (sid == 0)
   {
     DEBUGLOG("%s: got empty SID - returning from function", __FUNCTION__);
     return;
   }
-  if (ca_lm == 0x04 || ca_lm == 0x03)   //adding new sid
-  {
-    int found = 0;
-    for (i = 0; i < MAX_SOCKETS; i++)
-    {
-      if (sids[i] == sid)
-      {
-        found = 1;
-        break;
-      }
-    }
 
-    if (found)
-      DEBUGLOG("%s: found sid, reusing socket, i=%d", __FUNCTION__, i);
-    else                        //not found - adding to first free in table
+  //removind the PMT if exists
+  vector<pmtobj>::iterator it;
+  for (it = pmt.begin(); it != pmt.end(); it++)
+  {
+    if (it->sid == sid)
     {
-      for (i = 0; i < MAX_SOCKETS; i++)
-      {
-        if (sids[i] == 0)
-        {
-          sids[i] = sid;
-          break;
-        }
-      }
-    }
-    if (i == MAX_SOCKETS)
-    {
-      ERRORLOG("%s: no free space for new SID!!!", __FUNCTION__);
-      return;
-    }
-    else
-    {
-      sids[i] = sid;
-      DEBUGLOG("%s: added: i=%d", __FUNCTION__, i);
+      if (it->data)
+        delete[] it->data;
+      pmt.erase(it);
+      break;
     }
   }
-  else if (ca_lm == 0x05)       //removing sid
+  //adding new or updating existing PMT data
+  if (ca_lm == 0x04 || ca_lm == 0x03)
   {
-    for (i = 0; i < MAX_SOCKETS; i++)
+    pmtobj pmto;
+    pmto.sid = sid;
+    pmto.len = vdr_caPMTLen;
+    if (vdr_caPMTLen > 0)
     {
-      if (sids[i] == sid)
-        break;
+      unsigned char *pmt_data = new unsigned char[vdr_caPMTLen];
+      memcpy(pmt_data, vdr_caPMT, vdr_caPMTLen);
+      pmto.data = pmt_data;
     }
-    if (i == MAX_SOCKETS)
-    {
-      ERRORLOG("%s: socket to close not found", __FUNCTION__);
-      return;
-    }
+    else
+      pmto.data = NULL;
 
-    //closing socket (oscam handles this as event and stop decrypting)
-    DEBUGLOG("%s: closing socket i=%d, socket_fd=%d", __FUNCTION__, i, sockets[i]);
-    sids[i] = 0;
-    if (sockets[i] > 0)
-      close(sockets[i]);
-    sockets[i] = 0;
-    return;
+    pmt.push_back(pmto);
+  }
+
+  if (pmt.empty())
+  {
+    if ((sockets[0]) > 0)
+    {
+      close (sockets[0]);
+      sockets[0] = 0;
+    }
   }
   else
   {
-    ERRORLOG("%s: unhandled ca_lm request type = %d", __FUNCTION__, ca_lm);
-    return;
+    //sending complete PMT objects
+    int lm = LIST_FIRST;
+    for (it = pmt.begin(); it != pmt.end();)
+    {
+      int sid = it->sid;
+      int len = it->len;
+      unsigned char* pmt_data = it->data;
+      ++it;
+      if (it == pmt.end())
+        lm |= LIST_LAST;
+      sockets[0] = capmt->send(card_index, sid, sockets[0], lm, pmt_data, len);
+      lm = LIST_MORE;
+    }
   }
-
-  sockets[i] = capmt->send(card_index, sid, sockets[i], vdr_caPMT, vdr_caPMTLen);
   initialCaDscr = true;
 }
 

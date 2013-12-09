@@ -135,9 +135,6 @@ bool CAPMT::get_pmt(const int adapter, const int sid, unsigned char *buft)
   return ret;
 }
 
-//oscam also reads PMT file, but it is much slower
-//#define PMT_FILE
-
 int CAPMT::oscam_socket_connect()
 {
   int socket_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
@@ -155,7 +152,10 @@ int CAPMT::oscam_socket_connect()
   return socket_fd;
 }
 
-int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned char *vdr_caPMT, int vdr_caPMTLen)
+//oscam also reads PMT file, but it is much slower
+//#define PMT_FILE
+
+int CAPMT::send(const int adapter, const int sid, int socket_fd, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen)
 {
 #ifdef PMT_FILE
   unlink("/tmp/pmt.tmp");
@@ -203,7 +203,7 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, const unsigned 
   caPMT[2] = 0x32;
   caPMT[3] = 0x82;              //2 following bytes for size
 
-  caPMT[6] = 0x03;              //list management = 3
+  caPMT[6] = ca_lm;             //list management
   caPMT[7] = sid >> 8;          //program_number
   caPMT[8] = sid & 0xff;        //program_number
   caPMT[9] = 0;                 //version_number, current_next_indicator

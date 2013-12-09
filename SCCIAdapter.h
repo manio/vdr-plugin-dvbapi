@@ -24,8 +24,25 @@
 #include "CAPMT.h"
 #include "DeCSA.h"
 #include "UDPSocket.h"
+#include <vector>
+
+using namespace std;
+
+struct pmtobj
+{
+  int sid;
+  int len;
+  unsigned char* data;
+};
 
 class SCCAMSlot;
+
+#define LIST_MORE           0x00
+#define LIST_FIRST          0x01
+#define LIST_LAST           0x02
+#define LIST_ONLY           0x03
+#define LIST_ADD            0x04
+#define LIST_UPDATE         0x05
 
 #define MAX_CI_SLOTS        8
 #define MAX_SPLIT_SID       16
@@ -46,6 +63,7 @@ class SCCIAdapter : public cCiAdapter
 private:
   DeCSA *decsa;
   CAPMT *capmt;
+  vector<pmtobj> pmt;
   cDevice *device;
   bool softcsa, fullts;
   bool initialCaDscr;
