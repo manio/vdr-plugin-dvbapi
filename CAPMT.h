@@ -41,6 +41,7 @@ struct pmtobj
 {
   int sid;
   int len;
+  char pilen[2];
   unsigned char* data;
 };
 
@@ -58,7 +59,7 @@ private:
 public:
   CAPMT(void);
   ~CAPMT();
-  int send(const int adapter, const int sid, int socket_fd, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen);
+  int send(const int adapter, const int sid, int socket_fd, int ca_lm, const pmtobj *pmt);
   void ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen);
 };
 

@@ -164,6 +164,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     lm=3 prg=0: this is sent when changing transponder or during epg scan (also before new channel but ONLY if it is on different transponder)
     lm=3 prg=X: it seems that this is sent when starting vdr with active timers
 */
+  int length, offset = 0;
   if (sid == 0)
   {
     DEBUGLOG("%s: got empty SID - returning from function", __FUNCTION__);
@@ -190,12 +191,43 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     pmto.len = vdr_caPMTLen;
     if (vdr_caPMTLen > 0)
     {
-      unsigned char *pmt_data = new unsigned char[vdr_caPMTLen];
-      memcpy(pmt_data, vdr_caPMT, vdr_caPMTLen);
+      pmto.pilen[0] = vdr_caPMT[4];   //reserved+program_info_length
+      pmto.pilen[1] = vdr_caPMT[5];   //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
+
+      //obtaining program_info_length
+      int ilen = (vdr_caPMT[4] << 8) + vdr_caPMT[5];
+      //checking if we need to start copying 1 byte further and omit ca_pmt_cmd_id which we already have
+      if (ilen > 0)
+      {
+        offset = 1;
+        pmto.pilen[1] -= 1;           //-1 for ca_pmt_cmd_id which we have counted
+      }
+
+      length = vdr_caPMTLen;      //ca_pmt data length
+      pmto.len = length - 6 - offset;
+      unsigned char *pmt_data = new unsigned char[pmto.len];
+      memcpy(pmt_data, vdr_caPMT + 6 + offset, pmto.len);    //copy ca_pmt data from vdr
       pmto.data = pmt_data;
     }
     else
-      pmto.data = NULL;
+    {
+      static unsigned char buffer[DEMUX_BUFFER_SIZE];
+      //obtain PMT data only if we don't have caDescriptors
+      if (!get_pmt(card_index, sid, buffer))
+      {
+        ERRORLOG("Error obtaining PMT data, returning");
+        return;
+      }
+
+      pmto.pilen[0] = buffer[10];     //reserved+program_info_length
+      pmto.pilen[1] = buffer[11];     //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
+
+      length = ((buffer[1] & 0xf) << 8) + buffer[2] + 3;  //section_length (including 4 byte CRC)
+      pmto.len = length - 12 - 4;
+      unsigned char *pmt_data = new unsigned char[pmto.len];
+      memcpy(pmt_data, buffer + 12, pmto.len);    //copy ca_pmt data from vdr
+      pmto.data = pmt_data;
+    }
 
     pmt.push_back(pmto);
   }
@@ -215,12 +247,11 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     for (it = pmt.begin(); it != pmt.end();)
     {
       int sid = it->sid;
-      int len = it->len;
-      unsigned char* pmt_data = it->data;
+      pmtobj *pmto = &*it;
       ++it;
       if (it == pmt.end())
         lm |= LIST_LAST;
-      sockets[0] = send(card_index, sid, sockets[0], lm, pmt_data, len);
+      sockets[0] = send(card_index, sid, sockets[0], lm, pmto);
       lm = LIST_MORE;
     }
   }
@@ -247,16 +278,14 @@ int CAPMT::oscam_socket_connect()
 //oscam also reads PMT file, but it is much slower
 //#define PMT_FILE
 
-int CAPMT::send(const int adapter, const int sid, int socket_fd, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen)
+int CAPMT::send(const int adapter, const int sid, int socket_fd, int ca_lm, const pmtobj *pmt)
 {
 #ifdef PMT_FILE
   unlink("/tmp/pmt.tmp");
 #endif
   int length, length_field;
-  int offset = 0;
   int toWrite;
   //FILE *fout;
-  unsigned char buffer[DEMUX_BUFFER_SIZE];
 
   //try to reconnect to oscam if there is no connection
   if (socket_fd == -1)
@@ -264,16 +293,6 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, int ca_lm, cons
     socket_fd = oscam_socket_connect();
     if (socket_fd == -1)
       return socket_fd;
-  }
-
-  //obtain PMT data only if we don't have caDescriptors
-  if (!vdr_caPMT)
-  {
-    if (!get_pmt(adapter, sid, buffer))
-    {
-      ERRORLOG("Error obtaining PMT data, returning");
-      return 0;
-    }
   }
 
 #ifdef PMT_FILE
@@ -307,35 +326,11 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, int ca_lm, cons
   caPMT[15] = 0x00;             //demux id
   caPMT[16] = (char) adapter;   //adapter id
 
-  if (vdr_caPMT)                //adding CA_PMT from vdr
-  {
-    caPMT[10] = vdr_caPMT[4];   //reserved+program_info_length
-    caPMT[11] = vdr_caPMT[5] + 1 + 4;   //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
-
-    //obtaining program_info_length
-    int ilen = (vdr_caPMT[4] << 8) + vdr_caPMT[5];
-    //checking if we need to start copying 1 byte further and omit ca_pmt_cmd_id which we already have
-    if (ilen > 0)
-    {
-      offset = 1;
-      caPMT[11] -= 1;           //-1 for ca_pmt_cmd_id which we have counted
-    }
-
-    length = vdr_caPMTLen;      //ca_pmt data length
-    memcpy(caPMT + 17, vdr_caPMT + 6 + offset, length - 6 - offset);    //copy ca_pmt data from vdr
-
-    length_field = 17 + (length - 6 - offset) - 6;      //-6 = 3 bytes for AOT_CA_PMT and 3 for size
-  }
-  else                          //adding full PMT data obtained from demux
-  {
-    caPMT[10] = buffer[10];     //reserved+program_info_length
-    caPMT[11] = buffer[11] + 1 + 4;     //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
-
-    length = ((buffer[1] & 0xf) << 8) + buffer[2] + 3;  //section_length (including 4 byte CRC)
-    memcpy(caPMT + 17, buffer + 12, length - 12 - 4);   //copy PMT data without (-12 bytes for header, -4 byte for CRC_32)
-
-    length_field = 17 + (length - 12 - 4) - 6;  //-6 = 3 bytes for AOT_CA_PMT and 3 for size
-  }
+  //adding CA_PMT from vdr
+  caPMT[10] = pmt->pilen[0];                  //reserved+program_info_length
+  caPMT[11] = pmt->pilen[1] + 1 + 4;          //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
+  memcpy(caPMT + 17, pmt->data, pmt->len);    //copy ca_pmt data from vdr
+  length_field = 17 + pmt->len - 6;           //-6 = 3 bytes for AOT_CA_PMT and 3 for size
 
   //calculating length_field()
   caPMT[4] = length_field >> 8;
@@ -351,7 +346,7 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, int ca_lm, cons
   if (socket_fd > 0)
   {
     int wrote = write(socket_fd, caPMT, toWrite);
-    DEBUGLOG("socket_fd=%d length=%d toWrite=%d wrote=%d", socket_fd, length, toWrite, wrote);
+    DEBUGLOG("socket_fd=%d toWrite=%d wrote=%d", socket_fd, toWrite, wrote);
     if (wrote != toWrite)
     {
       ERRORLOG("%s: wrote != toWrite", __FUNCTION__);
