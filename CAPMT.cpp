@@ -276,17 +276,10 @@ int CAPMT::oscam_socket_connect()
   return socket_fd;
 }
 
-//oscam also reads PMT file, but it is much slower
-//#define PMT_FILE
-
 int CAPMT::send(const int adapter, const int sid, int socket_fd, int ca_lm, const pmtobj *pmt)
 {
-#ifdef PMT_FILE
-  unlink("/tmp/pmt.tmp");
-#endif
-  int length, length_field;
+  int length_field;
   int toWrite;
-  //FILE *fout;
 
   //try to reconnect to oscam if there is no connection
   if (socket_fd == -1)
@@ -295,15 +288,6 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, int ca_lm, cons
     if (socket_fd == -1)
       return socket_fd;
   }
-
-#ifdef PMT_FILE
-  FILE *fout = fopen("/tmp/pmt.tmp", "wt");
-  for (k = 0; k < length; k++)
-  {
-    putc(buffer[k + 1], fout);
-  }
-  fclose(fout);
-#else
 
 /////// preparing capmt data to send
   // http://cvs.tuxbox.org/lists/tuxbox-cvs-0208/msg00434.html
@@ -340,7 +324,6 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, int ca_lm, cons
   //number of bytes in packet to send (adding 3 bytes of ca_pmt_tag and 3 bytes of length_field)
   toWrite = length_field + 6;
 
-
 /////// sending data
   if (socket_fd == 0)
     socket_fd = oscam_socket_connect();
@@ -355,6 +338,5 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, int ca_lm, cons
       socket_fd = 0;
     }
   }
-#endif
   return socket_fd;
 }
