@@ -126,6 +126,13 @@ int SCCAMSlot::GetLength(const unsigned char *&data)
   return len;
 }
 
+uchar *SCCAMSlot::Decrypt(uchar *Data, int &Count)
+{
+  decsa->Decrypt(Data, Count, true);
+  Count = TS_SIZE;
+  return Data;
+}
+
 int SCCAMSlot::LengthSize(int n)
 {
   return n < TDPU_SIZE_INDICATOR ? 1 : 3;

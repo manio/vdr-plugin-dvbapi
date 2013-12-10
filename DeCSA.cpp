@@ -262,7 +262,7 @@ bool DeCSA::Decrypt(unsigned char *data, int len, bool force)
             if (!(flags[idx] & FL_EVEN_GOOD))
               doWait = true;
           }
-          if (doWait)
+          /*if (doWait)
           {
             if (flags[idx] & FL_ACTIVITY)
             {
@@ -272,7 +272,7 @@ bool DeCSA::Decrypt(unsigned char *data, int len, bool force)
               else
                 DEBUGLOG("%d.%d: timed out. proceeding anyways", cardindex, idx);
             }
-          }
+          }*/
         }
 #ifndef LIBDVBCSA
         if (newRange)

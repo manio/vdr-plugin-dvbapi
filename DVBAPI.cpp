@@ -23,16 +23,14 @@
 #include "DVBAPISetup.h"
 #include "Log.h"
 #include "UDPSocket.h"
+#include "SCCIAdapter.h"
 
 DVBAPI::DVBAPI(void)
 {
-  dlls.Load();
-  cScDevices::OnPluginLoad();
 }
 
 DVBAPI::~DVBAPI()
 {
-  cScDevices::OnPluginUnload();
 }
 
 const char *DVBAPI::CommandLineHelp(void)
@@ -69,19 +67,27 @@ bool DVBAPI::Initialize(void)
   decsa = new DeCSA(0);
   capmt = new CAPMT;
   UDPSocket::bindx(NULL);
-  return cScDevices::Initialize();
+
+  SCCIAdapter *sCCIAdapter = NULL;
+  for (int i = 0; i < cDevice::NumDevices(); i++)
+  {
+    if (const cDevice *Device = cDevice::GetDevice(i))
+    {
+      INFOLOG("Creating sCCIAdapter for device %d", Device->CardIndex());
+      sCCIAdapter = new SCCIAdapter(NULL, Device->CardIndex(), 0, true, true);
+    }
+  }
+  return true;
 }
 
 bool DVBAPI::Start(void)
 {
-  cScDevices::Startup();
   INFOLOG("plugin started");
   return true;
 }
 
 void DVBAPI::Stop(void)
 {
-  cScDevices::Shutdown();
   INFOLOG("plugin stopped");
 }
 

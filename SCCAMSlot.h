@@ -60,6 +60,7 @@ public:
   {
     return &frame;
   }
+  uchar *Decrypt(uchar *Data, int &Count);
 };
 
 #endif // ___SCCAMSLOT_H
