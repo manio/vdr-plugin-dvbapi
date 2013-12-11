@@ -32,7 +32,6 @@ bool CheckNull(const unsigned char *data, int len)
 }
 
 DeCSA::DeCSA(int CardIndex)
- : stall(MAX_STALL_MS)
 {
   cardindex = CardIndex;
 #ifndef LIBDVBCSA
@@ -74,8 +73,6 @@ DeCSA::~DeCSA()
 void DeCSA::ResetState(void)
 {
   DEBUGLOG("%d: reset state", cardindex);
-  memset(even_odd, 0, sizeof(even_odd));
-  memset(flags, 0, sizeof(flags));
 #ifndef LIBDVBCSA
   lastData = 0;
 #endif
@@ -111,19 +108,6 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
   int idx = ca_descr->index;
   if (idx < MAX_CSA_IDX && GetKeyStruct(idx))
   {
-    if (!initial && active && ca_descr->parity == (even_odd[idx] & 0x40) >> 6)
-    {
-      if (flags[idx] & (ca_descr->parity ? FL_ODD_GOOD : FL_EVEN_GOOD))
-      {
-        DEBUGLOG("%d.%d: %s key in use (%d ms)", cardindex, idx, ca_descr->parity ? "odd" : "even", MAX_REL_WAIT);
-        if (wait.TimedWait(mutex, MAX_REL_WAIT))
-          DEBUGLOG("%d.%d: successfully waited for release", cardindex, idx);
-        else
-          ERRORLOG("%d.%d: timed out. setting anyways", cardindex, idx);
-      }
-      else
-        DEBUGLOG("%d.%d: late key set...", cardindex, idx);
-    }
     DEBUGLOG("%d.%d: %4s key set", cardindex, idx, ca_descr->parity ? "odd" : "even");
     if (ca_descr->parity == 0)
     {
@@ -132,11 +116,6 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
 #else
       dvbcsa_bs_key_set(ca_descr->cw, cs_key_even[idx]);
 #endif
-      if (!CheckNull(ca_descr->cw, 8))
-        flags[idx] |= FL_EVEN_GOOD | FL_ACTIVITY;
-      else
-        DEBUGLOG("%d.%d: zero even CW", cardindex, idx);
-      wait.Broadcast();
     }
     else
     {
@@ -145,11 +124,6 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
 #else
       dvbcsa_bs_key_set(ca_descr->cw, cs_key_odd[idx]);
 #endif
-      if (!CheckNull(ca_descr->cw, 8))
-        flags[idx] |= FL_ODD_GOOD | FL_ACTIVITY;
-      else
-        DEBUGLOG("%d.%d: zero odd CW", cardindex, idx);
-      wait.Broadcast();
     }
   }
   return true;
@@ -225,10 +199,6 @@ bool DeCSA::Decrypt(unsigned char *data, int len, bool force)
   {
     if (data[l] != TS_SYNC_BYTE)
     {                           // let higher level cope with that
-#ifndef LIBDVBCSA
-      if (ccs)
-        force = true;           // prevent buffer stall
-#endif
       break;
     }
     unsigned int ev_od = data[l + 3] & 0xC0;
@@ -245,35 +215,6 @@ bool DeCSA::Decrypt(unsigned char *data, int len, bool force)
         data[l + 3] &= 0x3f;    // consider it decrypted now
 #endif
         currIdx = idx;
-        if (ccs == 0 && ev_od != even_odd[idx])
-        {
-          even_odd[idx] = ev_od;
-          wait.Broadcast();
-          bool doWait = false;
-          if (ev_od & 0x40)
-          {
-            flags[idx] &= ~FL_EVEN_GOOD;
-            if (!(flags[idx] & FL_ODD_GOOD))
-              doWait = true;
-          }
-          else
-          {
-            flags[idx] &= ~FL_ODD_GOOD;
-            if (!(flags[idx] & FL_EVEN_GOOD))
-              doWait = true;
-          }
-          /*if (doWait)
-          {
-            if (flags[idx] & FL_ACTIVITY)
-            {
-              flags[idx] &= ~FL_ACTIVITY;
-              if (wait.TimedWait(mutex, MAX_KEY_WAIT))
-                DEBUGLOG("%d.%d: successfully waited for key", cardindex, idx);
-              else
-                DEBUGLOG("%d.%d: timed out. proceeding anyways", cardindex, idx);
-            }
-          }*/
-        }
 #ifndef LIBDVBCSA
         if (newRange)
         {
@@ -311,22 +252,6 @@ bool DeCSA::Decrypt(unsigned char *data, int len, bool force)
     }
   }
 #ifndef LIBDVBCSA
-  int scanTS = l / TS_SIZE;
-  int stallP = ccs * 100 / scanTS;
-
-  if (r >= 0 && ccs < cs && !force)
-  {
-    if (lastData == data && stall.TimedOut())
-    {
-      force = true;
-    }
-    else if (stallP <= 10 && scanTS >= cs)
-    {
-      force = true;
-    }
-  }
-  lastData = data;
-
   if (r >= 0)
   {                             // we have some range
     if (ccs >= cs || force)
@@ -335,10 +260,7 @@ bool DeCSA::Decrypt(unsigned char *data, int len, bool force)
       {
         int n = decrypt_packets(keys[currIdx], range);
         if (n > 0)
-        {
-          stall.Set(MAX_STALL_MS);
           return true;
-        }
       }
     }
   }
@@ -357,8 +279,6 @@ bool DeCSA::Decrypt(unsigned char *data, int len, bool force)
       dvbcsa_bs_decrypt(cs_key_odd[currIdx], cs_tsbbatch_odd, 184);
       cs_fill_odd = 0;
     }
-
-    stall.Set(MAX_STALL_MS);
     return true;
   }
 #endif

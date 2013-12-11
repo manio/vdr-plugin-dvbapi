@@ -54,10 +54,7 @@ private:
   struct dvbcsa_bs_key_s *cs_key_odd[MAX_CSA_IDX];
 #endif
   unsigned char pidmap[MAX_CSA_PIDS];
-  unsigned int even_odd[MAX_CSA_IDX], flags[MAX_CSA_IDX];
   cMutex mutex;
-  cCondVar wait;
-  cTimeMs stall;
   bool active;
   int cardindex;
   bool GetKeyStruct(int idx);
