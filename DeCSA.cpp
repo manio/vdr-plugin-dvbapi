@@ -129,12 +129,13 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
   return true;
 }
 
-bool DeCSA::SetCaPid(ca_pid_t *ca_pid)
+bool DeCSA::SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid)
 {
   cMutexLock lock(&mutex);
-  if (ca_pid->index < MAX_CSA_IDX && ca_pid->pid < MAX_CSA_PIDS)
+  if (ca_pid->index < MAX_CSA_IDX && ca_pid->pid < MAX_CSA_PIDS &&
+      adapter_index-1 < MAX_ADAPTERS)
   {
-    pidmap[ca_pid->pid] = ca_pid->index;
+    pidmap[adapter_index-1][ca_pid->pid] = ca_pid->index;
     DEBUGLOG("%d.%d: set pid %04x", cardindex, ca_pid->index, ca_pid->pid);
   }
   return true;
@@ -170,7 +171,7 @@ unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet)
 }
 #endif
 
-bool DeCSA::Decrypt(unsigned char *data, int len, bool force)
+bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool force)
 {
   cMutexLock lock(&mutex);
 #ifndef LIBDVBCSA
@@ -208,7 +209,7 @@ bool DeCSA::Decrypt(unsigned char *data, int len, bool force)
       offset = ts_packet_get_payload_offset(data + l);
       payload_len = TS_SIZE - offset;
 #endif
-      int idx = pidmap[((data[l + 1] << 8) + data[l + 2]) & (MAX_CSA_PIDS - 1)];
+      int idx = pidmap[adapter_index-1][((data[l + 1] << 8) + data[l + 2]) & (MAX_CSA_PIDS - 1)];
       if (currIdx < 0 || idx == currIdx)
       {                         // same or no index
 #ifdef LIBDVBCSA

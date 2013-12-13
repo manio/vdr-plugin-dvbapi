@@ -128,7 +128,7 @@ int SCCAMSlot::GetLength(const unsigned char *&data)
 
 uchar *SCCAMSlot::Decrypt(uchar *Data, int &Count)
 {
-  decsa->Decrypt(Data, Count, true);
+  decsa->Decrypt(cardIndex, Data, Count, true);
   Count = TS_SIZE;
   return Data;
 }

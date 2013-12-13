@@ -53,6 +53,7 @@ void UDPSocket::Action(void)
   DEBUGLOG("%s", __FUNCTION__);
   unsigned char buff[sizeof(int) + sizeof(ca_descr_t)];
   int cRead, *request;
+  uint8_t adapter_index;
 
   while (bint)
   {
@@ -62,6 +63,15 @@ void UDPSocket::Action(void)
       cCondWait::SleepMs(20);
       continue;
     }
+
+    // first byte -> adapter_index
+    cRead = recv(connfd, &adapter_index, 1, MSG_DONTWAIT);
+    if (cRead <= 0)
+    {
+      cCondWait::SleepMs(20);
+      continue;
+    }
+    // request
     cRead = recv(connfd, &buff, sizeof(int), MSG_DONTWAIT);
     request = (int *) &buff;
     if (*request == CA_SET_PID)
@@ -82,13 +92,13 @@ void UDPSocket::Action(void)
     }
     if (*request == CA_SET_PID)
     {
-      DEBUGLOG("%s: Got CA_SET_PID request", __FUNCTION__);
+      DEBUGLOG("%s: Got CA_SET_PID request, adapter_index=%d", __FUNCTION__, adapter_index);
       memcpy(&ca_pid, &buff[sizeof(int)], sizeof(ca_pid_t));
-      decsa->SetCaPid(&ca_pid);
+      decsa->SetCaPid(adapter_index, &ca_pid);
     }
     else if (*request == CA_SET_DESCR)
     {
-      DEBUGLOG("%s: Got CA_SET_DESCR request", __FUNCTION__);
+      DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d", __FUNCTION__, adapter_index);
       memcpy(&ca_descr, &buff[sizeof(int)], sizeof(ca_descr_t));
       decsa->SetDescr(&ca_descr, false);
     }
