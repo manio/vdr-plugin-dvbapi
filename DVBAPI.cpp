@@ -35,28 +35,11 @@ DVBAPI::~DVBAPI()
 
 const char *DVBAPI::CommandLineHelp(void)
 {
-  return ("  -B N,     --budget=N     forces DVB device N to budget mode (using FFdecsa)\n");
+  return "";
 }
 
 bool DVBAPI::ProcessArgs(int argc, char *argv[])
 {
-  static struct option long_options[] = {
-      { "budget",      required_argument, NULL, 'B' },
-      { NULL }
-    };
-
-  int c, option_index = 0;
-  while ((c = getopt_long(argc, argv, "B:", long_options, &option_index)) != -1)
-  {
-    switch (c)
-    {
-      case 'B':
-        cScDevices::SetForceBudget(atoi(optarg));
-        break;
-      default:
-        return false;
-    }
-  }
   return true;
 }
 
@@ -125,8 +108,6 @@ bool DVBAPI::SetupParse(const char *Name, const char *Value)
   // Parse your own setup parameters and store their values.
   if (!strcasecmp(Name, CONFNAME_LOGLEVEL))
     LogLevel = atoi(Value);
-  else if (!strcasecmp(Name, CONFNAME_DECSABUFSIZE))
-    DeCsaTsBuffSize = atoi(Value);
   else
     return false;
   return true;

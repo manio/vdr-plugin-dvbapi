@@ -21,8 +21,6 @@
 
 #include <getopt.h>
 #include <vdr/plugin.h>
-#include "device.h"
-#include "dll.h"
 #include "CAPMT.h"
 #include "DeCSA.h"
 
@@ -31,13 +29,8 @@ static const char *DESCRIPTION    = "DVBAPI type SOFTCAM";
 DeCSA *decsa = NULL;
 CAPMT *capmt = NULL;
 
-extern int DeCsaTsBuffSize;
-
 class DVBAPI : public cPlugin
 {
-private:
-  cScDlls dlls;
-
 public:
   DVBAPI(void);
   virtual ~DVBAPI();

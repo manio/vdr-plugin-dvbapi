@@ -78,8 +78,6 @@ public:
   virtual eModuleStatus ModuleStatus(int Slot);
   virtual bool Assign(cDevice *Device, bool Query = false);
   int GetCaids(int slot, unsigned short *Caids, int max);
-  bool DeCSASetCaDescr(ca_descr_t *ca_descr);
-  bool DeCSASetCaPid(ca_pid_t *ca_pid);
 };
 
 #endif // ___SCCIADAPTER_H

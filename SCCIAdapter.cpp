@@ -293,37 +293,3 @@ bool SCCIAdapter::Assign(cDevice *Device, bool Query)
 {
   return Device ? (Device->CardIndex() == cardIndex) : true;
 }
-
-bool SCCIAdapter::DeCSASetCaDescr(ca_descr_t *ca_descr)
-{
-  DEBUGLOG("%s: index=%d", __FUNCTION__, ca_descr->index);
-  if (!softcsa || (fullts && ca_descr->index == 0))
-  {
-    cMutexLock lock(&cafdMutex);
-    return ioctl(fd_ca, CA_SET_DESCR, ca_descr) >= 0;
-  }
-  if (ca_descr->index == (unsigned) -1)
-  {
-    DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
-    return true;
-  }
-  bool ret = decsa->SetDescr(ca_descr, false);
-  //initialCaDscr = false;
-  return ret;
-}
-
-bool SCCIAdapter::DeCSASetCaPid(ca_pid_t *ca_pid)
-{
-  DEBUGLOG("%s: PID=%d, index=%d", __FUNCTION__, ca_pid->pid, ca_pid->index);
-  if (!softcsa || (fullts && ca_pid->index == 0))
-  {
-    cMutexLock lock(&cafdMutex);
-    return ioctl(fd_ca, CA_SET_PID, ca_pid) >= 0;
-  }
-  if (ca_pid->index == -1)
-  {
-    DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
-    return true;
-  }
-  return decsa->SetCaPid(ca_pid);
-}

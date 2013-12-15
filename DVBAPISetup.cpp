@@ -19,14 +19,11 @@
 #include "DVBAPISetup.h"
 
 int LogLevel = 2;
-int DeCsaTsBuffSize = 4;
 
 cMenuSetupDVBAPI::cMenuSetupDVBAPI(void)
 {
   newLogLevel = LogLevel;
-  newDeCsaTsBuffSize = DeCsaTsBuffSize;
   Add(new cMenuEditIntItem( tr("Log level (0-3)"), &newLogLevel));
-  Add(new cMenuEditIntItem( tr("TS buffer size MB (4-32)"), &newDeCsaTsBuffSize));
 }
 
 void cMenuSetupDVBAPI::Store(void)
@@ -34,10 +31,4 @@ void cMenuSetupDVBAPI::Store(void)
   if (newLogLevel > 3)
     newLogLevel = 3;
   SetupStore(CONFNAME_LOGLEVEL, LogLevel = newLogLevel);
-
-  if (newDeCsaTsBuffSize < 4)
-    newDeCsaTsBuffSize = 4;
-  if (newDeCsaTsBuffSize > 32)
-    newDeCsaTsBuffSize = 32;
-  SetupStore(CONFNAME_DECSABUFSIZE, DeCsaTsBuffSize = newDeCsaTsBuffSize);
 }
