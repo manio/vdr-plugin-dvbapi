@@ -56,7 +56,7 @@ public:
   bool Check(void);
   void Process(const unsigned char *data, int len);
   eModuleStatus Status(void);
-  bool Reset(bool log = true);
+  bool ResetSlot(bool log = true);
   Frame *getFrame(void)
   {
     return &frame;

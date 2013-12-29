@@ -51,7 +51,7 @@ SCCAMSlot::SCCAMSlot(SCCIAdapter *sCCIAdapter, int cardIndex, int slot)
   doReply = false;
   lastStatus = msReset;
   frame.SetRb(&rb);
-  Reset(false);
+  ResetSlot(false);
 }
 
 eModuleStatus SCCAMSlot::Status(void)
@@ -79,7 +79,7 @@ eModuleStatus SCCAMSlot::Status(void)
   return status;
 }
 
-bool SCCAMSlot::Reset(bool log)
+bool SCCAMSlot::ResetSlot(bool log)
 {
   DEBUGLOG("%s: log=%i", __FUNCTION__, log);
   reset = true;
@@ -98,7 +98,7 @@ bool SCCAMSlot::Check(void)
   if (dr != doReply && !IsDecrypting())
   {
     INFOLOG("%d.%d: doReply changed, reset triggered", cardIndex, slot);
-    Reset(false);
+    ResetSlot(false);
     doReply = dr;
   }
   if (checkTimer.TimedOut())
