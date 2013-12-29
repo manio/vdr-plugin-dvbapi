@@ -24,7 +24,6 @@
 #include <dlfcn.h>
 
 #include <linux/dvb/ca.h>
-#include <vdr/channels.h>
 #include <vdr/ci.h>
 #include <vdr/dvbdevice.h>
 #include <vdr/dvbci.h>
@@ -47,7 +46,6 @@ SCCAMSlot::SCCAMSlot(SCCIAdapter *sCCIAdapter, int cardIndex, int slot)
   this->cardIndex = cardIndex;
   this->slot = slot;
   version = 0;
-  caids[0] = 0;
   doReply = false;
   lastStatus = msReset;
   frame.SetRb(&rb);
@@ -63,7 +61,7 @@ eModuleStatus SCCAMSlot::Status(void)
     if (resetTimer.TimedOut())
       reset = false;
   }
-  else if (caids[0])
+  else if (version)
     status = msReady;
   else
   {
@@ -103,15 +101,21 @@ bool SCCAMSlot::Check(void)
   }
   if (checkTimer.TimedOut())
   {
-    if (version != sCCIAdapter->GetCaids(slot, 0, 0))
+    if (version != sCCIAdapter->GetVersion())
     {
-      version = sCCIAdapter->GetCaids(slot, caids, MAX_CI_SLOT_CAIDS);
+      version = sCCIAdapter->GetVersion();
       INFOLOG("%d.%d: now using CAIDs version %d", cardIndex, slot, version);
       res = true;
     }
     checkTimer.Set(SLOT_CAID_CHECK);
   }
   return res;
+}
+
+bool SCCAMSlot::ProvidesCa(const int *CaSystemIds)
+{
+  //assume OSCam is able to decrypt this CAID
+  return true;
 }
 
 int SCCAMSlot::GetLength(const unsigned char *&data)
@@ -152,9 +156,7 @@ void SCCAMSlot::SetSize(int n, unsigned char *&p)
 
 void SCCAMSlot::CaInfo(int tcid, int cid)
 {
-  int cn = 0;
-  for (int i = 0; caids[i]; i++)
-    cn += 2;
+  int cn = 2;
   int n = cn + 8 + LengthSize(cn);
   unsigned char *p;
   if (!(p = frame.GetBuff(n + 1 + LengthSize(n))))
@@ -170,11 +172,9 @@ void SCCAMSlot::CaInfo(int tcid, int cid)
   *p++ = 0x80;
   *p++ = (unsigned char) AOT_CA_INFO;
   SetSize(cn, p);
-  for (int i = 0; caids[i]; i++)
-  {
-    *p++ = caids[i] >> 8;
-    *p++ = caids[i] & 0xff;
-  }
+  //pass a 'wildcard' CAID to vdr
+  *p++ = 0xff;
+  *p++ = 0xff;
   frame.Put();
   INFOLOG("%s: %i.%i sending CA info", __FUNCTION__, cardIndex, slot);
 }

@@ -24,7 +24,6 @@
 #include <dlfcn.h>
 
 #include <linux/dvb/ca.h>
-#include <vdr/channels.h>
 #include <vdr/ci.h>
 #include <vdr/dvbdevice.h>
 #include <vdr/dvbci.h>
@@ -48,79 +47,18 @@ SCCIAdapter::SCCIAdapter(cDevice *Device, int cardIndex, int cafd, bool SoftCSA,
   softcsa = SoftCSA;
   fullts = FullTS;
 
-  memset(version, 1, sizeof(version));
+  version = 1;
   memset(slots, 0, sizeof(slots));
-  memset(caids, 0, sizeof(caids));
-  caidsLength = 0;
-  Channels.Lock(false);
-  for (cChannel *channel = Channels.First(); channel; channel = Channels.Next(channel))
-  {
-    if (!channel->GroupSep() && channel->Ca() >= CA_ENCRYPTED_MIN)
-    {
-      for (const int *ids = channel->Caids(); *ids; ids++)
-        addCaid(0, caidsLength, (unsigned short) *ids);
-    }
-  }
-  Channels.Unlock();
+
   rb = new cRingBufferLinear(KILOBYTE(8), 6 + LEN_OFF, false, "SC-CI adapter read");
   if (rb)
   {
     rb->SetTimeouts(0, CAM_READ_TIMEOUT);
     frame.SetRb(rb);
   }
-  INFOLOG("%s: built caid table with %i caids for %i channels", __FUNCTION__, caidsLength, Channels.Count());
   SetDescription("SC-CI adapter on device %d", cardIndex);
-  for (int i = 0; i < MAX_CI_SLOTS && i * MAX_CI_SLOT_CAIDS < caidsLength; i++)
-    slots[i] = new SCCAMSlot(this, cardIndex, i);
+  slots[0] = new SCCAMSlot(this, cardIndex, 0);
   Start();
-}
-
-int SCCIAdapter::addCaid(int offset, int limit, unsigned short caid)
-{
-  if ((caids[offset] == caid))
-    return offset;
-  if ((limit == 0) || (caidsLength == 0))
-  {
-    if ((caid > caids[offset]) && (offset < caidsLength))
-      offset++;
-    if (offset < caidsLength)
-      memmove(&caids[offset + 1], &caids[offset], (caidsLength - offset) * sizeof(int));
-    caidsLength++;
-    caids[offset] = caid;
-    return offset;
-  }
-  if (caid > caids[offset])
-  {
-    offset = offset + limit;
-    if (offset > caidsLength)
-      offset = caidsLength;
-  }
-  else if (caid < caids[offset])
-  {
-    offset = offset - limit;
-    if (offset < 0)
-      offset = 0;
-  }
-  if (limit == 1)
-    limit = 0;
-  else
-    limit = ceil(((float) limit) / 2.0f);
-  if (offset + limit > caidsLength)
-    offset = caidsLength - limit;
-  return addCaid(offset, limit, caid);
-}
-
-int SCCIAdapter::GetCaids(int slot, unsigned short *Caids, int max)
-{
-  cMutexLock lock(&ciMutex);
-  if (Caids)
-  {
-    int i;
-    for (i = 0; i < MAX_CI_SLOT_CAIDS && i < max && slot * MAX_CI_SLOT_CAIDS + i < caidsLength && caids[slot * MAX_CI_SLOT_CAIDS + i]; i++)
-      Caids[i] = caids[slot * MAX_CI_SLOT_CAIDS + i];
-    Caids[i] = 0;
-  }
-  return version[slot];
 }
 
 int SCCIAdapter::Read(unsigned char *Buffer, int MaxLength)

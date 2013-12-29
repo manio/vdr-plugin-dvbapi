@@ -26,7 +26,6 @@
 
 class SCCAMSlot;
 
-#define MAX_CI_SLOTS        8
 #define MAX_SPLIT_SID       16
 
 #define TDPU_SIZE_INDICATOR 0x80
@@ -48,20 +47,17 @@ class SCCIAdapter : public cCiAdapter
 private:
   cDevice *device;
   bool softcsa, fullts;
-  unsigned short caids[1024];
-  int caidsLength;
   int cardIndex;
   cMutex ciMutex;
   cMutex cafdMutex;
-  SCCAMSlot *slots[MAX_CI_SLOTS];
-  int version[MAX_CI_SLOTS];
+  SCCAMSlot *slots[1];
+  int version;
   int fd_ca;
   cTimeMs caidTimer, triggerTimer;
   int tcid;
   cTimeMs readTimer, writeTimer;
   Frame frame;
   cRingBufferLinear *rb;
-  int addCaid(int offset, int limit, unsigned short caid);
   cTimeMs checkTimer;
   void OSCamCheck();
 
@@ -72,12 +68,15 @@ public:
   {
     return cardIndex;
   }
+  int GetVersion()
+  {
+    return version;
+  }
   virtual int Read(unsigned char *Buffer, int MaxLength);
   virtual void Write(const unsigned char *Buffer, int Length);
   virtual bool Reset(int Slot);
   virtual eModuleStatus ModuleStatus(int Slot);
   virtual bool Assign(cDevice *Device, bool Query = false);
-  int GetCaids(int slot, unsigned short *Caids, int max);
 };
 
 #endif // ___SCCIADAPTER_H
