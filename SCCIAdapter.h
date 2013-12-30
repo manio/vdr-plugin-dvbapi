@@ -26,8 +26,6 @@
 
 class SCCAMSlot;
 
-#define MAX_SPLIT_SID       16
-
 #define TDPU_SIZE_INDICATOR 0x80
 
 extern DeCSA *decsa;
@@ -53,9 +51,8 @@ private:
   SCCAMSlot *slots[1];
   int version;
   int fd_ca;
-  cTimeMs caidTimer, triggerTimer;
   int tcid;
-  cTimeMs readTimer, writeTimer;
+  cTimeMs readTimer;
   Frame frame;
   cRingBufferLinear *rb;
   cTimeMs checkTimer;

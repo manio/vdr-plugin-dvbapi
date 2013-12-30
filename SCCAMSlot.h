@@ -25,9 +25,6 @@
 
 #define SLOT_CAID_CHECK   10000
 #define SLOT_RESET_TIME     600
-#define MAX_CW_IDX           16
-#define CAID_TIME        300000   // time between caid scans
-#define TRIGGER_TIME      10000   // min. time between caid scan trigger
 
 class SCCIAdapter;
 
