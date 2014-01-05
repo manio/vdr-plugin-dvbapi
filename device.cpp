@@ -117,7 +117,11 @@ void cScDevices::Shutdown(void)
 
 void cScDevices::SetForceBudget(int n)
 {
+#if APIVERSNUM >= 20103
+  if (n >= 0 && n < MAXDEVICES)
+#else
   if (n >= 0 && n < MAXDVBDEVICES)
+#endif
     budget |= (1 << n);
 }
 
