@@ -16,8 +16,8 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef ___UDPSOCKET_H
-#define ___UDPSOCKET_H
+#ifndef ___SOCKETHANDLER_H
+#define ___SOCKETHANDLER_H
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -35,7 +35,7 @@
 extern DeCSA *decsa;
 extern CAPMT *capmt;
 
-class UDPSocket : public cThread
+class SocketHandler : public cThread
 {
 public:
   static bool bindx();
@@ -44,8 +44,8 @@ public:
   bool bint;
 
 protected:
-  UDPSocket();
-  ~UDPSocket();
+  SocketHandler();
+  ~SocketHandler();
 
 private:
   int sock;
@@ -53,4 +53,4 @@ private:
   ca_pid_t ca_pid;
 };
 
-#endif // ___UDPSOCKET_H
+#endif // ___SOCKETHANDLER_H

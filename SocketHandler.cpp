@@ -17,20 +17,20 @@
  */
 
 #include <linux/ioctl.h>
-#include "UDPSocket.h"
+#include "SocketHandler.h"
 #include "Log.h"
 
-static UDPSocket *me = 0;
+static SocketHandler *me = 0;
 
-bool UDPSocket::bindx()
+bool SocketHandler::bindx()
 {
-  me = new UDPSocket();
+  me = new SocketHandler();
   if (me->bint)
     me->Start();
   return me->bint;
 }
 
-UDPSocket::~UDPSocket()
+SocketHandler::~SocketHandler()
 {
   Cancel(3);
   bint = false;
@@ -41,19 +41,19 @@ UDPSocket::~UDPSocket()
   }
 }
 
-UDPSocket::UDPSocket()
+SocketHandler::SocketHandler()
 {
   DEBUGLOG("%s", __FUNCTION__);
   bint = true;
   sock = 0;
 }
 
-void UDPSocket::unbind(void)
+void SocketHandler::unbind(void)
 {
   delete(me);
 }
 
-void UDPSocket::Action(void)
+void SocketHandler::Action(void)
 {
   DEBUGLOG("%s", __FUNCTION__);
   unsigned char buff[sizeof(int) + sizeof(ca_descr_t)];

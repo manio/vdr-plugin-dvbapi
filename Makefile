@@ -81,7 +81,7 @@ DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
 ### The object files (add further files here):
 
-OBJS = CAPMT.o DeCSA.o DVBAPI.o DVBAPISetup.o UDPSocket.o SCCIAdapter.o Frame.o SCCAMSlot.o
+OBJS = CAPMT.o DeCSA.o DVBAPI.o DVBAPISetup.o SocketHandler.o SCCIAdapter.o Frame.o SCCAMSlot.o
 
 ifndef LIBDVBCSA
 # FFdeCSA
