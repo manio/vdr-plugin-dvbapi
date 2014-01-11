@@ -23,7 +23,7 @@ int LogLevel = 2;
 cMenuSetupDVBAPI::cMenuSetupDVBAPI(void)
 {
   newLogLevel = LogLevel;
-  Add(new cMenuEditIntItem( tr("Log level (0-3)"), &newLogLevel));
+  Add(new cMenuEditIntItem( tr("Log level (0-3)"), &newLogLevel, 0, 3));
 }
 
 void cMenuSetupDVBAPI::Store(void)
