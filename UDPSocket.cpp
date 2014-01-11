@@ -22,9 +22,9 @@
 
 static UDPSocket *me = 0;
 
-bool UDPSocket::bindx(SCCIAdapter *sCCIAdapter)
+bool UDPSocket::bindx()
 {
-  me = new UDPSocket(sCCIAdapter);
+  me = new UDPSocket();
   if (me->bint)
     me->Start();
   return me->bint;
@@ -37,10 +37,9 @@ UDPSocket::~UDPSocket()
   close(sock);
 }
 
-UDPSocket::UDPSocket(SCCIAdapter *sCCIAdapter)
+UDPSocket::UDPSocket()
 {
   DEBUGLOG("%s", __FUNCTION__);
-  this->sCCIAdapter = sCCIAdapter;
   bint = true;
 }
 

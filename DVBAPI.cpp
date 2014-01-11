@@ -56,7 +56,7 @@ bool DVBAPI::Start(void)
   INFOLOG("plugin version %s initializing (VDR %s)", VERSION, VDRVERSION);
   decsa = new DeCSA(0);
   capmt = new CAPMT;
-  UDPSocket::bindx(NULL);
+  UDPSocket::bindx();
 
   for (int i = 0; i < cDevice::NumDevices(); i++)
   {

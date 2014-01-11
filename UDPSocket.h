@@ -29,22 +29,25 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <vdr/thread.h>
-#include "SCCIAdapter.h"
+#include "DeCSA.h"
+#include "CAPMT.h"
+
+extern DeCSA *decsa;
+extern CAPMT *capmt;
 
 class UDPSocket : public cThread
 {
 public:
-  static bool bindx(SCCIAdapter *sCCIAdapter);
+  static bool bindx();
   static void unbind(void);
   virtual void Action(void);
   bool bint;
 
 protected:
-  UDPSocket(SCCIAdapter *sCCIAdapter);
+  UDPSocket();
   ~UDPSocket();
 
 private:
-  SCCIAdapter *sCCIAdapter;
   int sock;
   ca_descr_t ca_descr;
   ca_pid_t ca_pid;
