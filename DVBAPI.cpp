@@ -27,6 +27,8 @@
 
 DVBAPI::DVBAPI(void)
 {
+  for (int i = 0; i < MAXDEVICES; i++)
+    sCCIAdapter[i] = NULL;
 }
 
 DVBAPI::~DVBAPI()
@@ -46,31 +48,40 @@ bool DVBAPI::ProcessArgs(int argc, char *argv[])
 bool DVBAPI::Initialize(void)
 {
   // Initialize any background activities the plugin shall perform.
-  INFOLOG("plugin version %s initializing (VDR %s)", VERSION, VDRVERSION);
-  decsa = new DeCSA(0);
-  capmt = new CAPMT;
-  UDPSocket::bindx(NULL);
-
-  SCCIAdapter *sCCIAdapter = NULL;
-  for (int i = 0; i < cDevice::NumDevices(); i++)
-  {
-    if (const cDevice *Device = cDevice::GetDevice(i))
-    {
-      INFOLOG("Creating sCCIAdapter for device %d", Device->CardIndex());
-      sCCIAdapter = new SCCIAdapter(NULL, Device->CardIndex(), 0, true, true);
-    }
-  }
   return true;
 }
 
 bool DVBAPI::Start(void)
 {
+  INFOLOG("plugin version %s initializing (VDR %s)", VERSION, VDRVERSION);
+  decsa = new DeCSA(0);
+  capmt = new CAPMT;
+  UDPSocket::bindx(NULL);
+
+  for (int i = 0; i < cDevice::NumDevices(); i++)
+  {
+    if (const cDevice *Device = cDevice::GetDevice(i))
+    {
+      INFOLOG("Creating sCCIAdapter for device %d", Device->CardIndex());
+      sCCIAdapter[i] = new SCCIAdapter(NULL, Device->CardIndex(), 0, true, true);
+    }
+  }
   INFOLOG("plugin started");
   return true;
 }
 
 void DVBAPI::Stop(void)
 {
+  for (int i = 0; i < MAXDEVICES; i++)
+  {
+    delete sCCIAdapter[i];
+    sCCIAdapter[i] = NULL;
+  }
+  UDPSocket::unbind();
+  delete capmt;
+  capmt = NULL;
+  delete decsa;
+  decsa = NULL;
   INFOLOG("plugin stopped");
 }
 

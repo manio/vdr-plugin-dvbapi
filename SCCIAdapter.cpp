@@ -206,12 +206,6 @@ SCCIAdapter::~SCCIAdapter()
   delete rb;
   rb = 0;
   ciMutex.Unlock();
-
-  if (decsa)
-    delete decsa;
-  if (capmt != 0)
-    delete capmt;
-  capmt = 0;
 }
 
 bool SCCIAdapter::Reset(int Slot)

@@ -23,6 +23,7 @@
 #include <vdr/plugin.h>
 #include "CAPMT.h"
 #include "DeCSA.h"
+#include "SCCIAdapter.h"
 
 static const char *VERSION        = "1.0.5";
 static const char *DESCRIPTION    = "DVBAPI type SOFTCAM";
@@ -31,6 +32,8 @@ CAPMT *capmt = NULL;
 
 class DVBAPI : public cPlugin
 {
+private:
+  SCCIAdapter *sCCIAdapter[MAXDEVICES];
 public:
   DVBAPI(void);
   virtual ~DVBAPI();
