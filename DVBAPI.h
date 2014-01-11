@@ -47,7 +47,10 @@ public:
   {
     return DESCRIPTION;
   }
-  virtual const char *CommandLineHelp(void);
+  virtual const char *CommandLineHelp(void)
+  {
+    return NULL;
+  }
   virtual bool ProcessArgs(int argc, char *argv[]);
   virtual bool Initialize(void);
   virtual bool Start(void);

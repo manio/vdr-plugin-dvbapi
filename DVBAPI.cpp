@@ -34,11 +34,6 @@ DVBAPI::~DVBAPI()
 {
 }
 
-const char *DVBAPI::CommandLineHelp(void)
-{
-  return "";
-}
-
 bool DVBAPI::ProcessArgs(int argc, char *argv[])
 {
   return true;
