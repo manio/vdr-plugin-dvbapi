@@ -112,6 +112,11 @@ bool SCCAMSlot::Check(void)
   return res;
 }
 
+const char *SCCAMSlot::GetCamName(void)
+{
+  return "OSCam";
+}
+
 bool SCCAMSlot::ProvidesCa(const int *CaSystemIds)
 {
   //assume OSCam is able to decrypt this CAID

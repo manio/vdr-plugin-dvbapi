@@ -55,6 +55,7 @@ public:
     return &frame;
   }
   uchar *Decrypt(uchar *Data, int &Count);
+  virtual const char *GetCamName(void);
   bool ProvidesCa(const int *CaSystemIds);
 };
 
