@@ -38,14 +38,9 @@ extern CAPMT *capmt;
 class SocketHandler : public cThread
 {
 public:
-  static bool bindx();
-  static void unbind(void);
-  virtual void Action(void);
-  bool bint;
-
-protected:
   SocketHandler();
   ~SocketHandler();
+  virtual void Action(void);
 
 private:
   int sock;

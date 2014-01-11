@@ -24,6 +24,7 @@
 #include "CAPMT.h"
 #include "DeCSA.h"
 #include "SCCIAdapter.h"
+#include "SocketHandler.h"
 
 static const char *VERSION        = "1.0.5";
 static const char *DESCRIPTION    = "DVBAPI type SOFTCAM";
@@ -34,6 +35,7 @@ class DVBAPI : public cPlugin
 {
 private:
   SCCIAdapter *sCCIAdapter[MAXDEVICES];
+  SocketHandler *SockHandler;
 public:
   DVBAPI(void);
   virtual ~DVBAPI();

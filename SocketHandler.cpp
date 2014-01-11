@@ -20,20 +20,9 @@
 #include "SocketHandler.h"
 #include "Log.h"
 
-static SocketHandler *me = 0;
-
-bool SocketHandler::bindx()
-{
-  me = new SocketHandler();
-  if (me->bint)
-    me->Start();
-  return me->bint;
-}
-
 SocketHandler::~SocketHandler()
 {
   Cancel(3);
-  bint = false;
   if (sock > 0)
   {
     close(sock);
@@ -44,13 +33,8 @@ SocketHandler::~SocketHandler()
 SocketHandler::SocketHandler()
 {
   DEBUGLOG("%s", __FUNCTION__);
-  bint = true;
   sock = 0;
-}
-
-void SocketHandler::unbind(void)
-{
-  delete(me);
+  Start();
 }
 
 void SocketHandler::Action(void)
@@ -60,7 +44,7 @@ void SocketHandler::Action(void)
   int cRead, *request;
   uint8_t adapter_index;
 
-  while (bint)
+  while (Running())
   {
     int connfd = capmt ? capmt->sockets[0] : 0;
     if (connfd == 0)

@@ -22,7 +22,6 @@
 #include "DVBAPI.h"
 #include "DVBAPISetup.h"
 #include "Log.h"
-#include "SocketHandler.h"
 #include "SCCIAdapter.h"
 
 DVBAPI::DVBAPI(void)
@@ -54,9 +53,9 @@ bool DVBAPI::Initialize(void)
 bool DVBAPI::Start(void)
 {
   INFOLOG("plugin version %s initializing (VDR %s)", VERSION, VDRVERSION);
+  SockHandler = new SocketHandler;
   decsa = new DeCSA(0);
   capmt = new CAPMT;
-  SocketHandler::bindx();
 
   for (int i = 0; i < cDevice::NumDevices(); i++)
   {
@@ -77,11 +76,12 @@ void DVBAPI::Stop(void)
     delete sCCIAdapter[i];
     sCCIAdapter[i] = NULL;
   }
-  SocketHandler::unbind();
   delete capmt;
   capmt = NULL;
   delete decsa;
   decsa = NULL;
+  delete SockHandler;
+  SockHandler = NULL;
   INFOLOG("plugin stopped");
 }
 
