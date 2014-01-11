@@ -32,6 +32,7 @@ bool UDPSocket::bindx(SCCIAdapter *sCCIAdapter)
 
 UDPSocket::~UDPSocket()
 {
+  Cancel(3);
   bint = false;
   close(sock);
 }
