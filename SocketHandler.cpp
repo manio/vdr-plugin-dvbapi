@@ -31,6 +31,7 @@ SocketHandler::~SocketHandler()
 }
 
 SocketHandler::SocketHandler()
+:cThread("Socket Handler")
 {
   DEBUGLOG("%s", __FUNCTION__);
   sock = 0;
