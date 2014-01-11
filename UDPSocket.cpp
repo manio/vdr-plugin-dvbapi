@@ -34,13 +34,18 @@ UDPSocket::~UDPSocket()
 {
   Cancel(3);
   bint = false;
-  close(sock);
+  if (sock > 0)
+  {
+    close(sock);
+    sock = 0;
+  }
 }
 
 UDPSocket::UDPSocket()
 {
   DEBUGLOG("%s", __FUNCTION__);
   bint = true;
+  sock = 0;
 }
 
 void UDPSocket::unbind(void)
