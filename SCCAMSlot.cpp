@@ -283,22 +283,24 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
           DEBUGLOG("%d.%d answer to query", cardIndex, slot);
         }
       }
-      if (sid != 0)
-      {
-        if (ci_cmd == 0x04)
-          INFOLOG("%d.%d stop decrypt", cardIndex, slot);
-        if (ci_cmd == 0x01 || (ci_cmd == -1 && (ca_lm == 0x04 || ca_lm == 0x05)))
-        {
-          INFOLOG("%d.%d set CAM decrypt (SID %d, caLm %d, HasCaDescriptors %d)", cardIndex, slot, sid, ca_lm, HasCaDescriptors);
+      else
+        DEBUGLOG("%d.%d answer to query surpressed", cardIndex, slot);
 
-          if (!HasCaDescriptors)
-          {
-            vdr_caPMT = NULL;
-            vdr_caPMTLen = 0;
-          }
-          capmt->ProcessSIDRequest(cardIndex, sid, ca_lm, vdr_caPMT, vdr_caPMTLen);
+      if (ci_cmd == 0x04 || (ci_cmd == -1 && sid == 0 && ca_lm == 0x03))
+        INFOLOG("%d.%d stop decrypt", cardIndex, slot);
+      else if (ci_cmd == 0x01 || (ci_cmd == -1 && sid != 0 && (ca_lm == 0x03 || ca_lm == 0x04 || ca_lm == 0x05)))
+      {
+        INFOLOG("%d.%d set CAM decrypt (SID %d, caLm %d, HasCaDescriptors %d)", cardIndex, slot, sid, ca_lm, HasCaDescriptors);
+
+        if (!HasCaDescriptors)
+        {
+          vdr_caPMT = NULL;
+          vdr_caPMTLen = 0;
         }
+        capmt->ProcessSIDRequest(cardIndex, sid, ca_lm, vdr_caPMT, vdr_caPMTLen);
       }
+      else
+        INFOLOG("%d.%d no action taken", cardIndex, slot);
     }
     break;
   }
