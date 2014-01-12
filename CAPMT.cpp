@@ -17,123 +17,12 @@
  */
 
 #include "CAPMT.h"
-#include <sys/ioctl.h>
-#include <linux/dvb/dmx.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "Log.h"
-
-bool CAPMT::get_pmt(const int adapter, const int sid, unsigned char *buft)
-{
-  int dmxfd, count;
-  int pmt_pid = 0;
-  int patread = 0;
-  int section_length;
-  char *demux_path = NULL;
-  unsigned char *buf = buft;
-  struct dmx_sct_filter_params f;
-  bool ret = false;
-  int k;
-
-  memset(&f, 0, sizeof(f));
-  f.pid = 0;
-  f.filter.filter[0] = 0x00;
-  f.filter.mask[0] = 0xff;
-  f.timeout = DEMUX_FILTER_TIMEOUT;
-  f.flags = DMX_IMMEDIATE_START | DMX_CHECK_CRC;
-
-  asprintf(&demux_path, "/dev/dvb/adapter%d/demux0", adapter);
-  if ((dmxfd = open(demux_path, O_RDWR)) < 0)
-  {
-    ERRORLOG("%s: openening demux failed: %s", __FUNCTION__, strerror(errno));
-    return ret;
-  }
-  if (demux_path)
-    free(demux_path);
-
-  if (ioctl(dmxfd, DMX_SET_FILTER, &f) == -1)
-  {
-    ERRORLOG("%s: ioctl DMX_SET_FILTER failed: %s", __FUNCTION__, strerror(errno));
-    close(dmxfd);
-    return ret;
-  }
-
-  //obtaining PMT PID
-  while (!patread)
-  {
-    if (((count = read(dmxfd, buf, DEMUX_BUFFER_SIZE)) < 0) && errno == EOVERFLOW)
-      count = read(dmxfd, buf, DEMUX_BUFFER_SIZE);
-    if (count < 0)
-    {
-      ERRORLOG("%s: read_sections: read error: %s", __FUNCTION__, strerror(errno));
-      close(dmxfd);
-      return ret;
-    }
-
-    section_length = ((buf[1] & 0x0f) << 8) | buf[2];
-    if (count != section_length + 3)
-      continue;
-
-    buf += 8;
-    section_length -= 8;
-
-    patread = 1;                /* assumes one section contains the whole pat */
-    while (section_length > 0)
-    {
-      int service_id = (buf[0] << 8) | buf[1];
-      if (service_id == sid)
-      {
-        pmt_pid = ((buf[2] & 0x1f) << 8) | buf[3];
-        section_length = 0;
-      }
-      buf += 4;
-      section_length -= 4;
-    }
-  }
-  DEBUGLOG("%s: PMT pid=0x%X (%d)", __FUNCTION__, pmt_pid, pmt_pid);
-
-  f.pid = pmt_pid;
-  f.filter.filter[0] = 0x02;
-  if (ioctl(dmxfd, DMX_SET_FILTER, &f) == -1)
-  {
-    ERRORLOG("%s: ioctl DMX_SET_FILTER failed: %s", __FUNCTION__, strerror(errno));
-    close(dmxfd);
-    return ret;
-  }
-  buf = buft;
-
-  //obtaining PMT data for our SID
-  for (k = 0; k < 64; k++)
-  {
-    if (((count = read(dmxfd, buf, DEMUX_BUFFER_SIZE)) < 0) && errno == EOVERFLOW)
-      count = read(dmxfd, buf, DEMUX_BUFFER_SIZE);
-    if (count < 0)
-    {
-      ERRORLOG("%s: read_sections: read error: %s", __FUNCTION__, strerror(errno));
-      close(dmxfd);
-      return ret;
-    }
-
-    section_length = ((buf[1] & 0x0f) << 8) | buf[2];
-    if (count != section_length + 3)
-      continue;
-    else
-    {
-      int service_id = (buf[3] << 8) | buf[4];
-      if (service_id == sid)
-      {
-        ret = true;
-        break;
-      }
-    }
-  }
-
-  close(dmxfd);
-  return ret;
-}
 
 CAPMT::CAPMT(void)
 {
@@ -212,22 +101,8 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     }
     else
     {
-      static unsigned char buffer[DEMUX_BUFFER_SIZE];
-      //obtain PMT data only if we don't have caDescriptors
-      if (!get_pmt(card_index, sid, buffer))
-      {
-        ERRORLOG("Error obtaining PMT data, returning");
-        return;
-      }
-
-      pmto.pilen[0] = buffer[10];     //reserved+program_info_length
-      pmto.pilen[1] = buffer[11];     //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
-
-      length = ((buffer[1] & 0xf) << 8) + buffer[2] + 3;  //section_length (including 4 byte CRC)
-      pmto.len = length - 12 - 4;
-      unsigned char *pmt_data = new unsigned char[pmto.len];
-      memcpy(pmt_data, buffer + 12, pmto.len);    //copy ca_pmt data from vdr
-      pmto.data = pmt_data;
+      ERRORLOG("FATAL: VDR doesn't provide CA desriptors, cannot continue");
+      return;
     }
 
     pmt.push_back(pmto);
