@@ -23,6 +23,8 @@
 #include <vdr/dvbdevice.h>
 #include <vdr/thread.h>
 #include <vector>
+#include "SocketHandler.h"
+
 #define DEMUX_BUFFER_SIZE    4096
 #define DEMUX_FILTER_TIMEOUT 2000  // ms
 #define CAPMT_BUFFER_SIZE    1024
@@ -34,6 +36,8 @@
 #define LIST_ONLY            0x03
 #define LIST_ADD             0x04
 #define LIST_UPDATE          0x05
+
+extern SocketHandler *SockHandler;
 
 using namespace std;
 
@@ -51,16 +55,12 @@ class CAPMT
 private:
   unsigned char caPMT[CAPMT_BUFFER_SIZE];
   bool get_pmt(const int adapter, const int sid, unsigned char *buft);
-  int oscam_socket_connect();
-  int sids[MAX_SOCKETS];
   vector<pmtobj> pmt;
   bool initialCaDscr;
 
 public:
-  int sockets[MAX_SOCKETS];
-  CAPMT(void);
   ~CAPMT();
-  int send(const int adapter, const int sid, int socket_fd, int ca_lm, const pmtobj *pmt);
+  void send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt);
   void ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen);
 };
 

@@ -26,20 +26,22 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <vdr/thread.h>
 #include "DeCSA.h"
-#include "CAPMT.h"
 
 extern DeCSA *decsa;
-extern CAPMT *capmt;
 
 class SocketHandler : public cThread
 {
 public:
   SocketHandler();
   ~SocketHandler();
+  void OpenConnection();
+  void CloseConnection();
+  void WritePMT(unsigned char* caPMT, int toWrite);
   virtual void Action(void);
 
 private:

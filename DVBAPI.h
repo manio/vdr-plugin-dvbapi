@@ -30,12 +30,12 @@ static const char *VERSION        = "1.0.5";
 static const char *DESCRIPTION    = "DVBAPI type SOFTCAM";
 DeCSA *decsa = NULL;
 CAPMT *capmt = NULL;
+SocketHandler *SockHandler = NULL;
 
 class DVBAPI : public cPlugin
 {
 private:
   SCCIAdapter *sCCIAdapter[MAXDEVICES];
-  SocketHandler *SockHandler;
 public:
   DVBAPI(void);
   virtual ~DVBAPI();

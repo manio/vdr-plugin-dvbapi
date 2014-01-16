@@ -18,20 +18,9 @@
 
 #include "CAPMT.h"
 #include <unistd.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "Log.h"
-
-CAPMT::CAPMT(void)
-{
-  for (int i = 0; i < MAX_SOCKETS; i++)
-  {
-    sids[i] = 0;
-    sockets[i] = 0;
-  }
-}
 
 CAPMT::~CAPMT()
 {
@@ -109,13 +98,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
   }
 
   if (pmt.empty())
-  {
-    if ((sockets[0]) > 0)
-    {
-      close (sockets[0]);
-      sockets[0] = 0;
-    }
-  }
+    SockHandler->CloseConnection();
   else
   {
     //sending complete PMT objects
@@ -127,42 +110,17 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
       ++it;
       if (it == pmt.end())
         lm |= LIST_LAST;
-      sockets[0] = send(pmto->adapter, sid, sockets[0], lm, pmto);
+      send(pmto->adapter, sid, lm, pmto);
       lm = LIST_MORE;
     }
   }
   initialCaDscr = true;
 }
 
-int CAPMT::oscam_socket_connect()
-{
-  int socket_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
-  sockaddr_un serv_addr_un;
-  memset(&serv_addr_un, 0, sizeof(serv_addr_un));
-  serv_addr_un.sun_family = AF_LOCAL;
-  snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
-  if (connect(socket_fd, (const sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
-  {
-    ERRORLOG("Cannot connect to /tmp/camd.socket, Do you have OSCam running?");
-    socket_fd = -1;
-  }
-  else
-    DEBUGLOG("created socket with socket_fd=%d", socket_fd);
-  return socket_fd;
-}
-
-int CAPMT::send(const int adapter, const int sid, int socket_fd, int ca_lm, const pmtobj *pmt)
+void CAPMT::send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt)
 {
   int length_field;
   int toWrite;
-
-  //try to reconnect to oscam if there is no connection
-  if (socket_fd == -1)
-  {
-    socket_fd = oscam_socket_connect();
-    if (socket_fd == -1)
-      return socket_fd;
-  }
 
 /////// preparing capmt data to send
   // http://cvs.tuxbox.org/lists/tuxbox-cvs-0208/msg00434.html
@@ -199,19 +157,6 @@ int CAPMT::send(const int adapter, const int sid, int socket_fd, int ca_lm, cons
   //number of bytes in packet to send (adding 3 bytes of ca_pmt_tag and 3 bytes of length_field)
   toWrite = length_field + 6;
 
-/////// sending data
-  if (socket_fd == 0)
-    socket_fd = oscam_socket_connect();
-  if (socket_fd > 0)
-  {
-    int wrote = write(socket_fd, caPMT, toWrite);
-    DEBUGLOG("socket_fd=%d toWrite=%d wrote=%d", socket_fd, toWrite, wrote);
-    if (wrote != toWrite)
-    {
-      ERRORLOG("%s: wrote != toWrite", __FUNCTION__);
-      close(socket_fd);
-      socket_fd = 0;
-    }
-  }
-  return socket_fd;
+  //sending data
+  SockHandler->WritePMT(caPMT, toWrite);
 }
