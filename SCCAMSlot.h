@@ -24,7 +24,6 @@
 #include "Frame.h"
 
 #define SLOT_CAID_CHECK   10000
-#define SLOT_RESET_TIME     600
 
 class SCCIAdapter;
 

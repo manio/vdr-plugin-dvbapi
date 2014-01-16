@@ -58,8 +58,7 @@ eModuleStatus SCCAMSlot::Status(void)
   if (reset)
   {
     status = msReset;
-    if (resetTimer.TimedOut())
-      reset = false;
+    reset = false;
   }
   else if (version)
     status = msReady;
@@ -81,7 +80,6 @@ bool SCCAMSlot::ResetSlot(bool log)
 {
   DEBUGLOG("%s: log=%i", __FUNCTION__, log);
   reset = true;
-  resetTimer.Set(SLOT_RESET_TIME);
   rb.Clear();
   if (log)
     INFOLOG("%d.%d: reset", cardIndex, slot);
