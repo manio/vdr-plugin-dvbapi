@@ -32,7 +32,10 @@
 #include <vdr/thread.h>
 #include "DeCSA.h"
 
+class CAPMT;
+
 extern DeCSA *decsa;
+extern CAPMT *capmt;
 
 class SocketHandler : public cThread
 {
@@ -48,6 +51,7 @@ private:
   int sock;
   ca_descr_t ca_descr;
   ca_pid_t ca_pid;
+  cTimeMs checkTimer;
 };
 
 #endif // ___SOCKETHANDLER_H

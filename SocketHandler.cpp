@@ -18,7 +18,10 @@
 
 #include <linux/ioctl.h>
 #include "SocketHandler.h"
+#include "CAPMT.h"
 #include "Log.h"
+
+#define SOCKET_CHECK_INTERVAL   3000
 
 SocketHandler::~SocketHandler()
 {
@@ -88,6 +91,17 @@ void SocketHandler::Action(void)
   {
     if (sock == 0)
     {
+      if (checkTimer.TimedOut())
+      {
+        if (!capmt->Empty())
+        {
+          ERRORLOG("OSCam connection lost, trying to reconnect...");
+          OpenConnection();
+          if (sock > 0)
+            capmt->SendAll();
+        }
+        checkTimer.Set(SOCKET_CHECK_INTERVAL);
+      }
       cCondWait::SleepMs(20);
       continue;
     }
@@ -96,6 +110,8 @@ void SocketHandler::Action(void)
     cRead = recv(sock, &adapter_index, 1, MSG_DONTWAIT);
     if (cRead <= 0)
     {
+      if (cRead == 0)
+        sock = 0;
       cCondWait::SleepMs(20);
       continue;
     }
@@ -115,6 +131,8 @@ void SocketHandler::Action(void)
 
     if (cRead <= 0)
     {
+      if (cRead == 0)
+        sock = 0;
       cCondWait::SleepMs(20);
       continue;
     }

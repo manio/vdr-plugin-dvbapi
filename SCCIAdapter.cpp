@@ -32,8 +32,6 @@
 #include "Frame.h"
 #include "Log.h"
 
-#define SOCKET_CHECK_INTERVAL   3000
-
 // from vdr's ci.c
 #define T_CREATE_TC    0x82
 #define T_RCV          0x81
@@ -161,39 +159,6 @@ void SCCIAdapter::Write(const unsigned char *buff, int len)
   }
   else
     DEBUGLOG("%d: short write (buff=%d len=%d)", cardIndex, buff != 0, len);
-
-  if (checkTimer.TimedOut())
-  {
-    OSCamCheck();
-    checkTimer.Set(SOCKET_CHECK_INTERVAL);
-  }
-}
-
-void SCCIAdapter::OSCamCheck()
-{
-  /* temporarily disabled, will be done differently after rework
-  for (int i = 0; i < MAX_SOCKETS; i++)
-  {
-    if (sockets[i] != 0)
-    {
-      DEBUGLOG("%s: %d: checking if connection to socket_fd=%d is still alive", __FUNCTION__, cardIndex, sockets[i]);
-      if ((sockets[i] == -1) || (write(sockets[i], NULL, 0) < 0))
-      {
-        if (sids[i] != 0)    //we have a SID assigned with this socket, need to reconnect and resend PMT data
-        {
-          int new_fd = capmt->send(cardIndex, sids[i], -1, NULL, 0);
-          if (new_fd > 0)
-          {
-            INFOLOG("%d: reconnected successfully, replacing socket_fd %d with %d", cardIndex, sockets[i], new_fd);
-            sockets[i] = new_fd;
-          }
-        }
-        else                 //no SID assigned to this socket, mark as invalid
-          sockets[i] = 0;
-      }
-    }
-  }*/
-  return;
 }
 
 SCCIAdapter::~SCCIAdapter()

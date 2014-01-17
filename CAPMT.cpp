@@ -97,6 +97,14 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     pmt.push_back(pmto);
   }
 
+  SendAll();
+  initialCaDscr = true;
+}
+
+void CAPMT::SendAll()
+{
+  vector<pmtobj>::iterator it;
+
   if (pmt.empty())
     SockHandler->CloseConnection();
   else
@@ -114,7 +122,6 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
       lm = LIST_MORE;
     }
   }
-  initialCaDscr = true;
 }
 
 void CAPMT::send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt)

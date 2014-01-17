@@ -55,8 +55,6 @@ private:
   cTimeMs readTimer;
   Frame frame;
   cRingBufferLinear *rb;
-  cTimeMs checkTimer;
-  void OSCamCheck();
 
 public:
   SCCIAdapter(cDevice *Device, int CardIndex, int cafd, bool SoftCSA, bool FullTS);
