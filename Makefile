@@ -35,32 +35,6 @@ export CXXFLAGS = $(call PKGCFG,cxxflags)
 ### The version number of VDR's plugin API:
 
 APIVERSION = $(call PKGCFG,apiversion)
-ifeq ($(strip $(APIVERSION)),)
-APIVERSION = $(shell grep 'define APIVERSION ' $(VDRDIR)/config.h | awk '{ print $$3 }' | sed -e 's/"//g')
-NOCONFIG := 1
-endif
-
-# backward compatibility with VDR version < 1.7.34
-API1733 := $(shell if [ "$(APIVERSION)" \< "1.7.34" ]; then echo true; fi; )
-
-ifdef API1733
-
-VDRSRC = $(VDRDIR)
-ifeq ($(strip $(VDRSRC)),)
-VDRSRC := ../../..
-endif
-LIBDIR = $(VDRSRC)/PLUGINS/lib
-
-ifndef NOCONFIG
-CXXFLAGS = $(call PKGCFG,cflags)
-CXXFLAGS += -fPIC
-else
--include $(VDRSRC)/Make.global
--include $(VDRSRC)/Make.config
-endif
-
-export CXXFLAGS
-endif
 
 ### The name of the distribution archive:
 
@@ -73,9 +47,7 @@ SOFILE = libvdr-$(PLUGIN).so
 
 ### Includes and Defines (add further entries here):
 
-ifdef API1733
-INCLUDES += -I$(VDRSRC)/include
-endif
+INCLUDES +=
 
 DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
@@ -98,11 +70,7 @@ endif
 
 ### The main target:
 
-ifdef API1733
-all: install
-else
 all: $(SOFILE)
-endif
 
 ### Implicit rules:
 
