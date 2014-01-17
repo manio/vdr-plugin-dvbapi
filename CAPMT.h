@@ -25,8 +25,6 @@
 #include <vector>
 #include "SocketHandler.h"
 
-#define DEMUX_BUFFER_SIZE    4096
-#define DEMUX_FILTER_TIMEOUT 2000  // ms
 #define CAPMT_BUFFER_SIZE    1024
 
 #define MAX_SOCKETS          16   // max sockets (simultaneus channels) per demux
