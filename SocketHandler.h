@@ -49,6 +49,7 @@ public:
 
 private:
   int sock;
+  cMutex mutex;
   ca_descr_t ca_descr;
   ca_pid_t ca_pid;
   cTimeMs checkTimer;

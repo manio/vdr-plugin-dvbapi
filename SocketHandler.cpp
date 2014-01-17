@@ -39,6 +39,7 @@ SocketHandler::SocketHandler()
 
 void SocketHandler::OpenConnection()
 {
+  cMutexLock lock(&mutex);
   sock = socket(AF_LOCAL, SOCK_STREAM, 0);
   sockaddr_un serv_addr_un;
   memset(&serv_addr_un, 0, sizeof(serv_addr_un));

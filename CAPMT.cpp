@@ -24,6 +24,7 @@
 
 CAPMT::~CAPMT()
 {
+  cMutexLock lock(&mutex);
   vector<pmtobj>::iterator it;
   for (it=pmt.begin(); it!=pmt.end(); it++)
   {
@@ -42,6 +43,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     lm=3 prg=0: this is sent when changing transponder or during epg scan (also before new channel but ONLY if it is on different transponder)
     lm=3 prg=X: it seems that this is sent when starting vdr with active timers
 */
+  cMutexLock lock(&mutex);
   int length, offset = 0;
   if (sid == 0)
   {
@@ -103,6 +105,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
 
 void CAPMT::SendAll()
 {
+  cMutexLock lock(&mutex);
   vector<pmtobj>::iterator it;
 
   if (pmt.empty())

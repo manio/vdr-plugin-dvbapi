@@ -51,6 +51,7 @@ struct pmtobj
 class CAPMT
 {
 private:
+  cMutex mutex;
   unsigned char caPMT[CAPMT_BUFFER_SIZE];
   bool get_pmt(const int adapter, const int sid, unsigned char *buft);
   vector<pmtobj> pmt;
@@ -62,6 +63,7 @@ public:
   void ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen);
   bool Empty()
   {
+    cMutexLock lock(&mutex);
     return pmt.empty();
   }
   void SendAll();

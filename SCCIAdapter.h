@@ -47,7 +47,6 @@ private:
   bool softcsa, fullts;
   int cardIndex;
   cMutex ciMutex;
-  cMutex cafdMutex;
   SCCAMSlot *slots[1];
   int version;
   int fd_ca;
