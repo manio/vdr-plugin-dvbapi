@@ -188,5 +188,5 @@ eModuleStatus SCCIAdapter::ModuleStatus(int Slot)
 
 bool SCCIAdapter::Assign(cDevice *Device, bool Query)
 {
-  return Device ? (Device->CardIndex() == cardIndex) : false;
+  return Device ? (Device->CardIndex() == cardIndex) : true;
 }
