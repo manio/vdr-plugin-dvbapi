@@ -38,7 +38,7 @@
 #define AOT_CA_PMT                  0x9f8032
 
 SCCAMSlot::SCCAMSlot(SCCIAdapter *sCCIAdapter, int cardIndex, int slot)
- : cCamSlot(sCCIAdapter)
+ : cCamSlot(sCCIAdapter, true)
  , checkTimer(-SLOT_CAID_CHECK - 1000)
  , rb(KILOBYTE(4), 5 + LEN_OFF, false, "SC-CI slot answer")
 {
