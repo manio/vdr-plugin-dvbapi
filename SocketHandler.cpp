@@ -94,7 +94,7 @@ void SocketHandler::Action(void)
     {
       if (checkTimer.TimedOut())
       {
-        if (!capmt->Empty())
+        if (capmt && !capmt->Empty())
         {
           ERRORLOG("OSCam connection lost, trying to reconnect...");
           OpenConnection();
