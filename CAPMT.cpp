@@ -92,7 +92,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     }
     else
     {
-      ERRORLOG("FATAL: VDR doesn't provide CA desriptors, cannot continue");
+      DEBUGLOG("CA_PMT doesn't contain CA desriptors");
       return;
     }
 
