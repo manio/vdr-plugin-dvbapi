@@ -272,13 +272,11 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
     {
       cs_tsbbatch_even[cs_fill_even].data = NULL;
       dvbcsa_bs_decrypt(cs_key_even[currIdx], cs_tsbbatch_even, 184);
-      cs_fill_even = 0;
     }
     if (cs_fill_odd)
     {
       cs_tsbbatch_odd[cs_fill_odd].data = NULL;
       dvbcsa_bs_decrypt(cs_key_odd[currIdx], cs_tsbbatch_odd, 184);
-      cs_fill_odd = 0;
     }
     return true;
   }
