@@ -1,21 +1,3 @@
-Q: When I switch to a channel I've got black screen and in the log:
-   DVBAPI-Error: get_pmt: read_sections: read error: Connection timed out
-   DVBAPI-Error: Error obtaining PMT data, returning
-
-A: If VDR doesn't pass the PMT data, then the plugin is trying to obtain
-   it itself (it's necessary for oscam to obtain ECMs).
-   When a card driver cannot obtain this data then the above error appear
-   in the log.
-   The real case of the problem could be various, but most probably the card
-   has failed to lock to specified frequency, eg for the following reason:
-   - channel has wrong tune parameters (after some time you'll probably
-     see in the syslog a line from vdr similar to this:
-     'frontend 0/0 timed out while tuning to channel 0, tp 211817')
-   - problems with faulty DVB driver, which cannot obtain a LOCK
-   - problems with DiSEqC
-   - weak signal
-
-
 Q: The plugin is not sending EMMs to my card, and my card is not working
    after some period.
 
