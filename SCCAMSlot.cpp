@@ -24,7 +24,6 @@
 #include <dlfcn.h>
 
 #include <linux/dvb/ca.h>
-#include <vdr/channels.h>
 #include <vdr/ci.h>
 #include <vdr/dvbdevice.h>
 #include <vdr/dvbci.h>
@@ -39,7 +38,7 @@
 #define AOT_CA_PMT                  0x9f8032
 
 SCCAMSlot::SCCAMSlot(SCCIAdapter *sCCIAdapter, int cardIndex, int slot)
- : cCamSlot(sCCIAdapter)
+ : cCamSlot(sCCIAdapter, true)
  , checkTimer(-SLOT_CAID_CHECK - 1000)
  , rb(KILOBYTE(4), 5 + LEN_OFF, false, "SC-CI slot answer")
 {
@@ -47,7 +46,6 @@ SCCAMSlot::SCCAMSlot(SCCIAdapter *sCCIAdapter, int cardIndex, int slot)
   this->cardIndex = cardIndex;
   this->slot = slot;
   version = 0;
-  caids[0] = 0;
   doReply = false;
   lastStatus = msReset;
   frame.SetRb(&rb);
@@ -60,10 +58,9 @@ eModuleStatus SCCAMSlot::Status(void)
   if (reset)
   {
     status = msReset;
-    if (resetTimer.TimedOut())
-      reset = false;
+    reset = false;
   }
-  else if (caids[0])
+  else if (version)
     status = msReady;
   else
   {
@@ -83,7 +80,6 @@ bool SCCAMSlot::ResetSlot(bool log)
 {
   DEBUGLOG("%s: log=%i", __FUNCTION__, log);
   reset = true;
-  resetTimer.Set(SLOT_RESET_TIME);
   rb.Clear();
   if (log)
     INFOLOG("%d.%d: reset", cardIndex, slot);
@@ -103,15 +99,26 @@ bool SCCAMSlot::Check(void)
   }
   if (checkTimer.TimedOut())
   {
-    if (version != sCCIAdapter->GetCaids(slot, 0, 0))
+    if (version != sCCIAdapter->GetVersion())
     {
-      version = sCCIAdapter->GetCaids(slot, caids, MAX_CI_SLOT_CAIDS);
+      version = sCCIAdapter->GetVersion();
       INFOLOG("%d.%d: now using CAIDs version %d", cardIndex, slot, version);
       res = true;
     }
     checkTimer.Set(SLOT_CAID_CHECK);
   }
   return res;
+}
+
+const char *SCCAMSlot::GetCamName(void)
+{
+  return "OSCam";
+}
+
+bool SCCAMSlot::ProvidesCa(const int *CaSystemIds)
+{
+  //assume OSCam is able to decrypt this CAID
+  return true;
 }
 
 int SCCAMSlot::GetLength(const unsigned char *&data)
@@ -124,6 +131,13 @@ int SCCAMSlot::GetLength(const unsigned char *&data)
       len = (len << 8) + *data++;
   }
   return len;
+}
+
+uchar *SCCAMSlot::Decrypt(uchar *Data, int &Count)
+{
+  decsa->Decrypt(cardIndex, Data, Count, true);
+  Count = TS_SIZE;
+  return Data;
 }
 
 int SCCAMSlot::LengthSize(int n)
@@ -145,9 +159,7 @@ void SCCAMSlot::SetSize(int n, unsigned char *&p)
 
 void SCCAMSlot::CaInfo(int tcid, int cid)
 {
-  int cn = 0;
-  for (int i = 0; caids[i]; i++)
-    cn += 2;
+  int cn = 2;
   int n = cn + 8 + LengthSize(cn);
   unsigned char *p;
   if (!(p = frame.GetBuff(n + 1 + LengthSize(n))))
@@ -163,11 +175,9 @@ void SCCAMSlot::CaInfo(int tcid, int cid)
   *p++ = 0x80;
   *p++ = (unsigned char) AOT_CA_INFO;
   SetSize(cn, p);
-  for (int i = 0; caids[i]; i++)
-  {
-    *p++ = caids[i] >> 8;
-    *p++ = caids[i] & 0xff;
-  }
+  //pass a 'wildcard' CAID to vdr
+  *p++ = 0xff;
+  *p++ = 0xff;
   frame.Put();
   INFOLOG("%s: %i.%i sending CA info", __FUNCTION__, cardIndex, slot);
 }
@@ -271,22 +281,24 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
           DEBUGLOG("%d.%d answer to query", cardIndex, slot);
         }
       }
-      if (sid != 0)
-      {
-        if (ci_cmd == 0x04)
-          INFOLOG("%d.%d stop decrypt", cardIndex, slot);
-        if (ci_cmd == 0x01 || (ci_cmd == -1 && (ca_lm == 0x04 || ca_lm == 0x05)))
-        {
-          INFOLOG("%d.%d set CAM decrypt (SID %d, caLm %d, HasCaDescriptors %d)", cardIndex, slot, sid, ca_lm, HasCaDescriptors);
+      else
+        DEBUGLOG("%d.%d answer to query surpressed", cardIndex, slot);
 
-          if (!HasCaDescriptors)
-          {
-            vdr_caPMT = NULL;
-            vdr_caPMTLen = 0;
-          }
-          sCCIAdapter->ProcessSIDRequest(sCCIAdapter->Adapter(), sid, ca_lm, vdr_caPMT, vdr_caPMTLen);
+      if (ci_cmd == 0x04 || (ci_cmd == -1 && sid == 0 && ca_lm == 0x03))
+        DEBUGLOG("%d.%d stop decrypt", cardIndex, slot);
+      else if (ci_cmd == 0x01 || (ci_cmd == -1 && sid != 0 && (ca_lm == 0x03 || ca_lm == 0x04 || ca_lm == 0x05)))
+      {
+        INFOLOG("%d.%d set CAM decrypt (SID %d, caLm %d, HasCaDescriptors %d)", cardIndex, slot, sid, ca_lm, HasCaDescriptors);
+
+        if (!HasCaDescriptors)
+        {
+          vdr_caPMT = NULL;
+          vdr_caPMTLen = 0;
         }
+        capmt->ProcessSIDRequest(cardIndex, sid, ca_lm, vdr_caPMT, vdr_caPMTLen);
       }
+      else
+        DEBUGLOG("%d.%d no action taken", cardIndex, slot);
     }
     break;
   }

@@ -24,7 +24,6 @@
 #include <dlfcn.h>
 
 #include <linux/dvb/ca.h>
-#include <vdr/channels.h>
 #include <vdr/ci.h>
 #include <vdr/dvbdevice.h>
 #include <vdr/dvbci.h>
@@ -33,8 +32,6 @@
 #include "Frame.h"
 #include "Log.h"
 
-#define SOCKET_CHECK_INTERVAL   3000
-
 // from vdr's ci.c
 #define T_CREATE_TC    0x82
 #define T_RCV          0x81
@@ -42,95 +39,24 @@
 
 SCCIAdapter::SCCIAdapter(cDevice *Device, int cardIndex, int cafd, bool SoftCSA, bool FullTS)
 {
-  for (int i = 0; i < MAX_SOCKETS; i++)
-  {
-    sids[i] = 0;
-    sockets[i] = 0;
-  }
-
   this->cardIndex = cardIndex;
   device = Device;
-  capmt = new CAPMT;
   fd_ca = cafd;
   softcsa = SoftCSA;
   fullts = FullTS;
 
-  decsa = softcsa ? new DeCSA(cardIndex) : 0;
-  UDPSocket::bindx(this);
-
-  memset(version, 1, sizeof(version));
+  version = 1;
   memset(slots, 0, sizeof(slots));
-  memset(caids, 0, sizeof(caids));
-  caidsLength = 0;
-  Channels.Lock(false);
-  for (cChannel *channel = Channels.First(); channel; channel = Channels.Next(channel))
-  {
-    if (!channel->GroupSep() && channel->Ca() >= CA_ENCRYPTED_MIN)
-    {
-      for (const int *ids = channel->Caids(); *ids; ids++)
-        addCaid(0, caidsLength, (unsigned short) *ids);
-    }
-  }
-  Channels.Unlock();
+
   rb = new cRingBufferLinear(KILOBYTE(8), 6 + LEN_OFF, false, "SC-CI adapter read");
   if (rb)
   {
     rb->SetTimeouts(0, CAM_READ_TIMEOUT);
     frame.SetRb(rb);
   }
-  INFOLOG("%s: built caid table with %i caids for %i channels", __FUNCTION__, caidsLength, Channels.Count());
   SetDescription("SC-CI adapter on device %d", cardIndex);
-  for (int i = 0; i < MAX_CI_SLOTS && i * MAX_CI_SLOT_CAIDS < caidsLength; i++)
-    slots[i] = new SCCAMSlot(this, cardIndex, i);
+  slots[0] = new SCCAMSlot(this, cardIndex, 0);
   Start();
-}
-
-int SCCIAdapter::addCaid(int offset, int limit, unsigned short caid)
-{
-  if ((caids[offset] == caid))
-    return offset;
-  if ((limit == 0) || (caidsLength == 0))
-  {
-    if ((caid > caids[offset]) && (offset < caidsLength))
-      offset++;
-    if (offset < caidsLength)
-      memmove(&caids[offset + 1], &caids[offset], (caidsLength - offset) * sizeof(int));
-    caidsLength++;
-    caids[offset] = caid;
-    return offset;
-  }
-  if (caid > caids[offset])
-  {
-    offset = offset + limit;
-    if (offset > caidsLength)
-      offset = caidsLength;
-  }
-  else if (caid < caids[offset])
-  {
-    offset = offset - limit;
-    if (offset < 0)
-      offset = 0;
-  }
-  if (limit == 1)
-    limit = 0;
-  else
-    limit = ceil(((float) limit) / 2.0f);
-  if (offset + limit > caidsLength)
-    offset = caidsLength - limit;
-  return addCaid(offset, limit, caid);
-}
-
-int SCCIAdapter::GetCaids(int slot, unsigned short *Caids, int max)
-{
-  cMutexLock lock(&ciMutex);
-  if (Caids)
-  {
-    int i;
-    for (i = 0; i < MAX_CI_SLOT_CAIDS && i < max && slot * MAX_CI_SLOT_CAIDS + i < caidsLength && caids[slot * MAX_CI_SLOT_CAIDS + i]; i++)
-      Caids[i] = caids[slot * MAX_CI_SLOT_CAIDS + i];
-    Caids[i] = 0;
-  }
-  return version[slot];
 }
 
 int SCCIAdapter::Read(unsigned char *Buffer, int MaxLength)
@@ -233,37 +159,6 @@ void SCCIAdapter::Write(const unsigned char *buff, int len)
   }
   else
     DEBUGLOG("%d: short write (buff=%d len=%d)", cardIndex, buff != 0, len);
-
-  if (checkTimer.TimedOut())
-  {
-    OSCamCheck();
-    checkTimer.Set(SOCKET_CHECK_INTERVAL);
-  }
-}
-
-void SCCIAdapter::OSCamCheck()
-{
-  for (int i = 0; i < MAX_SOCKETS; i++)
-  {
-    if (sockets[i] != 0)
-    {
-      DEBUGLOG("%s: %d: checking if connection to socket_fd=%d is still alive", __FUNCTION__, cardIndex, sockets[i]);
-      if ((sockets[i] == -1) || (write(sockets[i], NULL, 0) < 0))
-      {
-        if (sids[i] != 0)    //we have a SID assigned with this socket, need to reconnect and resend PMT data
-        {
-          int new_fd = capmt->send(cardIndex, sids[i], -1, NULL, 0);
-          if (new_fd > 0)
-          {
-            INFOLOG("%d: reconnected successfully, replacing socket_fd %d with %d", cardIndex, sockets[i], new_fd);
-            sockets[i] = new_fd;
-          }
-        }
-        else                 //no SID assigned to this socket, mark as invalid
-          sockets[i] = 0;
-      }
-    }
-  }
 }
 
 SCCIAdapter::~SCCIAdapter()
@@ -272,22 +167,10 @@ SCCIAdapter::~SCCIAdapter()
 
   Cancel(3);
 
-  for (int i = 0; i < MAX_SOCKETS; i++)
-  {
-    if (sockets[i] > 0)
-      close(sockets[i]);
-    sockets[i] = 0;
-  }
   ciMutex.Lock();
   delete rb;
   rb = 0;
   ciMutex.Unlock();
-
-  if (decsa)
-    delete decsa;
-  if (capmt != 0)
-    delete capmt;
-  capmt = 0;
 }
 
 bool SCCIAdapter::Reset(int Slot)
@@ -305,124 +188,5 @@ eModuleStatus SCCIAdapter::ModuleStatus(int Slot)
 
 bool SCCIAdapter::Assign(cDevice *Device, bool Query)
 {
-  return Device ? (Device == device) : true;
-}
-
-void SCCIAdapter::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen)
-{
-/*
-    here is what i found so far analyzing AOT_CA_PMT frame from vdr
-    lm=4 prg=X: request for X SID to be decrypted (added)
-    lm=5 prg=X: request for X SID to stop decryption (removed)
-    lm=3 prg=0: this is sent when changing transponder or during epg scan (also before new channel but ONLY if it is on different transponder)
-    lm=3 prg=X: it seems that this is sent when starting vdr with active timers
-*/
-  int i;
-
-  //for (i = 0; i < MAX_SOCKETS; i++)
-    //DEBUGLOG("%s: SOCKETS TABLE DUMP [%d]: sid=%d socket=%d", __FUNCTION__, i, sids[i], sockets[i]);
-  if (sid == 0)
-  {
-    DEBUGLOG("%s: got empty SID - returning from function", __FUNCTION__);
-    return;
-  }
-  if (ca_lm == 0x04 || ca_lm == 0x03)   //adding new sid
-  {
-    int found = 0;
-    for (i = 0; i < MAX_SOCKETS; i++)
-    {
-      if (sids[i] == sid)
-      {
-        found = 1;
-        break;
-      }
-    }
-
-    if (found)
-      DEBUGLOG("%s: found sid, reusing socket, i=%d", __FUNCTION__, i);
-    else                        //not found - adding to first free in table
-    {
-      for (i = 0; i < MAX_SOCKETS; i++)
-      {
-        if (sids[i] == 0)
-        {
-          sids[i] = sid;
-          break;
-        }
-      }
-    }
-    if (i == MAX_SOCKETS)
-    {
-      ERRORLOG("%s: no free space for new SID!!!", __FUNCTION__);
-      return;
-    }
-    else
-    {
-      sids[i] = sid;
-      DEBUGLOG("%s: added: i=%d", __FUNCTION__, i);
-    }
-  }
-  else if (ca_lm == 0x05)       //removing sid
-  {
-    for (i = 0; i < MAX_SOCKETS; i++)
-    {
-      if (sids[i] == sid)
-        break;
-    }
-    if (i == MAX_SOCKETS)
-    {
-      ERRORLOG("%s: socket to close not found", __FUNCTION__);
-      return;
-    }
-
-    //closing socket (oscam handles this as event and stop decrypting)
-    DEBUGLOG("%s: closing socket i=%d, socket_fd=%d", __FUNCTION__, i, sockets[i]);
-    sids[i] = 0;
-    if (sockets[i] > 0)
-      close(sockets[i]);
-    sockets[i] = 0;
-    return;
-  }
-  else
-  {
-    ERRORLOG("%s: unhandled ca_lm request type = %d", __FUNCTION__, ca_lm);
-    return;
-  }
-
-  sockets[i] = capmt->send(card_index, sid, sockets[i], vdr_caPMT, vdr_caPMTLen);
-  initialCaDscr = true;
-}
-
-bool SCCIAdapter::DeCSASetCaDescr(ca_descr_t *ca_descr)
-{
-  DEBUGLOG("%s: index=%d", __FUNCTION__, ca_descr->index);
-  if (!softcsa || (fullts && ca_descr->index == 0))
-  {
-    cMutexLock lock(&cafdMutex);
-    return ioctl(fd_ca, CA_SET_DESCR, ca_descr) >= 0;
-  }
-  if (ca_descr->index == (unsigned) -1)
-  {
-    DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
-    return true;
-  }
-  bool ret = decsa->SetDescr(ca_descr, initialCaDscr);
-  initialCaDscr = false;
-  return ret;
-}
-
-bool SCCIAdapter::DeCSASetCaPid(ca_pid_t *ca_pid)
-{
-  DEBUGLOG("%s: PID=%d, index=%d", __FUNCTION__, ca_pid->pid, ca_pid->index);
-  if (!softcsa || (fullts && ca_pid->index == 0))
-  {
-    cMutexLock lock(&cafdMutex);
-    return ioctl(fd_ca, CA_SET_PID, ca_pid) >= 0;
-  }
-  if (ca_pid->index == -1)
-  {
-    DEBUGLOG("%s: removal request - ignoring", __FUNCTION__);
-    return true;
-  }
-  return decsa->SetCaPid(ca_pid);
+  return Device ? (Device->CardIndex() == cardIndex) : true;
 }

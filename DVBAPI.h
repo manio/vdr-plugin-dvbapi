@@ -21,19 +21,21 @@
 
 #include <getopt.h>
 #include <vdr/plugin.h>
-#include "device.h"
-#include "dll.h"
+#include "CAPMT.h"
+#include "DeCSA.h"
+#include "SCCIAdapter.h"
+#include "SocketHandler.h"
 
 static const char *VERSION        = "1.0.6";
 static const char *DESCRIPTION    = "DVBAPI type SOFTCAM";
-
-extern int DeCsaTsBuffSize;
+DeCSA *decsa = NULL;
+CAPMT *capmt = NULL;
+SocketHandler *SockHandler = NULL;
 
 class DVBAPI : public cPlugin
 {
 private:
-  cScDlls dlls;
-
+  SCCIAdapter *sCCIAdapter[MAXDEVICES];
 public:
   DVBAPI(void);
   virtual ~DVBAPI();
@@ -45,7 +47,10 @@ public:
   {
     return DESCRIPTION;
   }
-  virtual const char *CommandLineHelp(void);
+  virtual const char *CommandLineHelp(void)
+  {
+    return NULL;
+  }
   virtual bool ProcessArgs(int argc, char *argv[]);
   virtual bool Initialize(void);
   virtual bool Start(void);

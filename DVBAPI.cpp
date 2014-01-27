@@ -22,62 +22,61 @@
 #include "DVBAPI.h"
 #include "DVBAPISetup.h"
 #include "Log.h"
+#include "SCCIAdapter.h"
 
 DVBAPI::DVBAPI(void)
 {
-  dlls.Load();
-  cScDevices::OnPluginLoad();
+  for (int i = 0; i < MAXDEVICES; i++)
+    sCCIAdapter[i] = NULL;
 }
 
 DVBAPI::~DVBAPI()
 {
-  cScDevices::OnPluginUnload();
-}
-
-const char *DVBAPI::CommandLineHelp(void)
-{
-  return ("  -B N,     --budget=N     forces DVB device N to budget mode (using FFdecsa)\n");
 }
 
 bool DVBAPI::ProcessArgs(int argc, char *argv[])
 {
-  static struct option long_options[] = {
-      { "budget",      required_argument, NULL, 'B' },
-      { NULL }
-    };
-
-  int c, option_index = 0;
-  while ((c = getopt_long(argc, argv, "B:", long_options, &option_index)) != -1)
-  {
-    switch (c)
-    {
-      case 'B':
-        cScDevices::SetForceBudget(atoi(optarg));
-        break;
-      default:
-        return false;
-    }
-  }
   return true;
 }
 
 bool DVBAPI::Initialize(void)
 {
   // Initialize any background activities the plugin shall perform.
-  INFOLOG("plugin version %s initializing (VDR %s)", VERSION, VDRVERSION);
-  return cScDevices::Initialize();
+  return true;
 }
 
 bool DVBAPI::Start(void)
 {
-  cScDevices::Startup();
+  INFOLOG("plugin version %s initializing (VDR %s)", VERSION, VDRVERSION);
+  SockHandler = new SocketHandler;
+  decsa = new DeCSA(0);
+  capmt = new CAPMT;
+
+  for (int i = 0; i < cDevice::NumDevices(); i++)
+  {
+    if (const cDevice *Device = cDevice::GetDevice(i))
+    {
+      INFOLOG("Creating sCCIAdapter for device %d", Device->CardIndex());
+      sCCIAdapter[i] = new SCCIAdapter(NULL, Device->CardIndex(), 0, true, true);
+    }
+  }
   INFOLOG("plugin started");
   return true;
 }
 
 void DVBAPI::Stop(void)
 {
-  cScDevices::Shutdown();
+  for (int i = 0; i < MAXDEVICES; i++)
+  {
+    delete sCCIAdapter[i];
+    sCCIAdapter[i] = NULL;
+  }
+  delete capmt;
+  capmt = NULL;
+  delete decsa;
+  decsa = NULL;
+  delete SockHandler;
+  SockHandler = NULL;
   INFOLOG("plugin stopped");
 }
 
@@ -115,8 +114,6 @@ bool DVBAPI::SetupParse(const char *Name, const char *Value)
   // Parse your own setup parameters and store their values.
   if (!strcasecmp(Name, CONFNAME_LOGLEVEL))
     LogLevel = atoi(Value);
-  else if (!strcasecmp(Name, CONFNAME_DECSABUFSIZE))
-    DeCsaTsBuffSize = atoi(Value);
   else
     return false;
   return true;

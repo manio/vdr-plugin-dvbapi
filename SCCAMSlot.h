@@ -24,13 +24,6 @@
 #include "Frame.h"
 
 #define SLOT_CAID_CHECK   10000
-#define SLOT_RESET_TIME     600
-#define MAX_CW_IDX           16
-#define CAID_TIME        300000   // time between caid scans
-#define TRIGGER_TIME      10000   // min. time between caid scan trigger
-#define MAX_SOCKETS          16   // max sockets (simultaneus channels) per demux
-
-#define MAX_CI_SLOT_CAIDS    64
 
 class SCCIAdapter;
 
@@ -38,7 +31,6 @@ class SCCAMSlot : public cCamSlot
 {
 private:
   SCCIAdapter *sCCIAdapter;
-  unsigned short caids[MAX_CI_SLOT_CAIDS + 1];
   int slot, cardIndex, version;
   cTimeMs checkTimer;
   bool reset, doReply;
@@ -61,6 +53,9 @@ public:
   {
     return &frame;
   }
+  uchar *Decrypt(uchar *Data, int &Count);
+  virtual const char *GetCamName(void);
+  bool ProvidesCa(const int *CaSystemIds);
 };
 
 #endif // ___SCCAMSLOT_H

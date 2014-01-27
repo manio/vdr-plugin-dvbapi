@@ -35,32 +35,6 @@ export CXXFLAGS = $(call PKGCFG,cxxflags)
 ### The version number of VDR's plugin API:
 
 APIVERSION = $(call PKGCFG,apiversion)
-ifeq ($(strip $(APIVERSION)),)
-APIVERSION = $(shell grep 'define APIVERSION ' $(VDRDIR)/config.h | awk '{ print $$3 }' | sed -e 's/"//g')
-NOCONFIG := 1
-endif
-
-# backward compatibility with VDR version < 1.7.34
-API1733 := $(shell if [ "$(APIVERSION)" \< "1.7.34" ]; then echo true; fi; )
-
-ifdef API1733
-
-VDRSRC = $(VDRDIR)
-ifeq ($(strip $(VDRSRC)),)
-VDRSRC := ../../..
-endif
-LIBDIR = $(VDRSRC)/PLUGINS/lib
-
-ifndef NOCONFIG
-CXXFLAGS = $(call PKGCFG,cflags)
-CXXFLAGS += -fPIC
-else
--include $(VDRSRC)/Make.global
--include $(VDRSRC)/Make.config
-endif
-
-export CXXFLAGS
-endif
 
 ### The name of the distribution archive:
 
@@ -73,15 +47,13 @@ SOFILE = libvdr-$(PLUGIN).so
 
 ### Includes and Defines (add further entries here):
 
-ifdef API1733
-INCLUDES += -I$(VDRSRC)/include
-endif
+INCLUDES +=
 
 DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
 ### The object files (add further files here):
 
-OBJS = CAPMT.o DeCSA.o DeCsaTSBuffer.o dll.o DVBAPI.o DVBAPISetup.o SCDeviceProbe.o simplelist.o device.o deviceplugin.o UDPSocket.o SCCIAdapter.o Frame.o SCCAMSlot.o
+OBJS = CAPMT.o DeCSA.o DVBAPI.o DVBAPISetup.o SocketHandler.o SCCIAdapter.o Frame.o SCCAMSlot.o
 
 ifndef LIBDVBCSA
 # FFdeCSA
@@ -96,35 +68,9 @@ DECSALIB    = -ldvbcsa
 DEFINES    += -DLIBDVBCSA
 endif
 
-HAVE_SD := $(wildcard ../dvbsddevice/dvbsddevice.c)
-ifneq ($(strip $(HAVE_SD)),)
-  DEFINES += -DWITH_SDDVB
-  DEVPLUGTARGETS += libdvbapi-dvbsddevice.so
-  DEVPLUGINSTALL += install-devplug-sddvb
-endif
-HAVE_HD := $(wildcard ../dvbhddevice/dvbhddevice.c)
-ifneq ($(strip $(HAVE_HD)),)
-  HDVERS := $(shell sed -ne '/*VERSION/ s/^.*=.*"\(.*\)".*$$/\1/p' ../dvbhddevice/dvbhddevice.c)
-  ifeq ($(findstring dag,$(HDVERS)),)
-    DEFINES += -DWITH_HDDVB
-    DEVPLUGTARGETS += libdvbapi-dvbhddevice.so
-    DEVPLUGINSTALL += install-devplug-hddvb
-  endif
-endif
-HAVE_UFS9XX := $(wildcard ../dvbufs9xx/dvbhddevice.c)
-ifneq ($(strip $(HAVE_UFS9XX)),)
-  DEFINES += -DWITH_UFS9XX
-  DEVPLUGTARGETS += libdvbapi-dvbufs9xx.so
-  DEVPLUGINSTALL += install-devplug-ufs9xx
-endif
-
 ### The main target:
 
-ifdef API1733
-all: install
-else
-all: $(SOFILE) $(DEVPLUGTARGETS)
-endif
+all: $(SOFILE)
 
 ### Implicit rules:
 
@@ -145,15 +91,6 @@ $(DEPFILE): Makefile
 $(SOFILE): $(OBJS) $(FFDECSA)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $(OBJS) $(DECSALIB) -o $@
 
-libdvbapi-dvbsddevice.so: device-sd.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $< -o $@
-
-libdvbapi-dvbhddevice.so: device-hd.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $< -o $@
-
-libdvbapi-dvbufs9xx.so: device-ufs9xx.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $< -o $@
-
 ifndef LIBDVBCSA
 $(FFDECSA): $(FFDECSADIR)/*.c $(FFDECSADIR)/*.h
 	@$(MAKE) COMPILER="$(CXX)" FLAGS="$(CXXFLAGS) $(LDFLAGS) $(CSAFLAGS)" PARALLEL_MODE=$(PARALLEL) -C $(FFDECSADIR) all
@@ -162,16 +99,7 @@ endif
 install-lib: $(SOFILE)
 	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
 
-install-devplug-sddvb: libdvbapi-dvbsddevice.so
-	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
-
-install-devplug-hddvb: libdvbapi-dvbhddevice.so
-	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
-
-install-devplug-ufs9xx: libdvbapi-dvbufs9xx.so
-	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
-
-install: install-lib $(DEVPLUGINSTALL)
+install: install-lib
 
 dist: clean
 	@-rm -rf $(TMPDIR)/$(ARCHIVE)
@@ -182,7 +110,7 @@ dist: clean
 	@echo Distribution package created as $(PACKAGE).tgz
 
 clean: clean-ffdecsa
-	@-rm -f $(OBJS) device-sd.o device-hd.o device-ufs9xx.o $(DEPFILE) *.so *.tgz core* *~
+	@-rm -f $(OBJS) $(DEPFILE) *.so *.tgz core* *~
 
 clean-ffdecsa:
 ifndef LIBDVBCSA

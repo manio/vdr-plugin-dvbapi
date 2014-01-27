@@ -16,45 +16,43 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef ___DLL_H
-#define ___DLL_H
+#ifndef ___SOCKETHANDLER_H
+#define ___SOCKETHANDLER_H
 
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <vdr/tools.h>
-#include <vdr/config.h>
-#include <dlfcn.h>
-#include <fnmatch.h>
-#include "simplelist.h"
+#include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <vdr/thread.h>
+#include "DeCSA.h"
 
-// --- cScDll ------------------------------------------------------------------
+class CAPMT;
 
-class cScDll : public cSimpleItem
+extern DeCSA *decsa;
+extern CAPMT *capmt;
+
+class SocketHandler : public cThread
 {
-private:
-  char *fileName;
-  void *handle;
-
 public:
-  cScDll(const char *FileName);
-  ~cScDll();
-  bool Load(bool check);
+  SocketHandler();
+  ~SocketHandler();
+  void OpenConnection();
+  void CloseConnection();
+  void WritePMT(unsigned char* caPMT, int toWrite);
+  virtual void Action(void);
+
+private:
+  int sock;
+  cMutex mutex;
+  ca_descr_t ca_descr;
+  ca_pid_t ca_pid;
+  cTimeMs checkTimer;
 };
 
-// --- cScDlls -----------------------------------------------------------------
-
-#define LIBVDR_PREFIX     "libvdr-"
-#define LIBDVBAPI_PREFIX  "libdvbapi-"
-#define SO_INDICATOR      ".so."
-
-class cScDlls : public cSimpleList<cScDll>
-{
-private:
-  void *handle;
-
-public:
-  cScDlls(void);
-  ~cScDlls();
-  bool Load(void);
-};
-
-#endif // ___DLL_H
+#endif // ___SOCKETHANDLER_H
