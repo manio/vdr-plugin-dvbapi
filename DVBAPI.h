@@ -26,7 +26,7 @@
 #include "SCCIAdapter.h"
 #include "SocketHandler.h"
 
-static const char *VERSION        = "1.0.6";
+static const char *VERSION        = "2.0.0";
 static const char *DESCRIPTION    = "DVBAPI type SOFTCAM";
 DeCSA *decsa = NULL;
 CAPMT *capmt = NULL;

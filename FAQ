@@ -1,3 +1,18 @@
+Q: When I start VDR than I need to zap twice to the same channel to have it
+   working.
+
+A: This problem would probably only affect a live streaming plugins.
+   Since version 2.0.0 the plugin is not obtaining PMT data when VDR doesn't
+   provide CA descriptors, to have it done properly, only VDR should provide it.
+   VDR is collecting this data after channel switch and during idle scan.
+
+   If you have this problem, the streaming plugin has to implement VDR's 2.1.4
+   cStatus::ChannelChange() interface which informs about channel changes.
+   After retune the dvbapi plugin will be able to pass complete information
+   to OSCam.
+   Please ask the streaming plugin author to make necessary changes.
+
+
 Q: The plugin is not sending EMMs to my card, and my card is not working
    after some period.
 

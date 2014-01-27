@@ -1,0 +1,18 @@
+2014-01-27 Version 2.0.0
+-------------------------------------------------------------------
+This version is a big step towards simplifying plugin architecture.
+Changes since version 1.0.6:
+
+OSCam changes allows:
+- Use one single socket connection to camd.socket for all channels
+  and all adapters.
+- Keys are also sent using same camd.socket, UDP is not used
+  anymore.
+
+Using new VDR CAM interface gave the following benefits:
+- Plugin doesn't need to create VDR devices, and loading subplugins
+  for hardware devices.
+- The plugin doesn't need to create own TS buffer for DeCSA
+  decryption, it's now done on VDR side.
+- Opening demux for obtaining PMT data has been dropped
+  (refer to the FAQ).
