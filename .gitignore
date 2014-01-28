@@ -1,5 +1,8 @@
+.dependencies
 *.o
 *.so
+*~
 FFdecsa/FFdecsa_test
 FFdecsa/FFdecsa_test.done
-.dependencies
+po/*.pot
+po/*.mo
