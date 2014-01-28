@@ -27,7 +27,7 @@
 #include "SocketHandler.h"
 
 static const char *VERSION        = "2.0.0";
-static const char *DESCRIPTION    = "DVBAPI type SOFTCAM";
+static const char *DESCRIPTION    = trNOOP("DVBAPI type SOFTCAM");
 DeCSA *decsa = NULL;
 CAPMT *capmt = NULL;
 SocketHandler *SockHandler = NULL;
@@ -45,7 +45,7 @@ public:
   }
   virtual const char *Description(void)
   {
-    return DESCRIPTION;
+    return tr(DESCRIPTION);
   }
   virtual const char *CommandLineHelp(void)
   {
