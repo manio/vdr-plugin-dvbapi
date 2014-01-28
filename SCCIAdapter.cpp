@@ -44,6 +44,7 @@ SCCIAdapter::SCCIAdapter(cDevice *Device, int cardIndex, int cafd, bool SoftCSA,
   fd_ca = cafd;
   softcsa = SoftCSA;
   fullts = FullTS;
+  tcid = 0;
 
   version = 1;
   memset(slots, 0, sizeof(slots));

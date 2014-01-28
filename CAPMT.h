@@ -57,6 +57,7 @@ private:
   vector<pmtobj> pmt;
 
 public:
+  CAPMT();
   ~CAPMT();
   void send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt);
   void ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen);

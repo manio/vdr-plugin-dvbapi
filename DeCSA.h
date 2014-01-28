@@ -59,6 +59,9 @@ private:
   int cardindex;
   bool GetKeyStruct(int idx);
   void ResetState(void);
+  // to prevent copy constructor and assignment
+  DeCSA(const DeCSA&);
+  DeCSA& operator=(const DeCSA&);
 
 public:
   DeCSA(int CardIndex);

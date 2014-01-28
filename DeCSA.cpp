@@ -42,8 +42,8 @@ DeCSA::DeCSA(int CardIndex)
 #else
   cs = dvbcsa_bs_batch_size();
   DEBUGLOG("%d: batch_size=%d", cardindex, cs);
-  cs_tsbbatch_even = (dvbcsa_bs_batch_s *) malloc((cs + 1) * sizeof(struct dvbcsa_bs_batch_s));
-  cs_tsbbatch_odd = (dvbcsa_bs_batch_s *) malloc((cs + 1) * sizeof(struct dvbcsa_bs_batch_s));
+  cs_tsbbatch_even = reinterpret_cast<dvbcsa_bs_batch_s *>(malloc((cs + 1) * sizeof(struct dvbcsa_bs_batch_s)));
+  cs_tsbbatch_odd = reinterpret_cast<dvbcsa_bs_batch_s *>(malloc((cs + 1) * sizeof(struct dvbcsa_bs_batch_s)));
   memset(cs_key_even, 0, sizeof(cs_key_even));
   memset(cs_key_odd, 0, sizeof(cs_key_odd));
 #endif

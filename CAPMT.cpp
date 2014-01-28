@@ -22,11 +22,16 @@
 #include <stdio.h>
 #include "Log.h"
 
+CAPMT::CAPMT()
+{
+  memset(&caPMT, 0, sizeof(caPMT));
+}
+
 CAPMT::~CAPMT()
 {
   cMutexLock lock(&mutex);
   vector<pmtobj>::iterator it;
-  for (it=pmt.begin(); it!=pmt.end(); it++)
+  for (it=pmt.begin(); it!=pmt.end(); ++it)
   {
     if (it->data)
       delete[] it->data;
@@ -44,7 +49,6 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     lm=3 prg=X: it seems that this is sent when starting vdr with active timers
 */
   cMutexLock lock(&mutex);
-  int length, offset = 0;
   if (sid == 0)
   {
     DEBUGLOG("%s: got empty SID - returning from function", __FUNCTION__);
@@ -53,7 +57,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
 
   //removind the PMT if exists
   vector<pmtobj>::iterator it;
-  for (it = pmt.begin(); it != pmt.end(); it++)
+  for (it = pmt.begin(); it != pmt.end(); ++it)
   {
     if (it->sid == sid)
     {
@@ -72,6 +76,9 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     pmto.adapter = card_index;
     if (vdr_caPMTLen > 0)
     {
+      int length;
+      int offset = 0;
+
       pmto.pilen[0] = vdr_caPMT[4];   //reserved+program_info_length
       pmto.pilen[1] = vdr_caPMT[5];   //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
 

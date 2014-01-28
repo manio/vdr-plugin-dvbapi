@@ -185,9 +185,6 @@ void SCCAMSlot::CaInfo(int tcid, int cid)
 void SCCAMSlot::Process(const unsigned char *data, int len)
 {
   const unsigned char *save = data;
-  const unsigned char *vdr_caPMT = NULL;
-  int vdr_caPMTLen = 0;
-  bool HasCaDescriptors = false;
 
   data += 3;
   int dlen = GetLength(data);
@@ -221,8 +218,9 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
   case AOT_CA_PMT:
     if (dlen >= 6)
     {
-      vdr_caPMT = data;
-      vdr_caPMTLen = dlen;
+      bool HasCaDescriptors = false;
+      const unsigned char *vdr_caPMT = data;
+      int vdr_caPMTLen = dlen;
 
       int ca_lm = data[0];                      // lm -> list manager
       int ci_cmd = -1;

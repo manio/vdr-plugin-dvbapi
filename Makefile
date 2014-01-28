@@ -143,3 +143,7 @@ clean-ffdecsa:
 ifndef LIBDVBCSA
 	@$(MAKE) -C $(FFDECSADIR) clean
 endif
+
+.PHONY: cppcheck
+cppcheck:
+	@cppcheck --language=c++ --enable=all -v -f $(OBJS:%.o=%.cpp)
