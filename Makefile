@@ -125,7 +125,7 @@ endif
 install-lib: $(SOFILE)
 	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
 
-install: install-lib
+install: install-lib install-i18n
 
 dist: clean
 	@-rm -rf $(TMPDIR)/$(ARCHIVE)
