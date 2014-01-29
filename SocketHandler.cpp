@@ -118,6 +118,13 @@ void SocketHandler::Action(void)
     }
     // request
     cRead = recv(sock, &buff, sizeof(int), MSG_DONTWAIT);
+    if (cRead <= 0)
+    {
+      if (cRead == 0)
+        sock = 0;
+      cCondWait::SleepMs(20);
+      continue;
+    }
     request = (int *) &buff;
     if (*request == CA_SET_PID)
       cRead = recv(sock, buff+4, sizeof(ca_pid_t), MSG_DONTWAIT);
