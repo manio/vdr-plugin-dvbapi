@@ -100,7 +100,6 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
   }
 
   SendAll();
-  initialCaDscr = true;
 }
 
 void CAPMT::SendAll()

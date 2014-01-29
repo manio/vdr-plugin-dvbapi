@@ -55,7 +55,6 @@ private:
   unsigned char caPMT[CAPMT_BUFFER_SIZE];
   bool get_pmt(const int adapter, const int sid, unsigned char *buft);
   vector<pmtobj> pmt;
-  bool initialCaDscr;
 
 public:
   ~CAPMT();

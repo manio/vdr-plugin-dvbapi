@@ -78,14 +78,6 @@ void DeCSA::ResetState(void)
 #endif
 }
 
-void DeCSA::SetActive(bool on)
-{
-//  if (!on && active)
-//    ResetState();
-  active = true;
-  DEBUGLOG("%d: set active %s", cardindex, active ? "on" : "off");
-}
-
 bool DeCSA::GetKeyStruct(int idx)
 {
 #ifndef LIBDVBCSA
