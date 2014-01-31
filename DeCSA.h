@@ -32,6 +32,7 @@ extern "C" {
 #define MAX_CSA_PIDS 8192
 #define MAX_CSA_IDX  16
 #define MAX_ADAPTERS 4
+#define MAX_KEY_WAIT 20         // max seconds to consider a CW as valid
 
 class DeCSA
 {
@@ -46,6 +47,7 @@ private:
   struct dvbcsa_bs_key_s *cs_key_even[MAX_CSA_IDX];
   struct dvbcsa_bs_key_s *cs_key_odd[MAX_CSA_IDX];
 #endif
+  time_t cwSeen[MAX_CSA_IDX];   // last time the CW for the related key was seen
   unsigned char pidmap[MAX_ADAPTERS][MAX_CSA_PIDS];    //FIXME: change to dynamic structure
   cMutex mutex;
   int cardindex;

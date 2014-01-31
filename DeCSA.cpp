@@ -47,6 +47,7 @@ DeCSA::DeCSA(int CardIndex)
   memset(cs_key_even, 0, sizeof(cs_key_even));
   memset(cs_key_odd, 0, sizeof(cs_key_odd));
 #endif
+  memset(cwSeen, 0, sizeof(cwSeen));
   memset(pidmap, 0, sizeof(pidmap));
   ResetState();
 }
@@ -101,6 +102,7 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
   if (idx < MAX_CSA_IDX && GetKeyStruct(idx))
   {
     DEBUGLOG("%d.%d: %4s key set", cardindex, idx, ca_descr->parity ? "odd" : "even");
+    cwSeen[idx] = time(NULL);
     if (ca_descr->parity == 0)
     {
 #ifndef LIBDVBCSA
@@ -244,6 +246,11 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       // nothing, we don't create holes for unencrypted packets
     }
   }
+
+  // return if the key is expired
+  if (time(NULL) - cwSeen[currIdx] > MAX_KEY_WAIT)
+    return false;
+
 #ifndef LIBDVBCSA
   if (r >= 0)
   {                             // we have some range
