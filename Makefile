@@ -12,6 +12,7 @@ PLUGIN = dvbapi
 ### The version number of this plugin (taken from the main source file):
 
 VERSION = $(shell grep 'static const char \*VERSION *=' DVBAPI.h | awk '{ print $$6 }' | sed -e 's/[";]//g')
+GITTAG  = $(shell git describe --always 2>/dev/null)
 
 ### The directory environment:
 
@@ -50,6 +51,10 @@ SOFILE = libvdr-$(PLUGIN).so
 INCLUDES +=
 
 DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
+
+ifneq ($(strip $(GITTAG)),)
+DEFINES += -DGITVERSION='"-GIT-$(GITTAG)"'
+endif
 
 ### The object files (add further files here):
 

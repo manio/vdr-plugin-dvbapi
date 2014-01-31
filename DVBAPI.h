@@ -26,7 +26,11 @@
 #include "SCCIAdapter.h"
 #include "SocketHandler.h"
 
-static const char *VERSION        = "2.0.0";
+#ifndef GITVERSION
+#define GITVERSION ""
+#endif
+
+static const char *VERSION        = "2.0.0" GITVERSION;
 static const char *DESCRIPTION    = trNOOP("DVBAPI type SOFTCAM");
 DeCSA *decsa = NULL;
 CAPMT *capmt = NULL;
