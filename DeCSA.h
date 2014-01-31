@@ -31,15 +31,7 @@ extern "C" {
 
 #define MAX_CSA_PIDS 8192
 #define MAX_CSA_IDX  16
-#define MAX_STALL_MS 70
 #define MAX_ADAPTERS 4
-
-#define MAX_REL_WAIT 100        // time to wait if key in used on set
-#define MAX_KEY_WAIT 500        // time to wait if key not ready on change
-
-#define FL_EVEN_GOOD 1
-#define FL_ODD_GOOD  2
-#define FL_ACTIVITY  4
 
 class DeCSA
 {
