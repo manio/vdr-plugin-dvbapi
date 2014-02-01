@@ -206,10 +206,10 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       int idx = pidmap[adapter_index-1][((data[l + 1] << 8) + data[l + 2]) & (MAX_CSA_PIDS - 1)];
       if (currIdx < 0 || idx == currIdx)
       {                         // same or no index
-#ifdef LIBDVBCSA
-        data[l + 3] &= 0x3f;    // consider it decrypted now
-#endif
         currIdx = idx;
+        // return if the key is expired
+        if (time(NULL) - cwSeen[currIdx] > MAX_KEY_WAIT)
+          return false;
 #ifndef LIBDVBCSA
         if (newRange)
         {
@@ -220,6 +220,7 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
         }
         range[r + 1] = &data[l + TS_SIZE];
 #else
+        data[l + 3] &= 0x3f;    // consider it decrypted now
         if (((ev_od & 0x40) >> 6) == 0)
         {
           cs_tsbbatch_even[cs_fill_even].data = &data[l + offset];
@@ -246,11 +247,6 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       // nothing, we don't create holes for unencrypted packets
     }
   }
-
-  // return if the key is expired
-  if (time(NULL) - cwSeen[currIdx] > MAX_KEY_WAIT)
-    return false;
-
 #ifndef LIBDVBCSA
   if (r >= 0)
   {                             // we have some range
