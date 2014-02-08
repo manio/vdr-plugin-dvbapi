@@ -49,6 +49,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     lm=3 prg=X: it seems that this is sent when starting vdr with active timers
 */
   cMutexLock lock(&mutex);
+  bool removed = false;
   if (sid == 0)
   {
     DEBUGLOG("%s: got empty SID - returning from function", __FUNCTION__);
@@ -64,9 +65,13 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
       if (it->data)
         delete[] it->data;
       pmt.erase(it);
+      removed = true;
       break;
     }
   }
+  //nothing to update/remove
+  if (ca_lm == 0x05 && !removed && !vdr_caPMTLen)
+    return;
   //adding new or updating existing PMT data
   if (ca_lm == 0x04 || ca_lm == 0x03)
   {
