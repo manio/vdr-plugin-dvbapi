@@ -60,7 +60,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
   vector<pmtobj>::iterator it;
   for (it = pmt.begin(); it != pmt.end(); ++it)
   {
-    if (it->sid == sid)
+    if (it->sid == sid && it->adapter == card_index)
     {
       if (it->data)
         delete[] it->data;
