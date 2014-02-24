@@ -281,7 +281,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
         }
       }
       else
-        DEBUGLOG("%d.%d answer to query surpressed", cardIndex, slot);
+        DEBUGLOG("%d.%d answer to query suppressed", cardIndex, slot);
 
       if (ci_cmd == 0x04 || (ci_cmd == -1 && sid == 0 && ca_lm == 0x03))
         DEBUGLOG("%d.%d stop decrypt", cardIndex, slot);
