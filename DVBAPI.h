@@ -32,6 +32,12 @@
 
 static const char *VERSION        = "2.0.1" GITVERSION;
 static const char *DESCRIPTION    = trNOOP("DVBAPI type SOFTCAM");
+#ifndef LIBDVBCSA
+static const char *DECSALIB       = "FFdecsa";
+#else
+static const char *DECSALIB       = "libdvbcsa";
+#endif
+
 DeCSA *decsa = NULL;
 CAPMT *capmt = NULL;
 SocketHandler *SockHandler = NULL;

@@ -48,6 +48,7 @@ bool DVBAPI::Initialize(void)
 bool DVBAPI::Start(void)
 {
   INFOLOG("plugin version %s initializing (VDR %s)", VERSION, VDRVERSION);
+  INFOLOG("decryption library: %s", DECSALIB);
   capmt = new CAPMT;
   decsa = new DeCSA(0);
   SockHandler = new SocketHandler;
