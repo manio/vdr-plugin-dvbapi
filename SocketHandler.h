@@ -41,6 +41,9 @@ extern DeCSA *decsa;
 extern Filter *filter;
 extern CAPMT *capmt;
 
+extern char OSCamHost[HOST_NAME_MAX];
+extern char OSCamPort[HOST_NAME_MAX];
+
 class SocketHandler : public cThread
 {
 public:

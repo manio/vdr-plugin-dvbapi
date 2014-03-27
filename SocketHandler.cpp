@@ -41,7 +41,7 @@ void SocketHandler::OpenConnection()
 {
   cMutexLock lock(&mutex);
 
-  if (1==1)
+  if (OSCamHost[0])
   {
     // connecting via TCP socket to OSCam
     struct addrinfo hints, *servinfo, *p;
@@ -50,7 +50,7 @@ void SocketHandler::OpenConnection()
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
-    if ((rv = getaddrinfo("localhost", "600", &hints, &servinfo)) != 0)
+    if ((rv = getaddrinfo(OSCamHost, OSCamPort, &hints, &servinfo)) != 0)
     {
       ERRORLOG("getaddrinfo error: %s", gai_strerror(rv));
       return;
