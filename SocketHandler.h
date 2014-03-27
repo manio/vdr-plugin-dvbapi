@@ -44,7 +44,7 @@ public:
   ~SocketHandler();
   void OpenConnection();
   void CloseConnection();
-  void WritePMT(unsigned char* caPMT, int toWrite);
+  void Write(unsigned char *data, int len);
   virtual void Action(void);
 
 private:

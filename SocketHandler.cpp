@@ -63,18 +63,18 @@ void SocketHandler::CloseConnection()
   }
 }
 
-void SocketHandler::WritePMT(unsigned char* caPMT, int toWrite)
+void SocketHandler::Write(unsigned char *data, int len)
 {
   //try to reconnect to oscam if there is no connection
   if (sock == 0)
     OpenConnection();
   if (sock > 0)
   {
-    int wrote = write(sock, caPMT, toWrite);
-    DEBUGLOG("socket_fd=%d toWrite=%d wrote=%d", sock, toWrite, wrote);
-    if (wrote != toWrite)
+    int wrote = write(sock, data, len);
+    DEBUGLOG("socket_fd=%d len=%d wrote=%d", sock, len, wrote);
+    if (wrote != len)
     {
-      ERRORLOG("%s: wrote != toWrite", __FUNCTION__);
+      ERRORLOG("%s: wrote != len", __FUNCTION__);
       close(sock);
       sock = 0;
     }
