@@ -23,6 +23,7 @@
 #include <vdr/plugin.h>
 #include "CAPMT.h"
 #include "DeCSA.h"
+#include "Filter.h"
 #include "SCCIAdapter.h"
 #include "SocketHandler.h"
 
@@ -39,6 +40,7 @@ static const char *DECSALIB       = "libdvbcsa";
 #endif
 
 DeCSA *decsa = NULL;
+Filter *filter = NULL;
 CAPMT *capmt = NULL;
 SocketHandler *SockHandler = NULL;
 

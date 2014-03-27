@@ -51,6 +51,7 @@ bool DVBAPI::Start(void)
   INFOLOG("decryption library: %s", DECSALIB);
   capmt = new CAPMT;
   decsa = new DeCSA(0);
+  filter = new Filter;
   SockHandler = new SocketHandler;
 
   for (int i = 0; i < cDevice::NumDevices(); i++)
@@ -74,6 +75,8 @@ void DVBAPI::Stop(void)
   }
   delete SockHandler;
   SockHandler = NULL;
+  delete filter;
+  filter = NULL;
   delete decsa;
   decsa = NULL;
   delete capmt;
