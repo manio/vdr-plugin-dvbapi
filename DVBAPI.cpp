@@ -51,6 +51,7 @@ bool DVBAPI::Start(void)
   INFOLOG("decryption library: %s", DECSALIB);
   capmt = new CAPMT;
   decsa = new DeCSA(0);
+  filter = new Filter;
   SockHandler = new SocketHandler;
 
   for (int i = 0; i < cDevice::NumDevices(); i++)
@@ -74,6 +75,8 @@ void DVBAPI::Stop(void)
   }
   delete SockHandler;
   SockHandler = NULL;
+  delete filter;
+  filter = NULL;
   delete decsa;
   decsa = NULL;
   delete capmt;
@@ -115,6 +118,10 @@ bool DVBAPI::SetupParse(const char *Name, const char *Value)
   // Parse your own setup parameters and store their values.
   if (!strcasecmp(Name, CONFNAME_LOGLEVEL))
     LogLevel = atoi(Value);
+  else if (!strcasecmp(Name, CONFNAME_OSCAMHOST))
+    strn0cpy(OSCamHost, Value, sizeof(OSCamHost));
+  else if (!strcasecmp(Name, CONFNAME_OSCAMPORT))
+    strn0cpy(OSCamPort, Value, sizeof(OSCamPort));
   else
     return false;
   return true;

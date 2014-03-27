@@ -40,17 +40,64 @@ SocketHandler::SocketHandler()
 void SocketHandler::OpenConnection()
 {
   cMutexLock lock(&mutex);
-  sock = socket(AF_LOCAL, SOCK_STREAM, 0);
-  sockaddr_un serv_addr_un;
-  memset(&serv_addr_un, 0, sizeof(serv_addr_un));
-  serv_addr_un.sun_family = AF_LOCAL;
-  snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
-  if (connect(sock, (const sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
+
+  if (OSCamHost[0])
   {
-    ERRORLOG("Cannot connect to /tmp/camd.socket, Do you have OSCam running?");
-    sock = 0;
+    // connecting via TCP socket to OSCam
+    struct addrinfo hints, *servinfo, *p;
+    int rv;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    if ((rv = getaddrinfo(OSCamHost, OSCamPort, &hints, &servinfo)) != 0)
+    {
+      ERRORLOG("getaddrinfo error: %s", gai_strerror(rv));
+      return;
+    }
+
+    // loop through all the results and connect to the first we can
+    for (p = servinfo; p != NULL; p = p->ai_next)
+    {
+      if ((sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
+      {
+          ERRORLOG("%s: socket error: %s", __FUNCTION__, strerror(errno));
+          continue;
+      }
+      if (connect(sock, p->ai_addr, p->ai_addrlen) == -1)
+      {
+          close(sock);
+          ERRORLOG("%s: connect error: %s", __FUNCTION__, strerror(errno));
+          continue;
+      }
+      break; // if we get here, we must have connected successfully
+    }
+
+    if (p == NULL)
+    {
+      // looped off the end of the list with no connection
+      ERRORLOG("Cannot connect to OSCam. Check your configuration and firewall settings.");
+      sock = 0;
+    }
+
+    freeaddrinfo(servinfo); // all done with this structure
   }
   else
+  {
+    // connecting to /tmp/camd.socket
+    sock = socket(AF_LOCAL, SOCK_STREAM, 0);
+    sockaddr_un serv_addr_un;
+    memset(&serv_addr_un, 0, sizeof(serv_addr_un));
+    serv_addr_un.sun_family = AF_LOCAL;
+    snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
+    if (connect(sock, (const sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
+    {
+      ERRORLOG("Cannot connect to /tmp/camd.socket, Do you have OSCam running?");
+      sock = 0;
+    }
+  }
+
+  if (sock)
     DEBUGLOG("created socket with socket_fd=%d", sock);
 }
 
@@ -60,31 +107,45 @@ void SocketHandler::CloseConnection()
   {
     close(sock);
     sock = 0;
+    filter->StopAllFilters();
   }
 }
 
-void SocketHandler::WritePMT(unsigned char* caPMT, int toWrite)
+void SocketHandler::Write(unsigned char *data, int len)
 {
   //try to reconnect to oscam if there is no connection
   if (sock == 0)
     OpenConnection();
   if (sock > 0)
   {
-    int wrote = write(sock, caPMT, toWrite);
-    DEBUGLOG("socket_fd=%d toWrite=%d wrote=%d", sock, toWrite, wrote);
-    if (wrote != toWrite)
+    int wrote = write(sock, data, len);
+    DEBUGLOG("socket_fd=%d len=%d wrote=%d", sock, len, wrote);
+    if (wrote != len)
     {
-      ERRORLOG("%s: wrote != toWrite", __FUNCTION__);
+      ERRORLOG("%s: wrote != len", __FUNCTION__);
       close(sock);
       sock = 0;
     }
   }
 }
 
+void SocketHandler::SendFilterData(unsigned char demux_id, unsigned char filter_num, unsigned char *data, int len)
+{
+  unsigned char buff[6 + len];
+  buff[0] = 0xff;                //data_identifier
+  buff[1] = 0xff;                //data_identifier
+  buff[2] = 0;                   //reserved
+  buff[3] = 0;                   //reserved
+  buff[4] = demux_id;            //demux
+  buff[5] = filter_num;          //filter
+  memcpy(buff+6, data, len);     //copy data
+  SockHandler->Write(buff, sizeof(buff));
+}
+
 void SocketHandler::Action(void)
 {
   DEBUGLOG("%s", __FUNCTION__);
-  unsigned char buff[sizeof(int) + sizeof(ca_descr_t)];
+  unsigned char buff[sizeof(int) + 2 + sizeof(struct dmx_sct_filter_params)];
   int cRead, *request;
   uint8_t adapter_index;
 
@@ -130,6 +191,10 @@ void SocketHandler::Action(void)
       cRead = recv(sock, buff+4, sizeof(ca_pid_t), MSG_DONTWAIT);
     else if (*request == CA_SET_DESCR)
       cRead = recv(sock, buff+4, sizeof(ca_descr_t), MSG_DONTWAIT);
+    else if (*request == DMX_SET_FILTER)
+      cRead = recv(sock, buff+4, 2 + sizeof(struct dmx_sct_filter_params), MSG_DONTWAIT);
+    else if (*request == DMX_STOP)
+      cRead = recv(sock, buff+4, 2 + 2, MSG_DONTWAIT);
     else
     {
       ERRORLOG("%s: read failed unknown command: %s", __FUNCTION__, strerror(errno));
@@ -155,6 +220,22 @@ void SocketHandler::Action(void)
       DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d", __FUNCTION__, adapter_index);
       memcpy(&ca_descr, &buff[sizeof(int)], sizeof(ca_descr_t));
       decsa->SetDescr(&ca_descr, false);
+    }
+    else if (*request == DMX_SET_FILTER)
+    {
+      unsigned char demux_index = buff[4];
+      unsigned char filter_num = buff[5];
+      memcpy(&sFP2, &buff[sizeof(int) + 2], sizeof(struct dmx_sct_filter_params));
+      DEBUGLOG("%s: Got DMX_SET_FILTER request, adapter_index=%d, pid=%X, demux_idx=%d, filter_num=%d", __FUNCTION__, adapter_index, sFP2.pid, demux_index, filter_num);
+      filter->SetFilter(adapter_index, sFP2.pid, 1, demux_index, filter_num, sFP2.filter.filter, sFP2.filter.mask);
+    }
+    else if (*request == DMX_STOP)
+    {
+      unsigned char demux_index = buff[4];
+      unsigned char filter_num = buff[5];
+      int pid = (buff[6] << 8) + buff[7];
+      DEBUGLOG("%s: Got DMX_STOP request, adapter_index=%d, pid=%X, demux_idx=%d, filter_num=%d", __FUNCTION__, adapter_index, pid, demux_index, filter_num);
+      filter->SetFilter(adapter_index, pid, 0, demux_index, filter_num, NULL, NULL);
     }
     else
       DEBUGLOG("%s: unknown request", __FUNCTION__);

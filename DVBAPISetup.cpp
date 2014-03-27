@@ -19,11 +19,17 @@
 #include "DVBAPISetup.h"
 
 int LogLevel = 2;
+char OSCamHost[HOST_NAME_MAX] = "";
+char OSCamPort[HOST_NAME_MAX] = "";
 
 cMenuSetupDVBAPI::cMenuSetupDVBAPI(void)
 {
   newLogLevel = LogLevel;
+  strn0cpy(newOSCamHost, OSCamHost, sizeof(newOSCamHost));
+  strn0cpy(newOSCamPort, OSCamPort, sizeof(newOSCamPort));
   Add(new cMenuEditIntItem( tr("Log level (0-3)"), &newLogLevel, 0, 3));
+  Add(new cMenuEditStrItem( tr("OSCam host"),      newOSCamHost, sizeof(newOSCamHost)));
+  Add(new cMenuEditStrItem( tr("OSCam port"),      newOSCamPort, sizeof(newOSCamPort)));
 }
 
 void cMenuSetupDVBAPI::Store(void)
@@ -31,4 +37,6 @@ void cMenuSetupDVBAPI::Store(void)
   if (newLogLevel > 3)
     newLogLevel = 3;
   SetupStore(CONFNAME_LOGLEVEL, LogLevel = newLogLevel);
+  SetupStore(CONFNAME_OSCAMHOST, strn0cpy(OSCamHost, newOSCamHost, sizeof(OSCamHost)));
+  SetupStore(CONFNAME_OSCAMPORT, strn0cpy(OSCamPort, newOSCamPort, sizeof(OSCamPort)));
 }

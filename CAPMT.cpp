@@ -179,5 +179,5 @@ void CAPMT::send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt)
   toWrite = length_field + 6;
 
   //sending data
-  SockHandler->WritePMT(caPMT, toWrite);
+  SockHandler->Write(caPMT, toWrite);
 }

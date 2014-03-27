@@ -22,11 +22,15 @@
 #include <vdr/plugin.h>
 
 #define CONFNAME_LOGLEVEL      "LogLevel"
+#define CONFNAME_OSCAMHOST     "OSCamHost"
+#define CONFNAME_OSCAMPORT     "OSCamPort"
 
 class cMenuSetupDVBAPI : public cMenuSetupPage
 {
 private:
   int newLogLevel;
+  char newOSCamHost[HOST_NAME_MAX];
+  char newOSCamPort[HOST_NAME_MAX];
 protected:
   virtual void Store(void);
 public:

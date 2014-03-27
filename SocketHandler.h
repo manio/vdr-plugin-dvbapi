@@ -31,11 +31,18 @@
 #include <netdb.h>
 #include <vdr/thread.h>
 #include "DeCSA.h"
+#include "Filter.h"
+#include <linux/dvb/dmx.h>
 
 class CAPMT;
+class Filter;
 
 extern DeCSA *decsa;
+extern Filter *filter;
 extern CAPMT *capmt;
+
+extern char OSCamHost[HOST_NAME_MAX];
+extern char OSCamPort[HOST_NAME_MAX];
 
 class SocketHandler : public cThread
 {
@@ -44,14 +51,16 @@ public:
   ~SocketHandler();
   void OpenConnection();
   void CloseConnection();
-  void WritePMT(unsigned char* caPMT, int toWrite);
+  void Write(unsigned char *data, int len);
   virtual void Action(void);
+  void SendFilterData(unsigned char demux_id, unsigned char filter_num, unsigned char *data, int len);
 
 private:
   int sock;
   cMutex mutex;
   ca_descr_t ca_descr;
   ca_pid_t ca_pid;
+  dmx_sct_filter_params sFP2;
   cTimeMs checkTimer;
 };
 

@@ -137,6 +137,8 @@ uchar *SCCAMSlot::Decrypt(uchar *Data, int &Count)
 {
   if (Data[3] & TS_SCRAMBLING_CONTROL)
     decsa->Decrypt(cardIndex, Data, Count, true);
+  else
+    filter->Analyze(cardIndex, Data, Count);
   Count = TS_SIZE;
   return Data;
 }
