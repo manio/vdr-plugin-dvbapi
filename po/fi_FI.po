@@ -25,8 +25,8 @@ msgstr "Logitustaso (0-3)"
 msgid "Enable OSCam network mode"
 msgstr "Käytä OSCam-palvelinta verkon yli"
 
-msgid "OSCam host"
-msgstr "OSCam-palvelimen osoite"
+msgid "Host"
+msgstr "Osoite"
 
-msgid "OSCam port"
-msgstr "OSCam-palvelimen portti"
+msgid "Port"
+msgstr "Portti"

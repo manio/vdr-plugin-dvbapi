@@ -21,7 +21,7 @@
 int LogLevel = 2;
 int OSCamNetworkMode = 0;
 char OSCamHost[HOST_NAME_MAX] = "localhost";
-char OSCamPort[HOST_NAME_MAX] = "";
+char OSCamPort[HOST_NAME_MAX] = "2000";
 
 cMenuSetupDVBAPI::cMenuSetupDVBAPI(void)
 {
@@ -29,10 +29,36 @@ cMenuSetupDVBAPI::cMenuSetupDVBAPI(void)
   newOSCamNetworkMode = OSCamNetworkMode;
   strn0cpy(newOSCamHost, OSCamHost, sizeof(newOSCamHost));
   strn0cpy(newOSCamPort, OSCamPort, sizeof(newOSCamPort));
+  Setup();
+}
+
+void cMenuSetupDVBAPI::Setup(void)
+{
+  int current = Current();
+
+  Clear();
+
   Add(new cMenuEditIntItem( tr("Log level (0-3)"), &newLogLevel, 0, 3));
   Add(new cMenuEditBoolItem( tr("Enable OSCam network mode"), &newOSCamNetworkMode));
-  Add(new cMenuEditStrItem( tr("OSCam host"), newOSCamHost, sizeof(newOSCamHost)));
-  Add(new cMenuEditStrItem( tr("OSCam port"), newOSCamPort, sizeof(newOSCamPort)));
+  if (newOSCamNetworkMode)
+  {
+    Add(new cMenuEditStrItem( *cString::sprintf(" %s", tr("Host")), newOSCamHost, sizeof(newOSCamHost)));
+    Add(new cMenuEditStrItem( *cString::sprintf(" %s", tr("Port")), newOSCamPort, sizeof(newOSCamPort)));
+  }
+
+  SetCurrent(Get(current));
+  Display();
+}
+
+eOSState cMenuSetupDVBAPI::ProcessKey(eKeys Key)
+{
+  int oldOSCamNetworkMode = newOSCamNetworkMode;
+  eOSState state = cMenuSetupPage::ProcessKey(Key);
+
+  if (Key != kNone && oldOSCamNetworkMode != newOSCamNetworkMode)
+    Setup();
+
+  return state;
 }
 
 void cMenuSetupDVBAPI::Store(void)

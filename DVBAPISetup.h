@@ -33,7 +33,9 @@ private:
   int newOSCamNetworkMode;
   char newOSCamHost[HOST_NAME_MAX];
   char newOSCamPort[HOST_NAME_MAX];
+  void Setup(void);
 protected:
+  virtual eOSState ProcessKey(eKeys Key);
   virtual void Store(void);
 public:
   cMenuSetupDVBAPI(void);
