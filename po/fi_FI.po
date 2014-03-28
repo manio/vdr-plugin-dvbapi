@@ -23,7 +23,7 @@ msgid "Log level (0-3)"
 msgstr "Logitustaso (0-3)"
 
 msgid "OSCam host"
-msgstr ""
+msgstr "OSCam-palvelimen osoite"
 
 msgid "OSCam port"
-msgstr ""
+msgstr "OSCam-palvelimen portti"
