@@ -41,6 +41,7 @@ extern DeCSA *decsa;
 extern Filter *filter;
 extern CAPMT *capmt;
 
+extern int OSCamNetworkMode;
 extern char OSCamHost[HOST_NAME_MAX];
 extern char OSCamPort[HOST_NAME_MAX];
 

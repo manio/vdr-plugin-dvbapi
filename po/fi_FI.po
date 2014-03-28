@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vdr-dvbapi 2.0.0\n"
 "Report-Msgid-Bugs-To: <see README>\n"
-"POT-Creation-Date: 2014-03-27 14:45+0100\n"
+"POT-Creation-Date: 2014-03-28 09:20+0100\n"
 "PO-Revision-Date: 2014-01-28 01:28+0200\n"
 "Last-Translator: Mariusz Bialonczyk <manio@skyboo.net>\n"
 "Language-Team: Finnish <vdr@linuxtv.org>\n"
@@ -21,6 +21,9 @@ msgstr "DVBAPI-pohjainen salauksenpurku"
 
 msgid "Log level (0-3)"
 msgstr "Logitustaso (0-3)"
+
+msgid "Enable OSCam network mode"
+msgstr "Käytä OSCam-palvelinta verkon yli"
 
 msgid "OSCam host"
 msgstr "OSCam-palvelimen osoite"

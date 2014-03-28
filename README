@@ -87,10 +87,12 @@ Let's assume that you want to use the port 2000 for communication on host
 To enable this mode in OSCam, configure the listen_port via OSCam's web
 interface or add the following line in [dvbapi] section of oscam.conf file:
 listen_port = 2000
-On the VDR plugin side you need to set the host and the same port of
-the machine where the OSCam is listening for connections.
+On the VDR plugin side you need to enable the OSCam network mode and set the
+host and the same port of the machine where the OSCam is listening for
+connections.
 You can set it in the plugin menu or manually adding the following lines
 in the VDR's setup.conf file:
+dvbapi.OSCamNetwork = 1
 dvbapi.OSCamHost = 192.168.0.1
 dvbapi.OSCamPort = 2000
 

@@ -41,7 +41,7 @@ void SocketHandler::OpenConnection()
 {
   cMutexLock lock(&mutex);
 
-  if (OSCamHost[0])
+  if (OSCamNetworkMode)
   {
     // connecting via TCP socket to OSCam
     struct addrinfo hints, *servinfo, *p;
