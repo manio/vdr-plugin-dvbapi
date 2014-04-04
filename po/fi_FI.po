@@ -16,8 +16,8 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "DVBAPI type SOFTCAM"
-msgstr "DVBAPI-pohjainen salauksenpurku"
+msgid "SoftCAM for OSCam"
+msgstr "OSCam-salauksenpurku"
 
 msgid "Log level (0-3)"
 msgstr "Logitustaso (0-3)"
