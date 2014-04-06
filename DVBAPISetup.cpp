@@ -21,14 +21,14 @@
 int LogLevel = 2;
 int OSCamNetworkMode = 0;
 char OSCamHost[HOST_NAME_MAX] = "localhost";
-char OSCamPort[HOST_NAME_MAX] = "2000";
+int OSCamPort = 2000;
 
 cMenuSetupDVBAPI::cMenuSetupDVBAPI(void)
 {
   newLogLevel = LogLevel;
   newOSCamNetworkMode = OSCamNetworkMode;
   strn0cpy(newOSCamHost, OSCamHost, sizeof(newOSCamHost));
-  strn0cpy(newOSCamPort, OSCamPort, sizeof(newOSCamPort));
+  newOSCamPort = OSCamPort;
   Setup();
 }
 
@@ -43,7 +43,7 @@ void cMenuSetupDVBAPI::Setup(void)
   if (newOSCamNetworkMode)
   {
     Add(new cMenuEditStrItem( *cString::sprintf(" %s", tr("Host")), newOSCamHost, sizeof(newOSCamHost)));
-    Add(new cMenuEditStrItem( *cString::sprintf(" %s", tr("Port")), newOSCamPort, sizeof(newOSCamPort)));
+    Add(new cMenuEditIntItem( *cString::sprintf(" %s", tr("Port")), &newOSCamPort, 1, 0xffff));
   }
 
   SetCurrent(Get(current));
@@ -68,5 +68,5 @@ void cMenuSetupDVBAPI::Store(void)
   SetupStore(CONFNAME_LOGLEVEL, LogLevel = newLogLevel);
   SetupStore(CONFNAME_OSCAMNETWORK, OSCamNetworkMode = newOSCamNetworkMode);
   SetupStore(CONFNAME_OSCAMHOST, strn0cpy(OSCamHost, newOSCamHost, sizeof(OSCamHost)));
-  SetupStore(CONFNAME_OSCAMPORT, strn0cpy(OSCamPort, newOSCamPort, sizeof(OSCamPort)));
+  SetupStore(CONFNAME_OSCAMPORT, OSCamPort = newOSCamPort);
 }

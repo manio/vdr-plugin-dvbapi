@@ -32,7 +32,7 @@ private:
   int newLogLevel;
   int newOSCamNetworkMode;
   char newOSCamHost[HOST_NAME_MAX];
-  char newOSCamPort[HOST_NAME_MAX];
+  int newOSCamPort;
   void Setup(void);
 protected:
   virtual eOSState ProcessKey(eKeys Key);

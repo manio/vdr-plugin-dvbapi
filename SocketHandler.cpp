@@ -50,7 +50,7 @@ void SocketHandler::OpenConnection()
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
-    if ((rv = getaddrinfo(OSCamHost, OSCamPort, &hints, &servinfo)) != 0)
+    if ((rv = getaddrinfo(OSCamHost, itoa(OSCamPort), &hints, &servinfo)) != 0)
     {
       ERRORLOG("getaddrinfo error: %s", gai_strerror(rv));
       return;

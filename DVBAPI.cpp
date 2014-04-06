@@ -123,7 +123,7 @@ bool DVBAPI::SetupParse(const char *Name, const char *Value)
   else if (!strcasecmp(Name, CONFNAME_OSCAMHOST))
     strn0cpy(OSCamHost, Value, sizeof(OSCamHost));
   else if (!strcasecmp(Name, CONFNAME_OSCAMPORT))
-    strn0cpy(OSCamPort, Value, sizeof(OSCamPort));
+    OSCamPort = atoi(Value);
   else
     return false;
   return true;
