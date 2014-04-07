@@ -31,7 +31,7 @@
 #define GITVERSION ""
 #endif
 
-static const char *VERSION        = "2.0.1" GITVERSION;
+static const char *VERSION        = "2.1.0" GITVERSION;
 static const char *DESCRIPTION    = trNOOP("SoftCAM for OSCam");
 #ifndef LIBDVBCSA
 static const char *DECSALIB       = "FFdecsa";

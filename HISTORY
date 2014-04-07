@@ -16,3 +16,10 @@ Using new VDR CAM interface gave the following benefits:
   decryption, it's now done on VDR side.
 - Opening demux for obtaining PMT data has been dropped
   (refer to the FAQ).
+
+2014-04-07 Version 2.1.0
+-------------------------------------------------------------------
+Added a 'network mode'. This allows connecting to OSCam over the
+network. Filtering of ECM/CAT/EMM is done locally by plugin on
+data provided by VDR.
+OSCam doesn't need access to physical hardware.
