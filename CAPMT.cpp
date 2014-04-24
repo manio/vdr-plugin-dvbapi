@@ -104,7 +104,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     }
     else
     {
-      DEBUGLOG("CA_PMT doesn't contain CA desriptors");
+      DEBUGLOG("CA_PMT doesn't contain CA descriptors");
       return;
     }
 
