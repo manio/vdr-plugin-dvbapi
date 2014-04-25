@@ -4,8 +4,9 @@ TOC
 3. Basic Installation
 4. VDR and OScam compatibility
 5. Network mode and plugin setup
-6. Contact and support
-7. Thanks area
+6. Commandline options
+7. Contact and support
+8. Thanks area
 
 -----------------------------------------------------------------------------
 1. Introduction
@@ -114,7 +115,39 @@ The values for the log level are:
   3 - all information including debug
 
 -----------------------------------------------------------------------------
-6. Contact and support
+6. Commandline options
+-----------------------------------------------------------------------------
+
+When you are using the plugin in network mode, single OSCam server is able to
+handle more then one VDR dvbapi clients. The problem is the adapter indexes.
+
+Let's assume the following scenario:
+  VDR client 1: two DVB adapters (0, 1)
+  VDR client 2: two DVB adapters (0, 1)
+
+As every VDR host will number devices from zero, then both requests will come
+to OSCam with conflicting adapter indexes, resulting in broken decrypting.
+
+To be able to prevent this conflict (and if you want to connect more then one
+dvbapi client to the same OSCam server) you need to add a constant value to
+all adapter indexes on one of the above host.
+
+There is a command line option "-o" to set this offset by the plugin when
+communicating with the OSCam.
+
+If you want to add eg. value 2 as the adapter index offset, then you need to
+run vdr like this:
+  vdr -P"dvbapi -o2"
+
+If you do this on "VDR client 2" from the above scenario it will add value 2
+to adapter indexes resulting in:
+  VDR client 1: two DVB adapters (0, 1)
+  VDR client 2: two DVB adapters (2, 3) - added offset 2 to indexes
+
+This way all adapters/clients will be handled correctly by single OSCam.
+
+-----------------------------------------------------------------------------
+7. Contact and support
 -----------------------------------------------------------------------------
 
 If you want discuss about the plugin or get help, use the following thread:
@@ -129,7 +162,7 @@ You can also join our IRC channel #dvbapi on freenode.
 Or you can send me an e-mail: manio@skyboo.net
 
 -----------------------------------------------------------------------------
-7. Thanks area
+8. Thanks area
 -----------------------------------------------------------------------------
 
  I would like to give a big thanks to a number of people from the OScam Board

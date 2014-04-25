@@ -163,7 +163,7 @@ void CAPMT::send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt)
   caPMT[13] = 0x82;             //CAPMT_DESC_DEMUX
   caPMT[14] = 0x02;             //length
   caPMT[15] = 0x00;             //demux id
-  caPMT[16] = (char) adapter;   //adapter id
+  caPMT[16] = (char) adapter + AdapterIndexOffset;   //adapter id
 
   //adding CA_PMT from vdr
   caPMT[10] = pmt->pilen[0];                  //reserved+program_info_length

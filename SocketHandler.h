@@ -44,6 +44,7 @@ extern CAPMT *capmt;
 extern int OSCamNetworkMode;
 extern char OSCamHost[HOST_NAME_MAX];
 extern int OSCamPort;
+extern unsigned int AdapterIndexOffset;
 
 class SocketHandler : public cThread
 {

@@ -43,6 +43,7 @@ DeCSA *decsa = NULL;
 Filter *filter = NULL;
 CAPMT *capmt = NULL;
 SocketHandler *SockHandler = NULL;
+unsigned int AdapterIndexOffset = 0;
 
 class DVBAPI : public cPlugin
 {
@@ -59,10 +60,7 @@ public:
   {
     return tr(DESCRIPTION);
   }
-  virtual const char *CommandLineHelp(void)
-  {
-    return NULL;
-  }
+  virtual const char *CommandLineHelp(void);
   virtual bool ProcessArgs(int argc, char *argv[]);
   virtual bool Initialize(void);
   virtual bool Start(void);

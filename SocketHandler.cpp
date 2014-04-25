@@ -177,6 +177,8 @@ void SocketHandler::Action(void)
       cCondWait::SleepMs(20);
       continue;
     }
+    adapter_index -= AdapterIndexOffset;
+
     // request
     cRead = recv(sock, &buff, sizeof(int), MSG_DONTWAIT);
     if (cRead <= 0)
