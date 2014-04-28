@@ -118,6 +118,8 @@ The values for the log level are:
 6. Commandline options
 -----------------------------------------------------------------------------
 
+Adapter index offset:
+---------------------
 When you are using the plugin in network mode, single OSCam server is able to
 handle more then one VDR dvbapi clients. The problem is the adapter indexes.
 
@@ -145,6 +147,16 @@ to adapter indexes resulting in:
   VDR client 2: two DVB adapters (2, 3) - added offset 2 to indexes
 
 This way all adapters/clients will be handled correctly by single OSCam.
+
+
+Disable CW expiration check:
+----------------------------
+The plugin is automatically checking if the key obtained from OSCam is still
+valid and doesn't expired before using it for decrypting. This way if OSCam
+cannot provide a key for a channel, VDR have a chance to switch to other CAM
+which is able to do so. In some circumstances (eg. when you're using Constant
+CW in OSCam) you may need to disable this check, starting VDR like this:
+  vdr -P"dvbapi -d"
 
 -----------------------------------------------------------------------------
 7. Contact and support

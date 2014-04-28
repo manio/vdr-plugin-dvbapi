@@ -37,24 +37,30 @@ DVBAPI::~DVBAPI()
 const char *DVBAPI::CommandLineHelp(void)
 {
   return "  -o N,     --offset=N     add constant value to all adapter indexes when\n"
-         "                           communicating with OSCam (default: 0)\n";
+         "                           communicating with OSCam (default: 0)\n"
+         "  -d,       --disable-exp  disable CW expiration check\n";
 }
 
 bool DVBAPI::ProcessArgs(int argc, char *argv[])
 {
   static struct option long_options[] = {
       { "offset",      required_argument, NULL, 'o' },
+      { "disable-exp", no_argument,       NULL, 'd' },
       { NULL }
     };
 
   int c, option_index = 0;
-  while ((c = getopt_long(argc, argv, "o:", long_options, &option_index)) != -1)
+  while ((c = getopt_long(argc, argv, "o:d", long_options, &option_index)) != -1)
   {
     switch (c)
     {
       case 'o':
         AdapterIndexOffset = atoi(optarg);
         INFOLOG("Using value %d as the adapter index offset", AdapterIndexOffset);
+        break;
+      case 'd':
+        CheckExpiredCW = false;
+        INFOLOG("CW expiration check is disabled");
         break;
       default:
         return false;

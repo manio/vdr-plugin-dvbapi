@@ -44,6 +44,7 @@ Filter *filter = NULL;
 CAPMT *capmt = NULL;
 SocketHandler *SockHandler = NULL;
 unsigned int AdapterIndexOffset = 0;
+bool CheckExpiredCW = true;
 
 class DVBAPI : public cPlugin
 {

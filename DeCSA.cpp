@@ -208,7 +208,7 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       {                         // same or no index
         currIdx = idx;
         // return if the key is expired
-        if (time(NULL) - cwSeen[currIdx] > MAX_KEY_WAIT)
+        if (CheckExpiredCW && time(NULL) - cwSeen[currIdx] > MAX_KEY_WAIT)
           return false;
 #ifndef LIBDVBCSA
         if (newRange)

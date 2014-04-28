@@ -34,6 +34,8 @@ extern "C" {
 #define MAX_ADAPTERS 4
 #define MAX_KEY_WAIT 20         // max seconds to consider a CW as valid
 
+extern bool CheckExpiredCW;
+
 class DeCSA
 {
 private:
