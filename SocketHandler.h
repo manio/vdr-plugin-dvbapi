@@ -64,6 +64,7 @@ private:
   ca_pid_t ca_pid;
   dmx_sct_filter_params sFP2;
   cTimeMs checkTimer;
+  bool changeEndianness;
 };
 
 #endif // ___SOCKETHANDLER_H

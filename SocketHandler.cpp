@@ -34,6 +34,7 @@ SocketHandler::SocketHandler()
 {
   DEBUGLOG("%s", __FUNCTION__);
   sock = 0;
+  changeEndianness = false;
   Start();
 }
 
@@ -189,6 +190,34 @@ void SocketHandler::Action(void)
       continue;
     }
     request = (int *) &buff;
+
+    /* OSCam should always send in network order, but it's not fixed there so as a workaround
+       probe for all possible cases here and detect when we need to change byte order.
+       Possible proper values are:
+         CA_SET_DESCR    0x40106f86
+         CA_SET_PID      0x40086f87
+         DMX_SET_FILTER  0x403c6f2b
+         DMX_STOP        0x00006f2a
+
+       Moreover the first bits of the first byte on some hardware are different.
+    */
+    if (((*request >> 8) & 0xffffff) == 0x866f10 ||
+        ((*request >> 8) & 0xffffff) == 0x876f08 ||
+        ((*request >> 8) & 0xffffff) == 0x2b6f3c ||
+        ((*request >> 8) & 0xffffff) == 0x2a6f00)
+    {
+      //we have to change endianness
+      changeEndianness = true;
+
+      //fix 0x80 -> 0x40 and 0x20 -> 0x00 when needed
+      if ((*request & 0xff) == 0x80)
+        buff[0] = 0x40;
+      else if ((*request & 0xff) == 0x20)
+        buff[0] = 0x00;
+    }
+
+    if (changeEndianness)
+      *request = htonl(*request);
     if (*request == CA_SET_PID)
       cRead = recv(sock, buff+4, sizeof(ca_pid_t), MSG_DONTWAIT);
     else if (*request == CA_SET_DESCR)
@@ -215,12 +244,22 @@ void SocketHandler::Action(void)
     {
       DEBUGLOG("%s: Got CA_SET_PID request, adapter_index=%d", __FUNCTION__, adapter_index);
       memcpy(&ca_pid, &buff[sizeof(int)], sizeof(ca_pid_t));
+      if (changeEndianness)
+      {
+        ca_pid.pid = htonl(ca_pid.pid);
+        ca_pid.index = htonl(ca_pid.index);
+      }
       decsa->SetCaPid(adapter_index, &ca_pid);
     }
     else if (*request == CA_SET_DESCR)
     {
       DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d", __FUNCTION__, adapter_index);
       memcpy(&ca_descr, &buff[sizeof(int)], sizeof(ca_descr_t));
+      if (changeEndianness)
+      {
+        ca_descr.index = htonl(ca_descr.index);
+        ca_descr.parity = htonl(ca_descr.parity);
+      }
       decsa->SetDescr(&ca_descr, false);
     }
     else if (*request == DMX_SET_FILTER)
@@ -228,6 +267,12 @@ void SocketHandler::Action(void)
       unsigned char demux_index = buff[4];
       unsigned char filter_num = buff[5];
       memcpy(&sFP2, &buff[sizeof(int) + 2], sizeof(struct dmx_sct_filter_params));
+      if (changeEndianness)
+      {
+        sFP2.pid = htons(sFP2.pid);
+        sFP2.timeout = htonl(sFP2.timeout);
+        sFP2.flags = htonl(sFP2.flags);
+      }
       DEBUGLOG("%s: Got DMX_SET_FILTER request, adapter_index=%d, pid=%X, demux_idx=%d, filter_num=%d", __FUNCTION__, adapter_index, sFP2.pid, demux_index, filter_num);
       filter->SetFilter(adapter_index, sFP2.pid, 1, demux_index, filter_num, sFP2.filter.filter, sFP2.filter.mask);
     }
