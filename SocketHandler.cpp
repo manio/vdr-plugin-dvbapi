@@ -199,7 +199,7 @@ void SocketHandler::Action(void)
       cRead = recv(sock, buff+4, 2 + 2, MSG_DONTWAIT);
     else
     {
-      ERRORLOG("%s: read failed unknown command: %s", __FUNCTION__, strerror(errno));
+      ERRORLOG("%s: read failed unknown command: %08x", __FUNCTION__, *request);
       cCondWait::SleepMs(20);
       continue;
     }
