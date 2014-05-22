@@ -161,7 +161,10 @@ void SocketHandler::Action(void)
           ERRORLOG("OSCam connection lost, trying to reconnect...");
           OpenConnection();
           if (sock > 0)
+          {
+            INFOLOG("Successfully reconnected to OSCam");
             capmt->SendAll();
+          }
         }
         checkTimer.Set(SOCKET_CHECK_INTERVAL);
       }
@@ -174,7 +177,7 @@ void SocketHandler::Action(void)
     if (cRead <= 0)
     {
       if (cRead == 0)
-        sock = 0;
+        CloseConnection();
       cCondWait::SleepMs(20);
       continue;
     }
@@ -185,7 +188,7 @@ void SocketHandler::Action(void)
     if (cRead <= 0)
     {
       if (cRead == 0)
-        sock = 0;
+        CloseConnection();
       cCondWait::SleepMs(20);
       continue;
     }
@@ -236,7 +239,7 @@ void SocketHandler::Action(void)
     if (cRead <= 0)
     {
       if (cRead == 0)
-        sock = 0;
+        CloseConnection();
       cCondWait::SleepMs(20);
       continue;
     }
