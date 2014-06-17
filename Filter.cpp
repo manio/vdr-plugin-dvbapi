@@ -108,6 +108,7 @@ bool Filter::SetFilter(uint8_t adapter_index, int pid, int start, unsigned char 
 
 void Filter::StopAllFilters()
 {
+  cMutexLock lock(&mutex);
   DEBUGLOG("%s", __FUNCTION__);
 
   // firstly releasing data
@@ -135,6 +136,7 @@ void Filter::StopAllFilters()
 
 void Filter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
 {
+  cMutexLock lock(&mutex);
   int pid = ((data[1] << 8) + data[2]) & 0x1FFF;
   if ((unsigned) pid <= MAX_CSA_PIDS && pid > 0)
   {
