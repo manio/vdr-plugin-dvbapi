@@ -35,10 +35,10 @@
 #include <linux/dvb/dmx.h>
 
 class CAPMT;
-class Filter;
+class cDvbapiFilter;
 
 extern DeCSA *decsa;
-extern Filter *filter;
+extern cDvbapiFilter *filter;
 extern CAPMT *capmt;
 
 extern int OSCamNetworkMode;

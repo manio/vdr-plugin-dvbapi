@@ -41,15 +41,15 @@ struct dmxfilter
   int lastcc;             //last continuity counter
 };
 
-class Filter
+class cDvbapiFilter
 {
 private:
   cMutex mutex;
   vector<dmxfilter> *pidmap[MAX_ADAPTERS][MAX_CSA_PIDS];
 
 public:
-  Filter();
-  ~Filter();
+  cDvbapiFilter();
+  ~cDvbapiFilter();
   void Analyze(uint8_t adapter_index, unsigned char *data, int len);
   bool SetFilter(uint8_t adapter_index, int pid, int start, unsigned char demux, unsigned char num, unsigned char *filter, unsigned char *mask);
   void StopAllFilters();

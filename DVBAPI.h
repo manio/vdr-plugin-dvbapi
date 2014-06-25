@@ -40,7 +40,7 @@ static const char *DECSALIB       = "libdvbcsa";
 #endif
 
 DeCSA *decsa = NULL;
-Filter *filter = NULL;
+cDvbapiFilter *filter = NULL;
 CAPMT *capmt = NULL;
 SocketHandler *SockHandler = NULL;
 unsigned int AdapterIndexOffset = 0;

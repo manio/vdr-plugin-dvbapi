@@ -81,7 +81,7 @@ bool DVBAPI::Start(void)
   INFOLOG("decryption library: %s", DECSALIB);
   capmt = new CAPMT;
   decsa = new DeCSA(0);
-  filter = new Filter;
+  filter = new cDvbapiFilter;
   SockHandler = new SocketHandler;
 
   for (int i = 0; i < cDevice::NumDevices(); i++)

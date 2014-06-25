@@ -19,17 +19,17 @@
 #include "Filter.h"
 #include "Log.h"
 
-Filter::Filter()
+cDvbapiFilter::cDvbapiFilter()
 {
   memset(pidmap, 0, sizeof(pidmap));
 }
 
-Filter::~Filter()
+cDvbapiFilter::~cDvbapiFilter()
 {
   StopAllFilters();
 }
 
-bool Filter::SetFilter(uint8_t adapter_index, int pid, int start, unsigned char demux, unsigned char num, unsigned char *filter, unsigned char *mask)
+bool cDvbapiFilter::SetFilter(uint8_t adapter_index, int pid, int start, unsigned char demux, unsigned char num, unsigned char *filter, unsigned char *mask)
 {
   cMutexLock lock(&mutex);
   if ((unsigned) pid <= MAX_CSA_PIDS &&
@@ -106,7 +106,7 @@ bool Filter::SetFilter(uint8_t adapter_index, int pid, int start, unsigned char 
   return true;
 }
 
-void Filter::StopAllFilters()
+void cDvbapiFilter::StopAllFilters()
 {
   cMutexLock lock(&mutex);
   DEBUGLOG("%s", __FUNCTION__);
@@ -134,7 +134,7 @@ void Filter::StopAllFilters()
   memset(pidmap, 0, sizeof(pidmap));
 }
 
-void Filter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
+void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
 {
   cMutexLock lock(&mutex);
   int pid = ((data[1] << 8) + data[2]) & 0x1FFF;
