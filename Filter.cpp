@@ -154,13 +154,13 @@ void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
           unsigned char *mask = it->mask;
           unsigned char *dat = data + 4 + 1;
           int i = 0, max = 16 - 1;
-          if ((dat[i] & mask[i]) != filter[i])
+          if ((dat[i] & mask[i]) != (filter[i] & mask[i]))
             continue;
           else
             dat = data + 4 + 3;
           for (i = 1; i < max; i++)
           {
-            if ((dat[i] & mask[i]) != filter[i])
+            if ((dat[i] & mask[i]) != (filter[i] & mask[i]))
               break;
           }
           if (i == max)
