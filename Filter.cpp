@@ -41,7 +41,7 @@ bool cDvbapiFilter::SetFilter(uint8_t adapter_index, int pid, int start, unsigne
     vector<dmxfilter>::iterator it;
     if (start == 1 && filter && mask)
     {
-      char hexdump[16 * 3];
+      char hexdump[DMX_FILTER_SIZE * 3];
       sprintf(hexdump, "%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X", filter[0], filter[1], filter[2], filter[3], filter[4], filter[5], filter[6], filter[7], filter[8], filter[9], filter[10], filter[11], filter[12], filter[13], filter[14], filter[15]);
       DEBUGLOG("   --> FILTER: %s", hexdump);
       sprintf(hexdump, "%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X", mask[0], mask[1], mask[2], mask[3], mask[4], mask[5], mask[6], mask[7], mask[8], mask[9], mask[10], mask[11], mask[12], mask[13], mask[14], mask[15]);
@@ -55,8 +55,10 @@ bool cDvbapiFilter::SetFilter(uint8_t adapter_index, int pid, int start, unsigne
           if (it->demux_id == demux && it->filter_num == num)
           {
             DEBUGLOG("%s: filter update, demux=%d, filter_num=%d", __FUNCTION__, demux, num);
-            memcpy(it->filter, filter, 16);
-            memcpy(it->mask, mask, 16);
+            memcpy(it->filter, filter, DMX_FILTER_SIZE);
+            memcpy(it->mask, mask, DMX_FILTER_SIZE);
+            for (int i = 0; i < DMX_FILTER_SIZE; i++)
+              it->filter[i] &= it->mask[i];
             updated = 1;
             break;
           }
@@ -75,8 +77,10 @@ bool cDvbapiFilter::SetFilter(uint8_t adapter_index, int pid, int start, unsigne
         newfilter.demux_id = demux;
         newfilter.filter_num = num;
         newfilter.data = NULL;
-        memcpy(newfilter.filter, filter, 16);
-        memcpy(newfilter.mask, mask, 16);
+        memcpy(newfilter.filter, filter, DMX_FILTER_SIZE);
+        memcpy(newfilter.mask, mask, DMX_FILTER_SIZE);
+        for (int i = 0; i < DMX_FILTER_SIZE; i++)
+          newfilter.filter[i] &= newfilter.mask[i];
         flt->push_back(newfilter);
       }
     }
@@ -153,14 +157,14 @@ void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
           unsigned char *filter = it->filter;
           unsigned char *mask = it->mask;
           unsigned char *dat = data + 4 + 1;
-          int i = 0, max = 16 - 1;
-          if ((dat[i] & mask[i]) != (filter[i] & mask[i]))
+          int i = 0, max = DMX_FILTER_SIZE - 1;
+          if ((dat[i] & mask[i]) != filter[i])
             continue;
           else
             dat = data + 4 + 3;
           for (i = 1; i < max; i++)
           {
-            if ((dat[i] & mask[i]) != (filter[i] & mask[i]))
+            if ((dat[i] & mask[i]) != filter[i])
               break;
           }
           if (i == max)

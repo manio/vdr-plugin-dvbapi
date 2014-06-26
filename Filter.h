@@ -22,6 +22,7 @@
 #include <vector>
 #include "DeCSA.h"
 #include "SocketHandler.h"
+#include <linux/dvb/dmx.h>
 
 class SocketHandler;
 extern SocketHandler *SockHandler;
@@ -32,8 +33,8 @@ struct dmxfilter
 {
   int demux_id;
   int filter_num;
-  unsigned char filter[16];
-  unsigned char mask[16];
+  unsigned char filter[DMX_FILTER_SIZE];
+  unsigned char mask[DMX_FILTER_SIZE];
 
   unsigned char *data;    //if ecm is spanned over TS packet, hold the part here
   unsigned int len;       //total len
