@@ -60,17 +60,19 @@ void SocketHandler::OpenConnection()
     // loop through all the results and connect to the first we can
     for (p = servinfo; p != NULL; p = p->ai_next)
     {
-      if ((sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
+      int sockfd;
+      if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
       {
           ERRORLOG("%s: socket error: %s", __FUNCTION__, strerror(errno));
           continue;
       }
-      if (connect(sock, p->ai_addr, p->ai_addrlen) == -1)
+      if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1)
       {
-          close(sock);
+          close(sockfd);
           ERRORLOG("%s: connect error: %s", __FUNCTION__, strerror(errno));
           continue;
       }
+      sock = sockfd;
       break; // if we get here, we must have connected successfully
     }
 
@@ -114,9 +116,7 @@ void SocketHandler::CloseConnection()
 
 void SocketHandler::Write(unsigned char *data, int len)
 {
-  //try to reconnect to oscam if there is no connection
-  if (sock == 0)
-    OpenConnection();
+  DEBUGLOG("%s, sock=%d", __FUNCTION__, sock);
   if (sock > 0)
   {
     int wrote = write(sock, data, len);
@@ -149,23 +149,24 @@ void SocketHandler::Action(void)
   unsigned char buff[sizeof(int) + 2 + sizeof(struct dmx_sct_filter_params)];
   int cRead, *request;
   uint8_t adapter_index;
+  int faults = 0;
 
   while (Running())
   {
-    if (sock == 0)
+    if (sock == 0 && capmt && !capmt->Empty())
     {
-      if (checkTimer.TimedOut())
+      if (faults == 0 || (faults > 0 && checkTimer.TimedOut()))
       {
-        if (capmt && !capmt->Empty())
+        DEBUGLOG("OSCam not connected, (re)connecting...");
+        OpenConnection();
+        if (sock > 0)
         {
-          ERRORLOG("OSCam connection lost, trying to reconnect...");
-          OpenConnection();
-          if (sock > 0)
-          {
-            INFOLOG("Successfully reconnected to OSCam");
-            capmt->SendAll();
-          }
+          DEBUGLOG("Successfully (re)connected to OSCam");
+          faults = 0;
+          capmt->SendAll();
         }
+        else
+          faults++;
         checkTimer.Set(SOCKET_CHECK_INTERVAL);
       }
       cCondWait::SleepMs(20);
