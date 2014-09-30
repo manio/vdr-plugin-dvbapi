@@ -21,11 +21,7 @@
 
 #include <getopt.h>
 #include <vdr/plugin.h>
-#include "CAPMT.h"
-#include "DeCSA.h"
-#include "Filter.h"
 #include "SCCIAdapter.h"
-#include "SocketHandler.h"
 
 #ifndef GITVERSION
 #define GITVERSION ""
@@ -33,18 +29,10 @@
 
 static const char *VERSION        = "2.1.1" GITVERSION;
 static const char *DESCRIPTION    = trNOOP("SoftCAM for OSCam");
-#ifndef LIBDVBCSA
-static const char *DECSALIB       = "FFdecsa";
-#else
-static const char *DECSALIB       = "libdvbcsa";
-#endif
 
-DeCSA *decsa = NULL;
-cDvbapiFilter *filter = NULL;
-CAPMT *capmt = NULL;
-SocketHandler *SockHandler = NULL;
-unsigned int AdapterIndexOffset = 0;
-bool CheckExpiredCW = true;
+class SCCIAdapter;
+extern unsigned int AdapterIndexOffset;
+extern bool CheckExpiredCW;
 
 class DVBAPI : public cPlugin
 {

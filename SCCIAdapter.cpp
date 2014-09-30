@@ -29,7 +29,6 @@
 #include <vdr/dvbci.h>
 #include <vdr/thread.h>
 #include "SCCIAdapter.h"
-#include "Frame.h"
 #include "Log.h"
 
 // from vdr's ci.c

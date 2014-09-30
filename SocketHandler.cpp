@@ -17,11 +17,13 @@
  */
 
 #include <linux/ioctl.h>
+#include <linux/dvb/ca.h>
 #include "SocketHandler.h"
-#include "CAPMT.h"
 #include "Log.h"
 
 #define SOCKET_CHECK_INTERVAL   3000
+
+SocketHandler *SockHandler = NULL;
 
 SocketHandler::~SocketHandler()
 {

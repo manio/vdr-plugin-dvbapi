@@ -35,8 +35,6 @@
 #define LIST_ADD             0x04
 #define LIST_UPDATE          0x05
 
-extern SocketHandler *SockHandler;
-
 using namespace std;
 
 struct pmtobj
@@ -68,5 +66,7 @@ public:
   }
   void SendAll();
 };
+
+extern CAPMT *capmt;
 
 #endif // ___CAPMT_H

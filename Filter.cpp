@@ -19,6 +19,8 @@
 #include "Filter.h"
 #include "Log.h"
 
+cDvbapiFilter *filter = NULL;
+
 cDvbapiFilter::cDvbapiFilter()
 {
   memset(pidmap, 0, sizeof(pidmap));

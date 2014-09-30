@@ -30,21 +30,12 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <vdr/thread.h>
-#include "DeCSA.h"
-#include "Filter.h"
 #include <linux/dvb/dmx.h>
-
-class CAPMT;
-class cDvbapiFilter;
-
-extern DeCSA *decsa;
-extern cDvbapiFilter *filter;
-extern CAPMT *capmt;
+#include "Filter.h"
 
 extern int OSCamNetworkMode;
 extern char OSCamHost[HOST_NAME_MAX];
 extern int OSCamPort;
-extern unsigned int AdapterIndexOffset;
 
 class SocketHandler : public cThread
 {
@@ -66,5 +57,7 @@ private:
   cTimeMs checkTimer;
   bool changeEndianness;
 };
+
+extern SocketHandler *SockHandler;
 
 #endif // ___SOCKETHANDLER_H

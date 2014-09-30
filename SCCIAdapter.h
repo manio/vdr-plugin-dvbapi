@@ -22,14 +22,10 @@
 #include "SCCAMSlot.h"
 #include "Frame.h"
 #include "CAPMT.h"
-#include "DeCSA.h"
 
 class SCCAMSlot;
 
 #define TDPU_SIZE_INDICATOR 0x80
-
-extern DeCSA *decsa;
-extern CAPMT *capmt;
 
 struct TPDU
 {

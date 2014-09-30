@@ -21,6 +21,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "Log.h"
+#include "DVBAPI.h"
+
+CAPMT *capmt = NULL;
 
 CAPMT::CAPMT()
 {
