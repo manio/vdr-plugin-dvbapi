@@ -343,9 +343,24 @@ void SocketHandler::Action(void)
       memcpy(&sFP2, &buff[sizeof(int) + 2], sizeof(struct dmx_sct_filter_params));
       if (protocol_version >= 1)
       {
-        sFP2.pid = ntohs(sFP2.pid);
-        sFP2.timeout = ntohl(sFP2.timeout);
-        sFP2.flags = ntohl(sFP2.flags);
+        int i = 6;
+        uint16_t *pid_ptr = (uint16_t *) &buff[i];
+        sFP2.pid = ntohs(*pid_ptr);
+        i += 2;
+
+        memcpy(&sFP2.filter.filter, &buff[i], 16);
+        i += 16;
+        memcpy(&sFP2.filter.mask, &buff[i], 16);
+        i += 16;
+        memcpy(&sFP2.filter.mode, &buff[i], 16);
+        i += 16;
+
+        uint32_t *timeout_ptr = (uint32_t *) &buff[i];
+        sFP2.timeout = ntohl(*timeout_ptr);
+        i += 4;
+
+        uint32_t *flags_ptr = (uint32_t *) &buff[i];
+        sFP2.flags = ntohl(*flags_ptr);
       }
       else if (changeEndianness)
       {
