@@ -279,7 +279,7 @@ void SocketHandler::Action(void)
     else if (*request == CA_SET_DESCR)
       cRead = recv(sock, buff+4, sizeof(ca_descr_t), MSG_DONTWAIT);
     else if (*request == DMX_SET_FILTER)
-      cRead = recv(sock, buff+4, 2 + sizeof(struct dmx_sct_filter_params), MSG_DONTWAIT);
+      cRead = recv(sock, buff+4, 2 + sizeof(struct dmx_sct_filter_params) + (protocol_version >= 1 ? -2 : 0), MSG_DONTWAIT);
     else if (*request == DMX_STOP)
       cRead = recv(sock, buff+4, 2 + 2, MSG_DONTWAIT);
     else if (*request == DVBAPI_SERVER_INFO)
@@ -340,7 +340,6 @@ void SocketHandler::Action(void)
     {
       unsigned char demux_index = buff[4];
       unsigned char filter_num = buff[5];
-      memcpy(&sFP2, &buff[sizeof(int) + 2], sizeof(struct dmx_sct_filter_params));
       if (protocol_version >= 1)
       {
         int i = 6;
@@ -362,11 +361,15 @@ void SocketHandler::Action(void)
         uint32_t *flags_ptr = (uint32_t *) &buff[i];
         sFP2.flags = ntohl(*flags_ptr);
       }
-      else if (changeEndianness)
+      else
       {
-        sFP2.pid = htons(sFP2.pid);
-        sFP2.timeout = htonl(sFP2.timeout);
-        sFP2.flags = htonl(sFP2.flags);
+        memcpy(&sFP2, &buff[sizeof(int) + 2], sizeof(struct dmx_sct_filter_params));
+        if (changeEndianness)
+        {
+          sFP2.pid = htons(sFP2.pid);
+          sFP2.timeout = htonl(sFP2.timeout);
+          sFP2.flags = htonl(sFP2.flags);
+        }
       }
       DEBUGLOG("%s: Got DMX_SET_FILTER request, adapter_index=%d, pid=%X, demux_idx=%d, filter_num=%d", __FUNCTION__, adapter_index, sFP2.pid, demux_index, filter_num);
       filter->SetFilter(adapter_index, sFP2.pid, 1, demux_index, filter_num, sFP2.filter.filter, sFP2.filter.mask);
