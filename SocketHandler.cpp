@@ -168,6 +168,24 @@ void SocketHandler::Action(void)
   uint8_t adapter_index;
   int faults = 0;
   int skip_bytes = 0;
+  bool new_oscam = false;
+
+  // for the compatibility with old oscam, ask if it can use
+  // the new protocol - if not, we will not try to use it later
+  OpenConnection();
+  SendClientInfo();
+  cCondWait::SleepMs(20);
+  cRead = recv(sock, &buff[0], 4, MSG_DONTWAIT);
+  if (cRead == 4)
+  {
+    request = (uint32_t *) &buff;
+    if (ntohl(*request) == DVBAPI_SERVER_INFO)
+    {
+      new_oscam = true;
+      DEBUGLOG("OSCam is supporting dvbapi protocol v1 or above");
+    }
+  }
+  CloseConnection();
 
   while (Running())
   {
@@ -181,7 +199,8 @@ void SocketHandler::Action(void)
         {
           DEBUGLOG("Successfully (re)connected to OSCam");
           faults = 0;
-          SendClientInfo();
+          if (new_oscam)
+            SendClientInfo();
           capmt->SendAll();
         }
         else
