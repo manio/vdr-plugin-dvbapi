@@ -37,7 +37,7 @@ SocketHandler::SocketHandler()
   DEBUGLOG("%s", __FUNCTION__);
   sock = 0;
   changeEndianness = false;
-  protocol_version = -1;
+  protocol_version = 0;
   Start();
 }
 
