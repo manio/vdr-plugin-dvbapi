@@ -211,32 +211,32 @@ void SocketHandler::Action(void)
       continue;
     }
 
-  if (protocol_version <= 0)
-  {
-    // first byte -> adapter_index
-    cRead = recv(sock, &adapter_index, 1, MSG_DONTWAIT);
-    if (cRead <= 0)
+    if (protocol_version <= 0)
     {
-      if (cRead == 0)
-        CloseConnection();
-      cCondWait::SleepMs(20);
-      continue;
-    }
+      // first byte -> adapter_index
+      cRead = recv(sock, &adapter_index, 1, MSG_DONTWAIT);
+      if (cRead <= 0)
+      {
+        if (cRead == 0)
+          CloseConnection();
+        cCondWait::SleepMs(20);
+        continue;
+      }
 
-    // ********* protocol-transition workaround *********
-    // If we have read 0xff into adapter number, then this surely means
-    // that oscam is responding to our CLIENT_INFO (using new protocol).
-    // In this case we move this byte to the first position of the request,
-    // and read only the 3 missing bytes
-    if (adapter_index == 0xff)
-    {
-      buff[0] = adapter_index;
-      protocol_version = 1;
-      skip_bytes = 1;
+      // ********* protocol-transition workaround *********
+      // If we have read 0xff into adapter number, then this surely means
+      // that oscam is responding to our CLIENT_INFO (using new protocol).
+      // In this case we move this byte to the first position of the request,
+      // and read only the 3 missing bytes
+      if (adapter_index == 0xff)
+      {
+        buff[0] = adapter_index;
+        protocol_version = 1;
+        skip_bytes = 1;
+      }
+      else
+        adapter_index -= AdapterIndexOffset;
     }
-    else
-      adapter_index -= AdapterIndexOffset;
-  }
 
     // request
     cRead = recv(sock, &buff[skip_bytes], sizeof(int)-skip_bytes, MSG_DONTWAIT);
@@ -250,19 +250,19 @@ void SocketHandler::Action(void)
     request = (uint32_t *) &buff;
       skip_bytes = 0;
 
-  if (protocol_version >= 1 && ntohl(*request) != DVBAPI_SERVER_INFO)
-  {
-    // first byte -> adapter_index
-    cRead = recv(sock, &adapter_index, 1, MSG_DONTWAIT);
-    if (cRead <= 0)
+    if (protocol_version >= 1 && ntohl(*request) != DVBAPI_SERVER_INFO)
     {
-      if (cRead == 0)
-        CloseConnection();
-      cCondWait::SleepMs(20);
-      continue;
+      // first byte -> adapter_index
+      cRead = recv(sock, &adapter_index, 1, MSG_DONTWAIT);
+      if (cRead <= 0)
+      {
+        if (cRead == 0)
+          CloseConnection();
+        cCondWait::SleepMs(20);
+        continue;
+      }
+      adapter_index -= AdapterIndexOffset;
     }
-    adapter_index -= AdapterIndexOffset;
-  }
 
     /* OSCam should always send in network order, but it's not fixed there so as a workaround
        probe for all possible cases here and detect when we need to change byte order.
