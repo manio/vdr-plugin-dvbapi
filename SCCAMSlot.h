@@ -22,9 +22,11 @@
 #include <vdr/dvbdevice.h>
 #include "SCCIAdapter.h"
 #include "Frame.h"
+#include "Filter.h"
 
 #define SLOT_CAID_CHECK   10000
 
+class cDvbapiFilter;
 class SCCIAdapter;
 
 class SCCAMSlot : public cCamSlot

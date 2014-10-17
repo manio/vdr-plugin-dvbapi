@@ -28,7 +28,6 @@
 #include <vdr/dvbdevice.h>
 #include <vdr/dvbci.h>
 #include <vdr/thread.h>
-#include "SCCIAdapter.h"
 #include "SCCAMSlot.h"
 #include "Log.h"
 

@@ -18,11 +18,18 @@
 
 #include <getopt.h>
 #include <vdr/plugin.h>
-#include <linux/dvb/ca.h>
 #include "DVBAPI.h"
 #include "DVBAPISetup.h"
 #include "Log.h"
-#include "SCCIAdapter.h"
+
+#ifndef LIBDVBCSA
+static const char *DECSALIB       = "FFdecsa";
+#else
+static const char *DECSALIB       = "libdvbcsa";
+#endif
+
+bool CheckExpiredCW = true;
+unsigned int AdapterIndexOffset = 0;
 
 DVBAPI::DVBAPI(void)
 {

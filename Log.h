@@ -19,6 +19,8 @@
 #ifndef ___LOG_H
 #define ___LOG_H
 
+#include <vdr/plugin.h>
+
 //global loglevel variable
 extern int LogLevel;
 

@@ -34,7 +34,7 @@ extern "C" {
 #define MAX_ADAPTERS 4
 #define MAX_KEY_WAIT 20         // max seconds to consider a CW as valid
 
-extern bool CheckExpiredCW;
+#include "DVBAPI.h"
 
 class DeCSA
 {
@@ -66,5 +66,7 @@ public:
   bool SetDescr(ca_descr_t *ca_descr, bool initial);
   bool SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid);
 };
+
+extern DeCSA *decsa;
 
 #endif // ___DECSA_H

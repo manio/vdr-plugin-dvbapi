@@ -30,21 +30,20 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <vdr/thread.h>
-#include "DeCSA.h"
-#include "Filter.h"
 #include <linux/dvb/dmx.h>
+#include "Filter.h"
 
-class CAPMT;
-class cDvbapiFilter;
+#define DVBAPI_PROTOCOL_VERSION         1
 
-extern DeCSA *decsa;
-extern cDvbapiFilter *filter;
-extern CAPMT *capmt;
+#define DVBAPI_FILTER_DATA     0xFFFF0000
+#define DVBAPI_CLIENT_INFO     0xFFFF0001
+#define DVBAPI_SERVER_INFO     0xFFFF0002
+
+#define INFO_VERSION "vdr-plugin-dvbapi " VERSION " / VDR " VDRVERSION
 
 extern int OSCamNetworkMode;
 extern char OSCamHost[HOST_NAME_MAX];
 extern int OSCamPort;
-extern unsigned int AdapterIndexOffset;
 
 class SocketHandler : public cThread
 {
@@ -56,6 +55,7 @@ public:
   void Write(unsigned char *data, int len);
   virtual void Action(void);
   void SendFilterData(unsigned char demux_id, unsigned char filter_num, unsigned char *data, int len);
+  void SendClientInfo();
 
 private:
   int sock;
@@ -65,6 +65,9 @@ private:
   dmx_sct_filter_params sFP2;
   cTimeMs checkTimer;
   bool changeEndianness;
+  uint16_t protocol_version;
 };
+
+extern SocketHandler *SockHandler;
 
 #endif // ___SOCKETHANDLER_H

@@ -21,11 +21,7 @@
 
 #include <vector>
 #include "DeCSA.h"
-#include "SocketHandler.h"
 #include <linux/dvb/dmx.h>
-
-class SocketHandler;
-extern SocketHandler *SockHandler;
 
 using namespace std;
 
@@ -55,5 +51,7 @@ public:
   bool SetFilter(uint8_t adapter_index, int pid, int start, unsigned char demux, unsigned char num, unsigned char *filter, unsigned char *mask);
   void StopAllFilters();
 };
+
+extern cDvbapiFilter *filter;
 
 #endif // ___FILTER_H

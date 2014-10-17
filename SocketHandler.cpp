@@ -17,11 +17,13 @@
  */
 
 #include <linux/ioctl.h>
+#include <linux/dvb/ca.h>
 #include "SocketHandler.h"
-#include "CAPMT.h"
 #include "Log.h"
 
 #define SOCKET_CHECK_INTERVAL   3000
+
+SocketHandler *SockHandler = NULL;
 
 SocketHandler::~SocketHandler()
 {
@@ -35,6 +37,7 @@ SocketHandler::SocketHandler()
   DEBUGLOG("%s", __FUNCTION__);
   sock = 0;
   changeEndianness = false;
+  protocol_version = 0;
   Start();
 }
 
@@ -133,23 +136,56 @@ void SocketHandler::Write(unsigned char *data, int len)
 void SocketHandler::SendFilterData(unsigned char demux_id, unsigned char filter_num, unsigned char *data, int len)
 {
   unsigned char buff[6 + len];
-  buff[0] = 0xff;                //data_identifier
-  buff[1] = 0xff;                //data_identifier
-  buff[2] = 0;                   //reserved
-  buff[3] = 0;                   //reserved
-  buff[4] = demux_id;            //demux
-  buff[5] = filter_num;          //filter
-  memcpy(buff+6, data, len);     //copy data
+
+  uint32_t req = htonl(DVBAPI_FILTER_DATA);               //type of request
+  memcpy(&buff[0], &req, 4);
+  buff[4] = demux_id;                                     //demux
+  buff[5] = filter_num;                                   //filter
+  memcpy(buff+6, data, len);                              //copy filter data
+  SockHandler->Write(buff, sizeof(buff));
+}
+
+void SocketHandler::SendClientInfo()
+{
+  int len = sizeof(INFO_VERSION) - 1;                     //ignoring null termination
+  unsigned char buff[7 + len];
+
+  uint32_t req = htonl(DVBAPI_CLIENT_INFO);               //type of request
+  memcpy(&buff[0], &req, 4);
+  int16_t proto_version = htons(DVBAPI_PROTOCOL_VERSION); //supported protocol version
+  memcpy(&buff[4], &proto_version, 2);
+  buff[6] = len;
+  memcpy(&buff[7], &INFO_VERSION, len);                   //copy info string
   SockHandler->Write(buff, sizeof(buff));
 }
 
 void SocketHandler::Action(void)
 {
   DEBUGLOG("%s", __FUNCTION__);
-  unsigned char buff[sizeof(int) + 2 + sizeof(struct dmx_sct_filter_params)];
-  int cRead, *request;
+  unsigned char buff[262];
+  int cRead;
+  uint32_t *request;
   uint8_t adapter_index;
   int faults = 0;
+  int skip_bytes = 0;
+  bool new_oscam = false;
+
+  // for the compatibility with old oscam, ask if it can use
+  // the new protocol - if not, we will not try to use it later
+  OpenConnection();
+  SendClientInfo();
+  cCondWait::SleepMs(20);
+  cRead = recv(sock, &buff[0], 4, MSG_DONTWAIT);
+  if (cRead == 4)
+  {
+    request = (uint32_t *) &buff;
+    if (ntohl(*request) == DVBAPI_SERVER_INFO)
+    {
+      new_oscam = true;
+      DEBUGLOG("OSCam is supporting dvbapi protocol v1 or above");
+    }
+  }
+  CloseConnection();
 
   while (Running())
   {
@@ -163,6 +199,8 @@ void SocketHandler::Action(void)
         {
           DEBUGLOG("Successfully (re)connected to OSCam");
           faults = 0;
+          if (new_oscam)
+            SendClientInfo();
           capmt->SendAll();
         }
         else
@@ -173,19 +211,35 @@ void SocketHandler::Action(void)
       continue;
     }
 
-    // first byte -> adapter_index
-    cRead = recv(sock, &adapter_index, 1, MSG_DONTWAIT);
-    if (cRead <= 0)
+    if (protocol_version <= 0)
     {
-      if (cRead == 0)
-        CloseConnection();
-      cCondWait::SleepMs(20);
-      continue;
+      // first byte -> adapter_index
+      cRead = recv(sock, &adapter_index, 1, MSG_DONTWAIT);
+      if (cRead <= 0)
+      {
+        if (cRead == 0)
+          CloseConnection();
+        cCondWait::SleepMs(20);
+        continue;
+      }
+
+      // ********* protocol-transition workaround *********
+      // If we have read 0xff into adapter number, then this surely means
+      // that oscam is responding to our CLIENT_INFO (using new protocol).
+      // In this case we move this byte to the first position of the request,
+      // and read only the 3 missing bytes
+      if (adapter_index == 0xff)
+      {
+        buff[0] = adapter_index;
+        protocol_version = 1;
+        skip_bytes = 1;
+      }
+      else
+        adapter_index -= AdapterIndexOffset;
     }
-    adapter_index -= AdapterIndexOffset;
 
     // request
-    cRead = recv(sock, &buff, sizeof(int), MSG_DONTWAIT);
+    cRead = recv(sock, &buff[skip_bytes], sizeof(int)-skip_bytes, MSG_DONTWAIT);
     if (cRead <= 0)
     {
       if (cRead == 0)
@@ -193,7 +247,22 @@ void SocketHandler::Action(void)
       cCondWait::SleepMs(20);
       continue;
     }
-    request = (int *) &buff;
+    request = (uint32_t *) &buff;
+      skip_bytes = 0;
+
+    if (protocol_version >= 1 && ntohl(*request) != DVBAPI_SERVER_INFO)
+    {
+      // first byte -> adapter_index
+      cRead = recv(sock, &adapter_index, 1, MSG_DONTWAIT);
+      if (cRead <= 0)
+      {
+        if (cRead == 0)
+          CloseConnection();
+        cCondWait::SleepMs(20);
+        continue;
+      }
+      adapter_index -= AdapterIndexOffset;
+    }
 
     /* OSCam should always send in network order, but it's not fixed there so as a workaround
        probe for all possible cases here and detect when we need to change byte order.
@@ -220,16 +289,26 @@ void SocketHandler::Action(void)
         buff[0] = 0x00;
     }
 
-    if (changeEndianness)
+    if (protocol_version >= 1)
+      *request = ntohl(*request);
+    else if (changeEndianness)
       *request = htonl(*request);
     if (*request == CA_SET_PID)
       cRead = recv(sock, buff+4, sizeof(ca_pid_t), MSG_DONTWAIT);
     else if (*request == CA_SET_DESCR)
       cRead = recv(sock, buff+4, sizeof(ca_descr_t), MSG_DONTWAIT);
     else if (*request == DMX_SET_FILTER)
-      cRead = recv(sock, buff+4, 2 + sizeof(struct dmx_sct_filter_params), MSG_DONTWAIT);
+      cRead = recv(sock, buff+4, 2 + sizeof(struct dmx_sct_filter_params) + (protocol_version >= 1 ? -2 : 0), MSG_DONTWAIT);
     else if (*request == DMX_STOP)
       cRead = recv(sock, buff+4, 2 + 2, MSG_DONTWAIT);
+    else if (*request == DVBAPI_SERVER_INFO)
+    {
+      unsigned char len;
+      recv(sock, buff+4, 2, MSG_DONTWAIT);             //proto version
+      recv(sock, &len, 1, MSG_DONTWAIT);               //string length
+      cRead = recv(sock, buff+6, len, MSG_DONTWAIT);
+      buff[6+len] = 0;                                 //terminate the string
+    }
     else
     {
       ERRORLOG("%s: read failed unknown command: %08x", __FUNCTION__, *request);
@@ -248,7 +327,12 @@ void SocketHandler::Action(void)
     {
       DEBUGLOG("%s: Got CA_SET_PID request, adapter_index=%d", __FUNCTION__, adapter_index);
       memcpy(&ca_pid, &buff[sizeof(int)], sizeof(ca_pid_t));
-      if (changeEndianness)
+      if (protocol_version >= 1)
+      {
+        ca_pid.pid = ntohl(ca_pid.pid);
+        ca_pid.index = ntohl(ca_pid.index);
+      }
+      else if (changeEndianness)
       {
         ca_pid.pid = htonl(ca_pid.pid);
         ca_pid.index = htonl(ca_pid.index);
@@ -259,7 +343,12 @@ void SocketHandler::Action(void)
     {
       DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d", __FUNCTION__, adapter_index);
       memcpy(&ca_descr, &buff[sizeof(int)], sizeof(ca_descr_t));
-      if (changeEndianness)
+      if (protocol_version >= 1)
+      {
+        ca_descr.index = ntohl(ca_descr.index);
+        ca_descr.parity = ntohl(ca_descr.parity);
+      }
+      else if (changeEndianness)
       {
         ca_descr.index = htonl(ca_descr.index);
         ca_descr.parity = htonl(ca_descr.parity);
@@ -270,12 +359,36 @@ void SocketHandler::Action(void)
     {
       unsigned char demux_index = buff[4];
       unsigned char filter_num = buff[5];
-      memcpy(&sFP2, &buff[sizeof(int) + 2], sizeof(struct dmx_sct_filter_params));
-      if (changeEndianness)
+      if (protocol_version >= 1)
       {
-        sFP2.pid = htons(sFP2.pid);
-        sFP2.timeout = htonl(sFP2.timeout);
-        sFP2.flags = htonl(sFP2.flags);
+        int i = 6;
+        uint16_t *pid_ptr = (uint16_t *) &buff[i];
+        sFP2.pid = ntohs(*pid_ptr);
+        i += 2;
+
+        memcpy(&sFP2.filter.filter, &buff[i], 16);
+        i += 16;
+        memcpy(&sFP2.filter.mask, &buff[i], 16);
+        i += 16;
+        memcpy(&sFP2.filter.mode, &buff[i], 16);
+        i += 16;
+
+        uint32_t *timeout_ptr = (uint32_t *) &buff[i];
+        sFP2.timeout = ntohl(*timeout_ptr);
+        i += 4;
+
+        uint32_t *flags_ptr = (uint32_t *) &buff[i];
+        sFP2.flags = ntohl(*flags_ptr);
+      }
+      else
+      {
+        memcpy(&sFP2, &buff[sizeof(int) + 2], sizeof(struct dmx_sct_filter_params));
+        if (changeEndianness)
+        {
+          sFP2.pid = htons(sFP2.pid);
+          sFP2.timeout = htonl(sFP2.timeout);
+          sFP2.flags = htonl(sFP2.flags);
+        }
       }
       DEBUGLOG("%s: Got DMX_SET_FILTER request, adapter_index=%d, pid=%X, demux_idx=%d, filter_num=%d", __FUNCTION__, adapter_index, sFP2.pid, demux_index, filter_num);
       filter->SetFilter(adapter_index, sFP2.pid, 1, demux_index, filter_num, sFP2.filter.filter, sFP2.filter.mask);
@@ -284,9 +397,22 @@ void SocketHandler::Action(void)
     {
       unsigned char demux_index = buff[4];
       unsigned char filter_num = buff[5];
-      int pid = (buff[6] << 8) + buff[7];
+      uint16_t pid;
+      if (protocol_version >= 1)
+      {
+        uint16_t *pid_ptr = (uint16_t *) &buff[6];
+        pid = ntohs(*pid_ptr);
+      }
+      else
+        pid = (buff[6] << 8) + buff[7];
       DEBUGLOG("%s: Got DMX_STOP request, adapter_index=%d, pid=%X, demux_idx=%d, filter_num=%d", __FUNCTION__, adapter_index, pid, demux_index, filter_num);
       filter->SetFilter(adapter_index, pid, 0, demux_index, filter_num, NULL, NULL);
+    }
+    else if (*request == DVBAPI_SERVER_INFO)
+    {
+      uint16_t *proto_ver_ptr = (uint16_t *) &buff[4];
+      protocol_version = ntohs(*proto_ver_ptr);
+      DEBUGLOG("%s: Got SERVER_INFO: %s, protocol_version = %d", __FUNCTION__, &buff[6], protocol_version);
     }
     else
       DEBUGLOG("%s: unknown request", __FUNCTION__);
