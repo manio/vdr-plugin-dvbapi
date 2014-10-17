@@ -27,7 +27,7 @@ TMPDIR ?= /tmp
 ### The compiler options:
 
 export CFLAGS   = $(call PKGCFG,cflags)
-export CXXFLAGS = $(call PKGCFG,cxxflags) -fdiagnostics-color=auto
+export CXXFLAGS = $(call PKGCFG,cxxflags)
 
 ### Allow user defined options to overwrite defaults:
 
