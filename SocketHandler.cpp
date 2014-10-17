@@ -304,8 +304,8 @@ void SocketHandler::Action(void)
     else if (*request == DVBAPI_SERVER_INFO)
     {
       unsigned char len;
-      cRead = recv(sock, buff+4, 2, MSG_DONTWAIT);     //proto version
-      cRead = recv(sock, &len, 1, MSG_DONTWAIT);       //string length
+      recv(sock, buff+4, 2, MSG_DONTWAIT);             //proto version
+      recv(sock, &len, 1, MSG_DONTWAIT);               //string length
       cRead = recv(sock, buff+6, len, MSG_DONTWAIT);
       buff[6+len] = 0;                                 //terminate the string
     }
