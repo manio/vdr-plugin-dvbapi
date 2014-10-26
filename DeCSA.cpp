@@ -132,8 +132,10 @@ bool DeCSA::SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid)
       adapter_index >= 0 && adapter_index < MAX_ADAPTERS)
   {
     pidmap[adapter_index][ca_pid->pid] = ca_pid->index;
-    DEBUGLOG("%d.%d: set pid %04x", cardindex, ca_pid->index, ca_pid->pid);
+    DEBUGLOG("%d.%d: set pid 0x%04x", cardindex, ca_pid->index, ca_pid->pid);
   }
+  else
+    ERRORLOG("%s: Parameter(s) out of range: adapter_index=%d, pid=0x%04x, index=0x%x", __FUNCTION__, adapter_index, ca_pid->pid, ca_pid->index);
   return true;
 }
 
