@@ -21,11 +21,6 @@
 
 cDvbapiFilter *filter = NULL;
 
-cDvbapiFilter::cDvbapiFilter()
-{
-  memset(pidmap, 0, sizeof(pidmap));
-}
-
 cDvbapiFilter::~cDvbapiFilter()
 {
   StopAllFilters();
@@ -34,12 +29,11 @@ cDvbapiFilter::~cDvbapiFilter()
 bool cDvbapiFilter::SetFilter(uint8_t adapter_index, int pid, int start, unsigned char demux, unsigned char num, unsigned char *filter, unsigned char *mask)
 {
   cMutexLock lock(&mutex);
-  if ((unsigned) pid <= MAX_CSA_PIDS &&
-      adapter_index >= 0 && adapter_index < MAX_ADAPTERS)
+  if ((unsigned) pid <= MAX_CSA_PIDS)
   {
     DEBUGLOG("%s: adapter=%d set FILTER pid=%04X start=%d, demux=%d, filter=%d", __FUNCTION__, adapter_index, pid, start, demux, num);
 
-    vector<dmxfilter> *flt = pidmap[adapter_index][pid];
+    vector<dmxfilter> *flt = pidmap[make_pair(adapter_index, pid)];
     vector<dmxfilter>::iterator it;
     if (start == 1 && filter && mask)
     {
@@ -69,7 +63,7 @@ bool cDvbapiFilter::SetFilter(uint8_t adapter_index, int pid, int start, unsigne
       else                      //it seems this is the first filter for this pid - create a list
       {
         flt = new vector<dmxfilter>;
-        pidmap[adapter_index][pid] = flt;
+        pidmap[make_pair(adapter_index, pid)] = flt;
       }
 
       if (!updated)
@@ -101,7 +95,7 @@ bool cDvbapiFilter::SetFilter(uint8_t adapter_index, int pid, int start, unsigne
           {
             DEBUGLOG("%s: deleted the last filter for pid=%04X, removing list", __FUNCTION__, pid);
             delete flt;
-            pidmap[adapter_index][pid] = NULL;
+            pidmap.erase(make_pair(adapter_index, pid));
           }
 
           break;
@@ -117,27 +111,26 @@ void cDvbapiFilter::StopAllFilters()
   cMutexLock lock(&mutex);
   DEBUGLOG("%s", __FUNCTION__);
 
-  // firstly releasing data
-  for (int i = 0; i < MAX_ADAPTERS; i++)
+  //release filter data
+  map<pair<int, int>, vector<dmxfilter>*>::iterator it;
+  for (it = pidmap.begin(); it != pidmap.end(); ++it)
   {
-    for (int j = 0; j < MAX_CSA_PIDS; j++)
+    vector<dmxfilter> *flt = it->second;
+    if (flt)                  //filter list assigned to this pid
     {
-      vector<dmxfilter> *flt = pidmap[i][j];
-      if (flt)                  //filter list assigned to this pid
+      vector<dmxfilter>::iterator it;
+      for (it = flt->begin(); it != flt->end(); ++it)
       {
-        vector<dmxfilter>::iterator it;
-        for (it = flt->begin(); it != flt->end(); ++it)
-        {
-          if (it->data)
-            delete it->data;
-        }
-        flt->clear();
-        delete flt;
+        if (it->data)
+          delete it->data;
       }
+      flt->clear();
+      delete flt;
     }
   }
-  // clearing pointers
-  memset(pidmap, 0, sizeof(pidmap));
+
+  //clear map
+  pidmap.clear();
 }
 
 void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
@@ -146,7 +139,7 @@ void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
   int pid = ((data[1] << 8) + data[2]) & 0x1FFF;
   if ((unsigned) pid <= MAX_CSA_PIDS && pid > 0)
   {
-    vector<dmxfilter> *flt = pidmap[adapter_index][pid];
+    vector<dmxfilter> *flt = pidmap[make_pair(adapter_index, pid)];
     if (flt)                    //filter list assigned to this pid
     {
       vector<dmxfilter>::iterator it;

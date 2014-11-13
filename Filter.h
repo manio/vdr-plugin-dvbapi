@@ -19,6 +19,7 @@
 #ifndef ___FILTER_H
 #define ___FILTER_H
 
+#include <map>
 #include <vector>
 #include "DeCSA.h"
 #include <linux/dvb/dmx.h>
@@ -42,10 +43,9 @@ class cDvbapiFilter
 {
 private:
   cMutex mutex;
-  vector<dmxfilter> *pidmap[MAX_ADAPTERS][MAX_CSA_PIDS];
+  map<pair<int, int>, vector<dmxfilter>*> pidmap;
 
 public:
-  cDvbapiFilter();
   ~cDvbapiFilter();
   void Analyze(uint8_t adapter_index, unsigned char *data, int len);
   bool SetFilter(uint8_t adapter_index, int pid, int start, unsigned char demux, unsigned char num, unsigned char *filter, unsigned char *mask);
