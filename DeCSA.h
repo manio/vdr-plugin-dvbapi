@@ -19,6 +19,7 @@
 #ifndef ___DECSA_H
 #define ___DECSA_H
 
+#include <map>
 #include <linux/dvb/ca.h>
 #include <vdr/dvbdevice.h>
 #include <vdr/thread.h>
@@ -31,10 +32,11 @@ extern "C" {
 
 #define MAX_CSA_PIDS 8192
 #define MAX_CSA_IDX  16
-#define MAX_ADAPTERS 4
 #define MAX_KEY_WAIT 20         // max seconds to consider a CW as valid
 
 #include "DVBAPI.h"
+
+using namespace std;
 
 class DeCSA
 {
@@ -50,7 +52,7 @@ private:
   struct dvbcsa_bs_key_s *cs_key_odd[MAX_CSA_IDX];
 #endif
   time_t cwSeen[MAX_CSA_IDX];   // last time the CW for the related key was seen
-  unsigned char pidmap[MAX_ADAPTERS][MAX_CSA_PIDS];    //FIXME: change to dynamic structure
+  map<pair<int, int>, unsigned char> pidmap;
   cMutex mutex;
   int cardindex;
   bool GetKeyStruct(int idx);

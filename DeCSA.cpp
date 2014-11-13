@@ -50,7 +50,6 @@ DeCSA::DeCSA(int CardIndex)
   memset(cs_key_odd, 0, sizeof(cs_key_odd));
 #endif
   memset(cwSeen, 0, sizeof(cwSeen));
-  memset(pidmap, 0, sizeof(pidmap));
   ResetState();
 }
 
@@ -128,10 +127,9 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
 bool DeCSA::SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid)
 {
   cMutexLock lock(&mutex);
-  if (ca_pid->index < MAX_CSA_IDX && ca_pid->pid < MAX_CSA_PIDS &&
-      adapter_index >= 0 && adapter_index < MAX_ADAPTERS)
+  if (ca_pid->index < MAX_CSA_IDX && ca_pid->pid < MAX_CSA_PIDS)
   {
-    pidmap[adapter_index][ca_pid->pid] = ca_pid->index;
+    pidmap[make_pair(adapter_index, ca_pid->pid)] = ca_pid->index;
     DEBUGLOG("%d.%d: set pid 0x%04x", cardindex, ca_pid->index, ca_pid->pid);
   }
   else
@@ -207,7 +205,7 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       offset = ts_packet_get_payload_offset(data + l);
       payload_len = TS_SIZE - offset;
 #endif
-      int idx = pidmap[adapter_index][((data[l + 1] << 8) + data[l + 2]) & (MAX_CSA_PIDS - 1)];
+      int idx = pidmap[make_pair(adapter_index, ((data[l + 1] << 8) + data[l + 2]) & (MAX_CSA_PIDS - 1))];
       if (currIdx < 0 || idx == currIdx)
       {                         // same or no index
         currIdx = idx;
