@@ -1,0 +1,32 @@
+# VDR plugin language source file.
+# Copyright (C) 2014 Mariusz Bialonczyk <manio@skyboo.net>
+# This file is distributed under the same license as the DVBAPI package.
+# Mariusz Bialonczyk <manio@skyboo.net>, 2014
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: vdr-dvbapi 2.0.0\n"
+"Report-Msgid-Bugs-To: <see README>\n"
+"POT-Creation-Date: 2014-03-28 09:20+0100\n"
+"PO-Revision-Date: 2014-01-28 01:28+0200\n"
+"Last-Translator: Arthur <artlov@gmail.com>\n"
+"Language-Team: Estonian <vdr@linuxtv.org>\n"
+"Language: et\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "SoftCAM for OSCam"
+msgstr "Tarkvaraline CAM OSCam-ile"
+
+msgid "Log level (0-3)"
+msgstr "Logimise tase (0-3)"
+
+msgid "Enable OSCam network mode"
+msgstr "OSCam võrgurežiimi kasutamine"
+
+msgid "Host"
+msgstr "Aadress"
+
+msgid "Port"
+msgstr "Port"
