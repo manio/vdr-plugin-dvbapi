@@ -52,10 +52,12 @@ public:
   ~SocketHandler();
   void OpenConnection();
   void CloseConnection();
+  void StopDescrambling();
   void Write(unsigned char *data, int len);
   virtual void Action(void);
   void SendFilterData(unsigned char demux_id, unsigned char filter_num, unsigned char *data, int len);
   void SendClientInfo();
+  void SendStopDescrambling();
 
 private:
   int sock;

@@ -117,6 +117,14 @@ void SocketHandler::CloseConnection()
   }
 }
 
+void SocketHandler::StopDescrambling()
+{
+  if (protocol_version >= 1)
+    SendStopDescrambling();
+  else
+    CloseConnection();
+}
+
 void SocketHandler::Write(unsigned char *data, int len)
 {
   DEBUGLOG("%s, sock=%d", __FUNCTION__, sock);
@@ -159,6 +167,24 @@ void SocketHandler::SendClientInfo()
   SockHandler->Write(buff, sizeof(buff));
 }
 
+void SocketHandler::SendStopDescrambling()
+{
+  DEBUGLOG("%s", __FUNCTION__);
+  unsigned char buff[8];
+
+  buff[0] = 0x9F;
+  buff[1] = 0x80;
+  buff[2] = 0x3F;
+  buff[3] = 0x04;
+
+  buff[4] = 0x83;
+  buff[5] = 0x02;
+  buff[6] = 0x00;
+  buff[7] = 0x00;             //demux id
+
+  Write(buff, 8);
+}
+
 void SocketHandler::Action(void)
 {
   DEBUGLOG("%s", __FUNCTION__);
@@ -175,17 +201,28 @@ void SocketHandler::Action(void)
   OpenConnection();
   SendClientInfo();
   cCondWait::SleepMs(20);
-  cRead = recv(sock, &buff[0], 4, MSG_DONTWAIT);
-  if (cRead == 4)
+  cRead = recv(sock, &buff[0], 6, MSG_DONTWAIT);
+  if (cRead == 6)
   {
     request = (uint32_t *) &buff;
     if (ntohl(*request) == DVBAPI_SERVER_INFO)
     {
+      unsigned char len;
+
+      uint16_t *proto_ver_ptr = (uint16_t *) &buff[4];
+      protocol_version = ntohs(*proto_ver_ptr);
+
+      recv(sock, &len, 1, MSG_DONTWAIT);               //string length
+      cRead = recv(sock, buff+6, len, MSG_DONTWAIT);
+      buff[6+len] = 0;                                 //terminate the string
+      DEBUGLOG("%s: Got SERVER_INFO: %s, protocol_version = %d", __FUNCTION__, &buff[6], protocol_version);
+
       new_oscam = true;
       DEBUGLOG("OSCam is supporting dvbapi protocol v1 or above");
     }
   }
-  CloseConnection();
+  if (!new_oscam)
+    CloseConnection();
 
   while (Running())
   {

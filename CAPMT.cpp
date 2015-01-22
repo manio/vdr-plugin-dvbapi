@@ -123,7 +123,7 @@ void CAPMT::SendAll()
   vector<pmtobj>::iterator it;
 
   if (pmt.empty())
-    SockHandler->CloseConnection();
+    SockHandler->StopDescrambling();
   else
   {
     //sending complete PMT objects
