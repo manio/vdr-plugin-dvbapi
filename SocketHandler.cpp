@@ -180,7 +180,7 @@ void SocketHandler::SendStopDescrambling()
   buff[4] = 0x83;
   buff[5] = 0x02;
   buff[6] = 0x00;
-  buff[7] = 0x00;             //demux id
+  buff[7] = 0xFF;             //wildcard demux id
 
   Write(buff, 8);
 }
