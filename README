@@ -3,7 +3,7 @@ TOC
 2. Getting the source code
 3. Basic Installation
 4. VDR and OScam compatibility
-5. Network mode and plugin setup
+5. Plugin and OSCam setup
 6. Commandline options
 7. Contact and support
 8. Thanks area
@@ -63,20 +63,16 @@ versions (2.0.0 or newer). You also need OScam svn rev >= 9095.
     You also need OScam svn rev >= 7314 in this case.
 
 -----------------------------------------------------------------------------
-5. Network mode and plugin setup
+5. Plugin and OSCam setup
 -----------------------------------------------------------------------------
 
-The standard way of using this plugin is to have it running on the same
-machine as OSCam with dvbapi module enabled. This way the VDR and OSCam
-is using the same hardware devices. Communication is done over unix domain
-socket, /tmp/camd.socket.
-
-Current version of the plugin has a new feature: allows connect to OSCam
+Current version of the plugin has a feature which allows connect to OSCam
 via TCP socket. This way OSCam instead of doing filering on demux device,
 is doing the requests over the network and the plugin is doing filering on
 data provided by VDR. All communication with OSCam is done over one single
 TCP socket. This allows directly connect to remote OSCam host with card
 readers if it is on different host then VDR is running at.
+This is currently the default (and recommended) plugin mode.
 It will also help to using the plugin in cases where there is no physical
 hardware the OSCam could use, eg the SAT>IP devices running on VDR.
 
@@ -85,11 +81,6 @@ also host and port in this plugin options. Required minimal OSCam version
 for this mode to work is svn rev 9580.
 Let's assume that you want to use the port 2000 for communication on host
 192.168.0.1 in your LAN.
-To enable this mode in OSCam, configure the listen_port via OSCam's web
-interface or add the following line in [dvbapi] section of oscam.conf file:
-listen_port = 2000
-Please also note that you need to configure the rest of OSCam dvbapi config
-as it's explained in the INSTALL file.
 
 On the VDR plugin side you need to enable the OSCam network mode and set the
 host and the same port of the machine where the OSCam is listening for
@@ -99,6 +90,28 @@ in the VDR's setup.conf file:
 dvbapi.OSCamNetwork = 1
 dvbapi.OSCamHost = 192.168.0.1
 dvbapi.OSCamPort = 2000
+
+NOTE: If you want to use VDR and OSCam on the same host, then just use
+127.0.0.1 as the OSCamHost setting.
+
+The OSCam has to be configured accordingly (oscam.conf file):
+[dvbapi]
+enabled                       = 1
+au                            = 1
+pmt_mode                      = 4
+listen_port                   = 2000
+user                          = vdr
+boxtype                       = pc
+
+You also need to properly add the above "vdr" user in OSCam, please refer
+the OSCam documentation for details.
+
+When the network mode is disabled the plugin uses the old (and deprecated)
+socket mode for communication with OSCam. It must be running on the same
+machine as OSCam with dvbapi module enabled. This way the VDR and OSCam
+is using the same hardware devices. Communication is done over unix domain
+socket, /tmp/camd.socket. You need to set 'listen_port = 0' in OSCam in
+this case.
 
 
 The log level parameter of the plugin can be configured either from VDR

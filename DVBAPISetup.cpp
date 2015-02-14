@@ -19,7 +19,7 @@
 #include "DVBAPISetup.h"
 
 int LogLevel = 2;
-int OSCamNetworkMode = 0;
+int OSCamNetworkMode = 1;
 char OSCamHost[HOST_NAME_MAX] = "localhost";
 int OSCamPort = 2000;
 

@@ -15,17 +15,6 @@ Basic Installation
  2) Start the VDR with dvbpi plugin, sample command:
  /usr/local/bin/vdr -c /etc/vdr -E /var/vdr -L /usr/local/lib/vdr -P dvbapi
 
- 3) In the oscam.conf file add following options
-        [dvbapi]
-        enabled = 1
-        au = 1
-        boxtype = pc
-        user = vdr
-        pmt_mode = 4
-
-   boxtype to "pc" will allow oscam to take adapter/demux information from CAPMT frame.
-   pmt_mode to "4" will allow oscam to use camd.socket in /tmp/ dir
-
 FFdecsa vs. libdvbcsa
 =====================
 This plugin is a SoftCAM - this means that it has to use Common Scrambling Algorithm
