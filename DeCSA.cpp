@@ -129,7 +129,7 @@ bool DeCSA::SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid)
   cMutexLock lock(&mutex);
   if (ca_pid->index < MAX_CSA_IDX && ca_pid->pid < MAX_CSA_PIDS)
   {
-    pidmap[make_pair(adapter_index, ca_pid->pid)] = ca_pid->index;
+    pidmap[make_pair(adapter_index, ca_pid->pid)] = ca_pid->index == -1 ? 0 : ca_pid->index;
     DEBUGLOG("%d.%d: set pid 0x%04x", cardindex, ca_pid->index, ca_pid->pid);
   }
   else
