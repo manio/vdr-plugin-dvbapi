@@ -52,15 +52,15 @@ For sample installation instructions refer to INSTALL file.
 4. VDR and OScam compatibility
 -----------------------------------------------------------------------------
 
-Current versions of this plugin uses a new VDR CAM decrypt interface, which
-was added in VDR 2.1.3. Additional fixes was added in VDR 2.1.4,
-and I recommend this version as minimal VDR version for recent plugin
-versions (2.0.0 or newer). You also need OScam svn rev >= 9095.
+Recommended VDR version for recent plugin versions is the stable VDR 2.2.0 or
+further Developer versions.
+You also need OScam svn rev >= 10389.
 
-*** NOTE FOR VDR VERSION < 2.1.4
-    If you are using VDR older then 2.1.4 then you also need an older plugin
-    version, 1.0.6 is the last that will work.
-    You also need OScam svn rev >= 7314 in this case.
+*** NOTE FOR OLDER VDR VERSIONS:
+    If you are using older VDR stable versions or developer version older
+    then 2.1.4 then you also need an older plugin version:
+    - version 1.0.6 is the last plugin revision that will work for you;
+    you also need OScam svn rev >= 7314 in this case.
 
 -----------------------------------------------------------------------------
 5. Plugin and OSCam setup
