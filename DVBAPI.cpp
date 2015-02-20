@@ -95,8 +95,11 @@ bool DVBAPI::Start(void)
   {
     if (const cDevice *Device = cDevice::GetDevice(i))
     {
-      INFOLOG("Creating sCCIAdapter for device %d", Device->CardIndex());
-      sCCIAdapter[i] = new SCCIAdapter(NULL, Device->CardIndex(), 0, true, true);
+      if (Device->NumProvidedSystems())
+      {
+        INFOLOG("Creating sCCIAdapter for device %d", Device->CardIndex());
+        sCCIAdapter[i] = new SCCIAdapter(NULL, Device->CardIndex(), 0, true, true);
+      }
     }
   }
   INFOLOG("plugin started");
