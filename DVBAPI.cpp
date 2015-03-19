@@ -63,11 +63,9 @@ bool DVBAPI::ProcessArgs(int argc, char *argv[])
     {
       case 'o':
         AdapterIndexOffset = atoi(optarg);
-        INFOLOG("Using value %d as the adapter index offset", AdapterIndexOffset);
         break;
       case 'd':
         CheckExpiredCW = false;
-        INFOLOG("CW expiration check is disabled");
         break;
       default:
         return false;
@@ -86,6 +84,10 @@ bool DVBAPI::Start(void)
 {
   INFOLOG("plugin version %s initializing (VDR %s)", VERSION, VDRVERSION);
   INFOLOG("decryption library: %s", DECSALIB);
+  if (AdapterIndexOffset)
+    INFOLOG("Using value %d as the adapter index offset", AdapterIndexOffset);
+  if (!CheckExpiredCW)
+    INFOLOG("CW expiration check is disabled");
   capmt = new CAPMT;
   decsa = new DeCSA(0);
   filter = new cDvbapiFilter;
