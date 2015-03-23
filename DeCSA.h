@@ -32,7 +32,7 @@ extern "C" {
 
 #define MAX_CSA_PIDS 8192
 #define MAX_CSA_IDX  16
-#define MAX_KEY_WAIT 20         // max seconds to consider a CW as valid
+#define MAX_KEY_WAIT 25         // max seconds to consider a CW as valid
 
 #include "DVBAPI.h"
 
