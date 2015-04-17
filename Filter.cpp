@@ -137,6 +137,7 @@ void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
 {
   cMutexLock lock(&mutex);
   int pid = ((data[1] << 8) + data[2]) & 0x1FFF;
+  int cc = data[3] & 0x0f;      //TS header -> continuity counter
   if ((unsigned) pid <= MAX_CSA_PIDS && pid > 0)
   {
     vector<dmxfilter> *flt = pidmap[make_pair(adapter_index, pid)];
@@ -148,44 +149,49 @@ void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
         //PUSI flag set, the first TS packet
         if (data[1] & 0x40)
         {
-          //checking filter match
-          unsigned char *filter = it->filter;
-          unsigned char *mask = it->mask;
-          unsigned char *dat = data + 4 + 1;
-          int i = 0, max = DMX_FILTER_SIZE - 1;
-          if ((dat[i] & mask[i]) != filter[i])
-            continue;
-          else
-            dat = data + 4 + 3;
-          for (i = 1; i < max; i++)
+          int offset = 5;       //skip TS packet header and counter
+          do
           {
-            if ((dat[i] & mask[i]) != filter[i])
-              break;
-          }
-          if (i == max)
-          {
-            int tablelen = ((data[4 + 2] << 8) + data[4 + 3]) & 0x0FFF;
-            if (tablelen <= TS_SIZE - 8)        //data fits in one TS_PACKET
-            {
-              DEBUGLOG("%s: all data in one TS packet, immediate send", __FUNCTION__);
-              SockHandler->SendFilterData(it->demux_id, it->filter_num, data + 4 + 1, tablelen + 3);
-            }
-            else                //copying the first part of data
-            {
-              DEBUGLOG("%s: saving first part of data", __FUNCTION__);
-              if (it->data)
-                delete it->data;
-              it->data = new unsigned char[tablelen + 3];
-              it->len = tablelen;
+            unsigned char *filter = it->filter;
+            unsigned char *mask = it->mask;
+            unsigned char *dat = data + offset;
 
-              memcpy(it->data, data + 5, TS_SIZE - 5);  //copy data
-              it->size = TS_SIZE - 5 - 3;
-              it->lastcc = data[3] & 0x0f;      //TS header -> continuity counter
+            int tablelen = ((dat[1] << 8) + dat[2]) & 0x0FFF;
+
+            int i = 0, max = DMX_FILTER_SIZE - 1;
+            if ((dat[i] & mask[i]) == filter[i]) //first byte match?
+            {
+              //skip 2 byte length and continue checking
+              for (i = 1; i < max; i++)
+              {
+                if ((dat[i + 2] & mask[i]) != filter[i])
+                  break;
+              }
             }
-            return;
-          }
+            if (i == max)
+            {
+              if (tablelen <= TS_SIZE - 8)       //data fits in one TS_PACKET
+              {
+                DEBUGLOG("%s: all data in one TS packet, immediate send", __FUNCTION__);
+                SockHandler->SendFilterData(it->demux_id, it->filter_num, dat, tablelen + 3);
+              }
+              else              //copying the first part of data
+              {
+                DEBUGLOG("%s: saving first part of data", __FUNCTION__);
+                if (it->data)
+                  delete it->data;
+                it->data = new unsigned char[tablelen + 3];
+                it->len = tablelen;
+
+                memcpy(it->data, dat, tablelen + 3);  //copy data
+                it->size = tablelen;
+                it->lastcc = cc;
+              }
+            }
+            offset += tablelen + 3; //there may be next table in the same TS packet
+          } while (offset <= TS_SIZE);
         }
-        else if (it->data && (it->lastcc + 1 == (data[3] & 0x0f)))      //we have a part of data for this filter
+        else if (it->data && (cc == it->lastcc + 1))      //we have a part of data for this filter
         {
           int to_copy = it->len - it->size;
           if (to_copy > TS_SIZE - 4)
@@ -194,7 +200,7 @@ void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
 
           memcpy(it->data + 3 + it->size, data + 4, to_copy);   //copy data
           it->size += to_copy;
-          it->lastcc = data[3] & 0x0f;  //TS header -> continuity counter
+          it->lastcc = cc;              //TS header -> continuity counter
 
           if (it->size == it->len)      //we've got all data
           {
