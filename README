@@ -6,7 +6,6 @@ TOC
 5. Plugin and OSCam setup
 6. Commandline options
 7. Contact and support
-8. Thanks area
 
 -----------------------------------------------------------------------------
 1. Introduction
@@ -185,23 +184,3 @@ https://github.com/manio/vdr-plugin-dvbapi/issues
 You can also join our IRC channel #dvbapi on freenode.
 
 Or you can send me an e-mail: manio@skyboo.net
-
------------------------------------------------------------------------------
-8. Thanks area
------------------------------------------------------------------------------
-
- I would like to give a big thanks to a number of people from the OScam Board
- (oscam.to) and eurocardsharing forum for their great help and support.
-
- To Aigars for creating the first simplified version of this plugin using
- VDR-SC and with modifications from dvbapi-patch.tar.gz
-
- To Narog for implementing the multiple adapter support
-
- To Peje, Unixer, Copper, HALLO01, udobroemme, ninjagp, JeroenT for their
- patience, support and testing on own hardware.
-
- To the authors of VDR-SC plugin, FFdecsa and Oscam for their great work and
- dedication
-
- In last to all other forum members that have/will contribute to this plugin.
