@@ -285,7 +285,7 @@ void SocketHandler::Action(void)
       continue;
     }
     request = (uint32_t *) &buff;
-      skip_bytes = 0;
+    skip_bytes = 0;
 
     if (protocol_version >= 1 && ntohl(*request) != DVBAPI_SERVER_INFO)
     {
