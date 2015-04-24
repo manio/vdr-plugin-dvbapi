@@ -346,6 +346,8 @@ void SocketHandler::Action(void)
       cRead = recv(sock, buff+6, len, MSG_DONTWAIT);
       buff[6+len] = 0;                                 //terminate the string
     }
+    else if (*request == DVBAPI_ECM_INFO)
+      recv(sock, buff+4, 14, MSG_DONTWAIT);            //read ECM info const len header only
     else
     {
       ERRORLOG("%s: read failed unknown command: %08x", __FUNCTION__, *request);
@@ -450,6 +452,53 @@ void SocketHandler::Action(void)
       uint16_t *proto_ver_ptr = (uint16_t *) &buff[4];
       protocol_version = ntohs(*proto_ver_ptr);
       DEBUGLOG("%s: Got SERVER_INFO: %s, protocol_version = %d", __FUNCTION__, &buff[6], protocol_version);
+    }
+    else if (*request == DVBAPI_ECM_INFO)
+    {
+      char reader[255];
+      char from[255];
+      char protocol[255];
+      unsigned char len, hops;
+      int i = 4;
+
+      uint16_t *sid_ptr = (uint16_t *) &buff[i];       //ServiceID
+      uint16_t sid = ntohs(*sid_ptr);
+      i += 2;
+
+      uint16_t *caid_ptr = (uint16_t *) &buff[i];      //CAID
+      uint16_t caid = ntohs(*caid_ptr);
+      i += 2;
+
+      uint16_t *pid_ptr = (uint16_t *) &buff[i];       //PID
+      uint16_t pid = ntohs(*pid_ptr);
+      i += 2;
+
+      uint32_t *prid_ptr = (uint32_t *) &buff[i];      //ProviderID
+      uint32_t prid = ntohl(*prid_ptr);
+      i += 4;
+
+      uint32_t *ecmtime_ptr = (uint32_t *) &buff[i];   //ECM time
+      uint32_t ecmtime = ntohl(*ecmtime_ptr);
+      i += 4;
+
+      //reader name
+      recv(sock, &len, 1, MSG_DONTWAIT);               //string length
+      recv(sock, reader, len, MSG_DONTWAIT);
+      reader[len] = 0;                                 //terminate the string
+
+      //source (from)
+      recv(sock, &len, 1, MSG_DONTWAIT);               //string length
+      recv(sock, from, len, MSG_DONTWAIT);
+      from[len] = 0;                                   //terminate the string
+
+      //protocol name
+      recv(sock, &len, 1, MSG_DONTWAIT);               //string length
+      recv(sock, protocol, len, MSG_DONTWAIT);
+      protocol[len] = 0;                               //terminate the string
+
+      recv(sock, &hops, 1, MSG_DONTWAIT);              //hops
+
+      DEBUGLOG("%s: Got ECM_INFO: SID = %04X, CAID = %04X, PID = %04X, ProvID = %06X, ECM time = %d ms, reader = %s, from = %s, protocol = %s, hops = %d", __FUNCTION__, sid, caid, pid, prid, ecmtime, reader, from, protocol, hops);
     }
     else
       DEBUGLOG("%s: unknown request", __FUNCTION__);

@@ -33,11 +33,12 @@
 #include <linux/dvb/dmx.h>
 #include "Filter.h"
 
-#define DVBAPI_PROTOCOL_VERSION         1
+#define DVBAPI_PROTOCOL_VERSION         2
 
 #define DVBAPI_FILTER_DATA     0xFFFF0000
 #define DVBAPI_CLIENT_INFO     0xFFFF0001
 #define DVBAPI_SERVER_INFO     0xFFFF0002
+#define DVBAPI_ECM_INFO        0xFFFF0003
 
 #define INFO_VERSION "vdr-plugin-dvbapi " VERSION " / VDR " VDRVERSION
 
