@@ -498,7 +498,8 @@ void SocketHandler::Action(void)
 
       recv(sock, &hops, 1, MSG_DONTWAIT);              //hops
 
-      DEBUGLOG("%s: Got ECM_INFO: SID = %04X, CAID = %04X, PID = %04X, ProvID = %06X, ECM time = %d ms, reader = %s, from = %s, protocol = %s, hops = %d", __FUNCTION__, sid, caid, pid, prid, ecmtime, reader, from, protocol, hops);
+      DEBUGLOG("%s: Got ECM_INFO: adapter_index=%d, SID = %04X, CAID = %04X, PID = %04X, ProvID = %06X, ECM time = %d ms, reader = %s, from = %s, protocol = %s, hops = %d", __FUNCTION__, adapter_index, sid, caid, pid, prid, ecmtime, reader, from, protocol, hops);
+      capmt->UpdateEcmInfo(adapter_index, sid, caid, pid, prid, ecmtime, reader, from, protocol, hops);
     }
     else
       DEBUGLOG("%s: unknown request", __FUNCTION__);

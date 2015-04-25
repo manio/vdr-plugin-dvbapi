@@ -174,6 +174,13 @@ bool DVBAPI::SetupParse(const char *Name, const char *Value)
 bool DVBAPI::Service(const char *Id, void *Data)
 {
   // Handle custom service requests from other plugins
+  if (Data == NULL)
+    return false;
+  if (strcmp(Id, "GetEcmInfo") == 0)
+  {
+    sDVBAPIEcmInfo *ecminfo = (sDVBAPIEcmInfo*) Data;
+    return capmt->FillEcmInfo(ecminfo);
+  }
   return false;
 }
 

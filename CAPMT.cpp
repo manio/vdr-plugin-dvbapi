@@ -184,3 +184,56 @@ void CAPMT::send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt)
   //sending data
   SockHandler->Write(caPMT, toWrite);
 }
+
+void CAPMT::UpdateEcmInfo(int adapter_index, int sid, uint16_t caid, uint16_t pid, uint32_t prid, uint32_t ecmtime, char *reader, char *from, char *protocol, int8_t hops)
+{
+  cMutexLock lock(&mutex);
+  vector<pmtobj>::iterator it;
+
+  if (!pmt.empty())
+  {
+    for (it = pmt.begin(); it != pmt.end(); ++it)
+    {
+      if (it->sid == sid && it->adapter == adapter_index)
+      {
+        DEBUGLOG("%s: PMTO update, adapter=%d, SID=%04X", __FUNCTION__, adapter_index, sid);
+        it->caid = caid;
+        it->pid = pid;
+        it->prid = prid;
+        it->ecmtime = ecmtime;
+        it->reader = reader;
+        it->from = from;
+        it->protocol = protocol;
+        it->hops = hops;
+        break;
+      }
+    }
+  }
+}
+
+bool CAPMT::FillEcmInfo(sDVBAPIEcmInfo *ecminfo)
+{
+  cMutexLock lock(&mutex);
+  vector<pmtobj>::iterator it;
+
+  if (!pmt.empty())
+  {
+    for (it = pmt.begin(); it != pmt.end(); ++it)
+    {
+      if (it->sid == ecminfo->sid)
+      {
+        DEBUGLOG("%s: PMTO match - fill, adapter=%d, SID=%04X", __FUNCTION__, it->adapter, it->sid);
+        ecminfo->caid = it->caid;
+        ecminfo->pid = it->pid;
+        ecminfo->prid = it->prid;
+        ecminfo->ecmtime = it->ecmtime;
+        ecminfo->reader = it->reader;
+        ecminfo->from = it->from;
+        ecminfo->protocol = it->protocol;
+        ecminfo->hops = it->hops;
+        return true;
+      }
+    }
+  }
+  return false;
+}

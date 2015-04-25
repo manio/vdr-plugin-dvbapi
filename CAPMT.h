@@ -35,6 +35,8 @@
 #define LIST_ADD             0x04
 #define LIST_UPDATE          0x05
 
+struct sDVBAPIEcmInfo;
+
 using namespace std;
 
 struct pmtobj
@@ -44,6 +46,16 @@ struct pmtobj
   int adapter;
   char pilen[2];
   unsigned char* data;
+
+  //ecminfo
+  uint16_t caid;
+  uint16_t pid;
+  uint32_t prid;
+  uint32_t ecmtime;
+  cString reader;
+  cString from;
+  cString protocol;
+  int8_t hops;
 };
 
 class CAPMT
@@ -65,6 +77,8 @@ public:
     return pmt.empty();
   }
   void SendAll();
+  void UpdateEcmInfo(int adapter_index, int sid, uint16_t caid, uint16_t pid, uint32_t prid, uint32_t ecmtime, char *reader, char *from, char *protocol, int8_t hops);
+  bool FillEcmInfo(sDVBAPIEcmInfo *ecminfo);
 };
 
 extern CAPMT *capmt;

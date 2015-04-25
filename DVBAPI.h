@@ -34,6 +34,20 @@ class SCCIAdapter;
 extern unsigned int AdapterIndexOffset;
 extern bool CheckExpiredCW;
 
+struct sDVBAPIEcmInfo {
+  //in parameters
+  uint16_t sid;
+  //out parameters
+  uint16_t caid;
+  uint16_t pid;
+  uint32_t prid;
+  uint32_t ecmtime;
+  cString reader;
+  cString from;
+  cString protocol;
+  int8_t hops;
+};
+
 class DVBAPI : public cPlugin
 {
 private:
