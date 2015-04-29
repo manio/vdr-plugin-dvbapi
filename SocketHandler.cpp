@@ -455,6 +455,7 @@ void SocketHandler::Action(void)
     }
     else if (*request == DVBAPI_ECM_INFO)
     {
+      char cardsystem[255];
       char reader[255];
       char from[255];
       char protocol[255];
@@ -481,6 +482,11 @@ void SocketHandler::Action(void)
       uint32_t ecmtime = ntohl(*ecmtime_ptr);
       i += 4;
 
+      //cardsystem name
+      recv(sock, &len, 1, MSG_DONTWAIT);               //string length
+      recv(sock, cardsystem, len, MSG_DONTWAIT);
+      cardsystem[len] = 0;                             //terminate the string
+
       //reader name
       recv(sock, &len, 1, MSG_DONTWAIT);               //string length
       recv(sock, reader, len, MSG_DONTWAIT);
@@ -498,8 +504,8 @@ void SocketHandler::Action(void)
 
       recv(sock, &hops, 1, MSG_DONTWAIT);              //hops
 
-      DEBUGLOG("%s: Got ECM_INFO: adapter_index=%d, SID = %04X, CAID = %04X, PID = %04X, ProvID = %06X, ECM time = %d ms, reader = %s, from = %s, protocol = %s, hops = %d", __FUNCTION__, adapter_index, sid, caid, pid, prid, ecmtime, reader, from, protocol, hops);
-      capmt->UpdateEcmInfo(adapter_index, sid, caid, pid, prid, ecmtime, reader, from, protocol, hops);
+      DEBUGLOG("%s: Got ECM_INFO: adapter_index=%d, SID = %04X, CAID = %04X (%s), PID = %04X, ProvID = %06X, ECM time = %d ms, reader = %s, from = %s, protocol = %s, hops = %d", __FUNCTION__, adapter_index, sid, caid, cardsystem, pid, prid, ecmtime, reader, from, protocol, hops);
+      capmt->UpdateEcmInfo(adapter_index, sid, caid, pid, prid, ecmtime, cardsystem, reader, from, protocol, hops);
     }
     else
       DEBUGLOG("%s: unknown request", __FUNCTION__);

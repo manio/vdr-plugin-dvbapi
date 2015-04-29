@@ -52,6 +52,7 @@ struct pmtobj
   uint16_t pid;
   uint32_t prid;
   uint32_t ecmtime;
+  cString cardsystem;
   cString reader;
   cString from;
   cString protocol;
@@ -77,7 +78,7 @@ public:
     return pmt.empty();
   }
   void SendAll();
-  void UpdateEcmInfo(int adapter_index, int sid, uint16_t caid, uint16_t pid, uint32_t prid, uint32_t ecmtime, char *reader, char *from, char *protocol, int8_t hops);
+  void UpdateEcmInfo(int adapter_index, int sid, uint16_t caid, uint16_t pid, uint32_t prid, uint32_t ecmtime, char *cardsystem, char *reader, char *from, char *protocol, int8_t hops);
   bool FillEcmInfo(sDVBAPIEcmInfo *ecminfo);
 };
 

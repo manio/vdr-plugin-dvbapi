@@ -185,7 +185,7 @@ void CAPMT::send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt)
   SockHandler->Write(caPMT, toWrite);
 }
 
-void CAPMT::UpdateEcmInfo(int adapter_index, int sid, uint16_t caid, uint16_t pid, uint32_t prid, uint32_t ecmtime, char *reader, char *from, char *protocol, int8_t hops)
+void CAPMT::UpdateEcmInfo(int adapter_index, int sid, uint16_t caid, uint16_t pid, uint32_t prid, uint32_t ecmtime, char *cardsystem, char *reader, char *from, char *protocol, int8_t hops)
 {
   cMutexLock lock(&mutex);
   vector<pmtobj>::iterator it;
@@ -201,6 +201,7 @@ void CAPMT::UpdateEcmInfo(int adapter_index, int sid, uint16_t caid, uint16_t pi
         it->pid = pid;
         it->prid = prid;
         it->ecmtime = ecmtime;
+        it->cardsystem = cardsystem;
         it->reader = reader;
         it->from = from;
         it->protocol = protocol;
@@ -227,6 +228,7 @@ bool CAPMT::FillEcmInfo(sDVBAPIEcmInfo *ecminfo)
         ecminfo->pid = it->pid;
         ecminfo->prid = it->prid;
         ecminfo->ecmtime = it->ecmtime;
+        ecminfo->cardsystem = it->cardsystem;
         ecminfo->reader = it->reader;
         ecminfo->from = it->from;
         ecminfo->protocol = it->protocol;
