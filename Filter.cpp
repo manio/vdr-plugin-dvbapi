@@ -177,7 +177,7 @@ void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
               }
               else              //copying the first part of data
               {
-                DEBUGLOG("%s: saving first part of data", __FUNCTION__);
+                DEBUGLOG("%s: saving first part of data, tablelen=%d", __FUNCTION__, tablelen);
                 if (it->data)
                   delete it->data;
                 it->data = new unsigned char[tablelen + 3];
