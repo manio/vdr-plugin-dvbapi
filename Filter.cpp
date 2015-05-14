@@ -183,8 +183,8 @@ void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
                 it->data = new unsigned char[tablelen + 3];
                 it->len = tablelen;
 
-                memcpy(it->data, dat, tablelen + 3);  //copy data
-                it->size = tablelen;
+                memcpy(it->data, dat, TS_SIZE - 5);  //copy data
+                it->size = TS_SIZE - 5 - 3;
                 it->lastcc = cc;
               }
             }
