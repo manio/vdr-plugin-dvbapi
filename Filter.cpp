@@ -214,7 +214,6 @@ void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
             delete it->data;
             it->data = NULL;
           }
-          return;
         }
       }
     }
