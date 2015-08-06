@@ -137,7 +137,11 @@ void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
 {
   cMutexLock lock(&mutex);
   int pid = ((data[1] << 8) + data[2]) & MAX_CSA_PID;
+
   int cc = data[3] & 0x0f;      //TS header -> continuity counter
+  if (cc == 0x0f)
+    cc = -1;
+
   if ((unsigned) pid < MAX_CSA_PID && pid > 0)
   {
     vector<dmxfilter> *flt = pidmap[make_pair(adapter_index, pid)];
