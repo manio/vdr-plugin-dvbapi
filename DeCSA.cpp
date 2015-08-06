@@ -127,7 +127,7 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
 bool DeCSA::SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid)
 {
   cMutexLock lock(&mutex);
-  if (ca_pid->index < MAX_CSA_IDX && ca_pid->pid < MAX_CSA_PIDS)
+  if (ca_pid->index < MAX_CSA_IDX && ca_pid->pid < MAX_CSA_PID)
   {
     pidmap[make_pair(adapter_index, ca_pid->pid)] = ca_pid->index == -1 ? 0 : ca_pid->index;
     DEBUGLOG("%d.%d: set pid 0x%04x", cardindex, ca_pid->index, ca_pid->pid);
@@ -205,8 +205,9 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       offset = ts_packet_get_payload_offset(data + l);
       payload_len = TS_SIZE - offset;
 #endif
-      int idx = pidmap[make_pair(adapter_index, ((data[l + 1] << 8) + data[l + 2]) & (MAX_CSA_PIDS - 1))];
-      if (currIdx < 0 || idx == currIdx)
+      int pid = ((data[l + 1] << 8) + data[l + 2]) & MAX_CSA_PID;
+      int idx = pidmap[make_pair(adapter_index, pid)];
+      if ((pid < MAX_CSA_PID) && (currIdx < 0 || idx == currIdx))
       {                         // same or no index
         currIdx = idx;
         // return if the key is expired

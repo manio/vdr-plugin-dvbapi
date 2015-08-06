@@ -29,7 +29,7 @@ cDvbapiFilter::~cDvbapiFilter()
 bool cDvbapiFilter::SetFilter(uint8_t adapter_index, int pid, int start, unsigned char demux, unsigned char num, unsigned char *filter, unsigned char *mask)
 {
   cMutexLock lock(&mutex);
-  if ((unsigned) pid <= MAX_CSA_PIDS)
+  if ((unsigned) pid < MAX_CSA_PID)
   {
     DEBUGLOG("%s: adapter=%d set FILTER pid=%04X start=%d, demux=%d, filter=%d", __FUNCTION__, adapter_index, pid, start, demux, num);
 
@@ -136,9 +136,9 @@ void cDvbapiFilter::StopAllFilters()
 void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
 {
   cMutexLock lock(&mutex);
-  int pid = ((data[1] << 8) + data[2]) & 0x1FFF;
+  int pid = ((data[1] << 8) + data[2]) & MAX_CSA_PID;
   int cc = data[3] & 0x0f;      //TS header -> continuity counter
-  if ((unsigned) pid <= MAX_CSA_PIDS && pid > 0)
+  if ((unsigned) pid < MAX_CSA_PID && pid > 0)
   {
     vector<dmxfilter> *flt = pidmap[make_pair(adapter_index, pid)];
     if (flt)                    //filter list assigned to this pid
