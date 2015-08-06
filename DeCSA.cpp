@@ -207,7 +207,7 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
 #endif
       int pid = ((data[l + 1] << 8) + data[l + 2]) & MAX_CSA_PID;
       int idx = pidmap[make_pair(adapter_index, pid)];
-      if (currIdx < 0 || idx == currIdx)
+      if ((pid < MAX_CSA_PID) && (currIdx < 0 || idx == currIdx))
       {                         // same or no index
         currIdx = idx;
         // return if the key is expired
