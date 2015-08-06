@@ -30,7 +30,7 @@ extern "C" {
 }
 #endif
 
-#define MAX_CSA_PIDS 8192
+#define MAX_CSA_PID  0x1FFF
 #define MAX_CSA_IDX  16
 #define MAX_KEY_WAIT 25         // max seconds to consider a CW as valid
 
