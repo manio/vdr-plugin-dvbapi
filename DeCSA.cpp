@@ -205,7 +205,8 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       offset = ts_packet_get_payload_offset(data + l);
       payload_len = TS_SIZE - offset;
 #endif
-      int idx = pidmap[make_pair(adapter_index, ((data[l + 1] << 8) + data[l + 2]) & MAX_CSA_PID)];
+      int pid = ((data[l + 1] << 8) + data[l + 2]) & MAX_CSA_PID;
+      int idx = pidmap[make_pair(adapter_index, pid)];
       if (currIdx < 0 || idx == currIdx)
       {                         // same or no index
         currIdx = idx;
