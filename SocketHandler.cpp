@@ -36,7 +36,6 @@ SocketHandler::SocketHandler()
 {
   DEBUGLOG("%s", __FUNCTION__);
   sock = 0;
-  changeEndianness = false;
   protocol_version = 0;
   Start();
 }
@@ -115,14 +114,6 @@ void SocketHandler::CloseConnection()
     sock = 0;
     filter->StopAllFilters();
   }
-}
-
-void SocketHandler::StopDescrambling()
-{
-  if (protocol_version >= 1)
-    SendStopDescrambling();
-  else
-    CloseConnection();
 }
 
 void SocketHandler::Write(unsigned char *data, int len)
@@ -218,33 +209,6 @@ void SocketHandler::Action(void)
       continue;
     }
 
-    if (protocol_version <= 0)
-    {
-      // first byte -> adapter_index
-      cRead = recv(sock, &adapter_index, 1, MSG_DONTWAIT);
-      if (cRead <= 0)
-      {
-        if (cRead == 0)
-          CloseConnection();
-        cCondWait::SleepMs(20);
-        continue;
-      }
-
-      // ********* protocol-transition workaround *********
-      // If we have read 0xff into adapter number, then this surely means
-      // that oscam is responding to our CLIENT_INFO (using new protocol).
-      // In this case we move this byte to the first position of the request,
-      // and read only the 3 missing bytes
-      if (adapter_index == 0xff)
-      {
-        buff[0] = adapter_index;
-        protocol_version = 1;
-        skip_bytes = 1;
-      }
-      else
-        adapter_index -= AdapterIndexOffset;
-    }
-
     // request
     cRead = recv(sock, &buff[skip_bytes], sizeof(int)-skip_bytes, MSG_DONTWAIT);
     if (cRead <= 0)
@@ -257,7 +221,7 @@ void SocketHandler::Action(void)
     request = (uint32_t *) &buff;
     skip_bytes = 0;
 
-    if (protocol_version >= 1 && ntohl(*request) != DVBAPI_SERVER_INFO)
+    if (ntohl(*request) != DVBAPI_SERVER_INFO)
     {
       // first byte -> adapter_index
       cRead = recv(sock, &adapter_index, 1, MSG_DONTWAIT);
@@ -271,41 +235,13 @@ void SocketHandler::Action(void)
       adapter_index -= AdapterIndexOffset;
     }
 
-    /* OSCam should always send in network order, but it's not fixed there so as a workaround
-       probe for all possible cases here and detect when we need to change byte order.
-       Possible proper values are:
-         CA_SET_DESCR    0x40106f86
-         CA_SET_PID      0x40086f87
-         DMX_SET_FILTER  0x403c6f2b
-         DMX_STOP        0x00006f2a
-
-       Moreover the first bits of the first byte on some hardware are different.
-    */
-    if (((*request >> 8) & 0xffffff) == 0x866f10 ||
-        ((*request >> 8) & 0xffffff) == 0x876f08 ||
-        ((*request >> 8) & 0xffffff) == 0x2b6f3c ||
-        ((*request >> 8) & 0xffffff) == 0x2a6f00)
-    {
-      //we have to change endianness
-      changeEndianness = true;
-
-      //fix 0x80 -> 0x40 and 0x20 -> 0x00 when needed
-      if ((*request & 0xff) == 0x80)
-        buff[0] = 0x40;
-      else if ((*request & 0xff) == 0x20)
-        buff[0] = 0x00;
-    }
-
-    if (protocol_version >= 1)
-      *request = ntohl(*request);
-    else if (changeEndianness)
-      *request = htonl(*request);
+    *request = ntohl(*request);
     if (*request == CA_SET_PID)
       cRead = recv(sock, buff+4, sizeof(ca_pid_t), MSG_DONTWAIT);
     else if (*request == CA_SET_DESCR)
       cRead = recv(sock, buff+4, sizeof(ca_descr_t), MSG_DONTWAIT);
     else if (*request == DMX_SET_FILTER)
-      cRead = recv(sock, buff+4, 2 + sizeof(struct dmx_sct_filter_params) + (protocol_version >= 1 ? -2 : 0), MSG_DONTWAIT);
+      cRead = recv(sock, buff+4, sizeof(struct dmx_sct_filter_params), MSG_DONTWAIT);
     else if (*request == DMX_STOP)
       cRead = recv(sock, buff+4, 2 + 2, MSG_DONTWAIT);
     else if (*request == DVBAPI_SERVER_INFO)
@@ -336,69 +272,42 @@ void SocketHandler::Action(void)
     {
       DEBUGLOG("%s: Got CA_SET_PID request, adapter_index=%d", __FUNCTION__, adapter_index);
       memcpy(&ca_pid, &buff[sizeof(int)], sizeof(ca_pid_t));
-      if (protocol_version >= 1)
-      {
-        ca_pid.pid = ntohl(ca_pid.pid);
-        ca_pid.index = ntohl(ca_pid.index);
-      }
-      else if (changeEndianness)
-      {
-        ca_pid.pid = htonl(ca_pid.pid);
-        ca_pid.index = htonl(ca_pid.index);
-      }
+      ca_pid.pid = ntohl(ca_pid.pid);
+      ca_pid.index = ntohl(ca_pid.index);
       decsa->SetCaPid(adapter_index, &ca_pid);
     }
     else if (*request == CA_SET_DESCR)
     {
       DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d", __FUNCTION__, adapter_index);
       memcpy(&ca_descr, &buff[sizeof(int)], sizeof(ca_descr_t));
-      if (protocol_version >= 1)
-      {
-        ca_descr.index = ntohl(ca_descr.index);
-        ca_descr.parity = ntohl(ca_descr.parity);
-      }
-      else if (changeEndianness)
-      {
-        ca_descr.index = htonl(ca_descr.index);
-        ca_descr.parity = htonl(ca_descr.parity);
-      }
+      ca_descr.index = ntohl(ca_descr.index);
+      ca_descr.parity = ntohl(ca_descr.parity);
       decsa->SetDescr(&ca_descr, false);
     }
     else if (*request == DMX_SET_FILTER)
     {
       unsigned char demux_index = buff[4];
       unsigned char filter_num = buff[5];
-      if (protocol_version >= 1)
-      {
-        int i = 6;
-        uint16_t *pid_ptr = (uint16_t *) &buff[i];
-        sFP2.pid = ntohs(*pid_ptr);
-        i += 2;
+      int i = 6;
 
-        memcpy(&sFP2.filter.filter, &buff[i], 16);
-        i += 16;
-        memcpy(&sFP2.filter.mask, &buff[i], 16);
-        i += 16;
-        memcpy(&sFP2.filter.mode, &buff[i], 16);
-        i += 16;
+      uint16_t *pid_ptr = (uint16_t *) &buff[i];
+      sFP2.pid = ntohs(*pid_ptr);
+      i += 2;
 
-        uint32_t *timeout_ptr = (uint32_t *) &buff[i];
-        sFP2.timeout = ntohl(*timeout_ptr);
-        i += 4;
+      memcpy(&sFP2.filter.filter, &buff[i], 16);
+      i += 16;
+      memcpy(&sFP2.filter.mask, &buff[i], 16);
+      i += 16;
+      memcpy(&sFP2.filter.mode, &buff[i], 16);
+      i += 16;
 
-        uint32_t *flags_ptr = (uint32_t *) &buff[i];
-        sFP2.flags = ntohl(*flags_ptr);
-      }
-      else
-      {
-        memcpy(&sFP2, &buff[sizeof(int) + 2], sizeof(struct dmx_sct_filter_params));
-        if (changeEndianness)
-        {
-          sFP2.pid = htons(sFP2.pid);
-          sFP2.timeout = htonl(sFP2.timeout);
-          sFP2.flags = htonl(sFP2.flags);
-        }
-      }
+      uint32_t *timeout_ptr = (uint32_t *) &buff[i];
+      sFP2.timeout = ntohl(*timeout_ptr);
+      i += 4;
+
+      uint32_t *flags_ptr = (uint32_t *) &buff[i];
+      sFP2.flags = ntohl(*flags_ptr);
+
       DEBUGLOG("%s: Got DMX_SET_FILTER request, adapter_index=%d, pid=%X, demux_idx=%d, filter_num=%d", __FUNCTION__, adapter_index, sFP2.pid, demux_index, filter_num);
       filter->SetFilter(adapter_index, sFP2.pid, 1, demux_index, filter_num, sFP2.filter.filter, sFP2.filter.mask);
     }
@@ -406,14 +315,10 @@ void SocketHandler::Action(void)
     {
       unsigned char demux_index = buff[4];
       unsigned char filter_num = buff[5];
-      uint16_t pid;
-      if (protocol_version >= 1)
-      {
-        uint16_t *pid_ptr = (uint16_t *) &buff[6];
-        pid = ntohs(*pid_ptr);
-      }
-      else
-        pid = (buff[6] << 8) + buff[7];
+
+      uint16_t *pid_ptr = (uint16_t *) &buff[6];
+      uint16_t pid = ntohs(*pid_ptr);
+
       DEBUGLOG("%s: Got DMX_STOP request, adapter_index=%d, pid=%X, demux_idx=%d, filter_num=%d", __FUNCTION__, adapter_index, pid, demux_index, filter_num);
       filter->SetFilter(adapter_index, pid, 0, demux_index, filter_num, NULL, NULL);
     }

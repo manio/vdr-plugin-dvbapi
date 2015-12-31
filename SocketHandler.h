@@ -53,7 +53,6 @@ public:
   ~SocketHandler();
   void OpenConnection();
   void CloseConnection();
-  void StopDescrambling();
   void Write(unsigned char *data, int len);
   virtual void Action(void);
   void SendFilterData(unsigned char demux_id, unsigned char filter_num, unsigned char *data, int len);
@@ -67,7 +66,6 @@ private:
   ca_pid_t ca_pid;
   dmx_sct_filter_params sFP2;
   cTimeMs checkTimer;
-  bool changeEndianness;
   uint16_t protocol_version;
 };
 
