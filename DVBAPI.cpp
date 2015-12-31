@@ -178,7 +178,7 @@ bool DVBAPI::Service(const char *Id, void *Data)
     return false;
   if (strcmp(Id, "GetEcmInfo") == 0)
   {
-    sDVBAPIEcmInfo *ecminfo = (sDVBAPIEcmInfo*) Data;
+    sDVBAPIEcmInfo *ecminfo = static_cast<sDVBAPIEcmInfo *>(Data);
     return capmt->FillEcmInfo(ecminfo);
   }
   return false;

@@ -355,7 +355,6 @@ void SocketHandler::Action(void)
 
       uint32_t *ecmtime_ptr = (uint32_t *) &buff[i];   //ECM time
       uint32_t ecmtime = ntohl(*ecmtime_ptr);
-      i += 4;
 
       //cardsystem name
       recv(sock, &len, 1, MSG_DONTWAIT);               //string length
