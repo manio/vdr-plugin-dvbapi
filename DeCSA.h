@@ -54,7 +54,6 @@ private:
   time_t cwSeen[MAX_CSA_IDX];   // last time the CW for the related key was seen
   map<pair<int, int>, unsigned char> pidmap;
   cMutex mutex;
-  int cardindex;
   bool GetKeyStruct(int idx);
   void ResetState(void);
   // to prevent copy constructor and assignment
@@ -62,7 +61,7 @@ private:
   DeCSA& operator=(const DeCSA&);
 
 public:
-  DeCSA(int CardIndex);
+  DeCSA();
   ~DeCSA();
   bool Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool force);
   bool SetDescr(ca_descr_t *ca_descr, bool initial);

@@ -89,7 +89,7 @@ bool DVBAPI::Start(void)
   if (!CheckExpiredCW)
     INFOLOG("CW expiration check is disabled");
   capmt = new CAPMT;
-  decsa = new DeCSA(0);
+  decsa = new DeCSA;
   filter = new cDvbapiFilter;
   SockHandler = new SocketHandler;
 

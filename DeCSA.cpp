@@ -33,17 +33,16 @@ bool CheckNull(const unsigned char *data, int len)
   return true;
 }
 
-DeCSA::DeCSA(int CardIndex)
+DeCSA::DeCSA()
 {
-  cardindex = CardIndex;
 #ifndef LIBDVBCSA
   cs = get_suggested_cluster_size();
-  DEBUGLOG("%d: clustersize=%d rangesize=%d", cardindex, cs, cs * 2 + 5);
+  DEBUGLOG("clustersize=%d rangesize=%d", cs, cs * 2 + 5);
   range = MALLOC(unsigned char *, (cs * 2 + 5));
   memset(keys, 0, sizeof(keys));
 #else
   cs = dvbcsa_bs_batch_size();
-  DEBUGLOG("%d: batch_size=%d", cardindex, cs);
+  DEBUGLOG("batch_size=%d", cs);
   cs_tsbbatch_even = reinterpret_cast<dvbcsa_bs_batch_s *>(malloc((cs + 1) * sizeof(struct dvbcsa_bs_batch_s)));
   cs_tsbbatch_odd = reinterpret_cast<dvbcsa_bs_batch_s *>(malloc((cs + 1) * sizeof(struct dvbcsa_bs_batch_s)));
   memset(cs_key_even, 0, sizeof(cs_key_even));
@@ -74,7 +73,7 @@ DeCSA::~DeCSA()
 
 void DeCSA::ResetState(void)
 {
-  DEBUGLOG("%d: reset state", cardindex);
+  DEBUGLOG("%s", __FUNCTION__);
 #ifndef LIBDVBCSA
   lastData = 0;
 #endif
@@ -102,7 +101,7 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
   int idx = ca_descr->index;
   if (idx < MAX_CSA_IDX && GetKeyStruct(idx))
   {
-    DEBUGLOG("%d.%d: %4s key set", cardindex, idx, ca_descr->parity ? "odd" : "even");
+    DEBUGLOG("%d: %4s key set", idx, ca_descr->parity ? "odd" : "even");
     cwSeen[idx] = time(NULL);
     if (ca_descr->parity == 0)
     {
@@ -130,7 +129,7 @@ bool DeCSA::SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid)
   if (ca_pid->index < MAX_CSA_IDX && ca_pid->pid < MAX_CSA_PID)
   {
     pidmap[make_pair(adapter_index, ca_pid->pid)] = ca_pid->index == -1 ? 0 : ca_pid->index;
-    DEBUGLOG("%d.%d: set pid 0x%04x", cardindex, ca_pid->index, ca_pid->pid);
+    DEBUGLOG("%d.%d: set pid 0x%04x", adapter_index, ca_pid->index, ca_pid->pid);
   }
   else
     ERRORLOG("%s: Parameter(s) out of range: adapter_index=%d, pid=0x%04x, index=0x%x", __FUNCTION__, adapter_index, ca_pid->pid, ca_pid->index);
