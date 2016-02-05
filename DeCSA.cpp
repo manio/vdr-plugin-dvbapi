@@ -18,6 +18,7 @@
 
 #include "DeCSA.h"
 #include "Log.h"
+#include "cscrypt/des.h"
 
 #ifndef LIBDVBCSA
 #include "FFdecsa/FFdecsa.h"
@@ -104,6 +105,7 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
   {
     DEBUGLOG("%d.%d: %4s key set", cardindex, idx, ca_descr->parity ? "odd" : "even");
     cwSeen[idx] = time(NULL);
+    des_set_key(ca_descr->cw, des_key_schedule[idx][ca_descr->parity]);
     if (ca_descr->parity == 0)
     {
 #ifndef LIBDVBCSA
@@ -137,7 +139,12 @@ bool DeCSA::SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid)
   return true;
 }
 
-#ifdef LIBDVBCSA
+void DeCSA::SetAlgo(uint32_t index, uint32_t usedAlgo)
+{
+  if (index < MAX_CSA_IDX)
+    algo[index] = usedAlgo;
+}
+
 unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet)
 {
   if (ts_packet[0] != TS_SYNC_BYTE)
@@ -165,7 +172,6 @@ unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet)
     return 4; // No adaptation, data starts directly after TS header
   }
 }
-#endif
 
 bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool force)
 {
@@ -180,13 +186,14 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
     return false;
   }
 
+  int offset;
 #ifndef LIBDVBCSA
   int r = -2, ccs = 0, currIdx = -1;
   bool newRange = true;
   range[0] = 0;
 #else
   int ccs = 0, currIdx = -1;
-  int payload_len, offset;
+  int payload_len;
   int cs_fill_even = 0;
   int cs_fill_odd = 0;
 #endif
@@ -199,10 +206,17 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       break;
     }
     unsigned int ev_od = data[l + 3] & 0xC0;
-    if (ev_od == 0x80 || ev_od == 0xC0)
+    /*
+       we could have the following values:
+       '00' = Not scrambled
+       '01' (0x40) = Reserved for future use
+       '10' (0x80) = Scrambled with even key
+       '11' (0xC0) = Scrambled with odd key
+    */
+    if (ev_od & 0x80)
     {                           // encrypted
-#ifdef LIBDVBCSA
       offset = ts_packet_get_payload_offset(data + l);
+#ifdef LIBDVBCSA
       payload_len = TS_SIZE - offset;
 #endif
       int idx = pidmap[make_pair(adapter_index, ((data[l + 1] << 8) + data[l + 2]) & (MAX_CSA_PIDS - 1))];
@@ -212,32 +226,51 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
         // return if the key is expired
         if (CheckExpiredCW && time(NULL) - cwSeen[currIdx] > MAX_KEY_WAIT)
           return false;
-#ifndef LIBDVBCSA
-        if (newRange)
+        if (algo[currIdx] == CA_ALGO_DES)
         {
-          r += 2;
-          newRange = false;
-          range[r] = &data[l];
-          range[r + 2] = 0;
-        }
-        range[r + 1] = &data[l + TS_SIZE];
-#else
-        data[l + 3] &= 0x3f;    // consider it decrypted now
-        if (((ev_od & 0x40) >> 6) == 0)
-        {
-          cs_tsbbatch_even[cs_fill_even].data = &data[l + offset];
-          cs_tsbbatch_even[cs_fill_even].len = payload_len;
-          cs_fill_even++;
+          if ((ev_od & 0x40) == 0)
+          {
+            for (int j = offset; j + 7 < 188; j += 8)
+              des(&data[l + j], des_key_schedule[currIdx][0], 0);
+
+          }
+          else
+          {
+            for (int j = offset; j + 7 < 188; j += 8)
+              des(&data[l + j], des_key_schedule[currIdx][1], 0);
+
+          }
+          data[l + 3] &= 0x3f;    // consider it decrypted now
         }
         else
         {
-          cs_tsbbatch_odd[cs_fill_odd].data = &data[l + offset];
-          cs_tsbbatch_odd[cs_fill_odd].len = payload_len;
-          cs_fill_odd++;
-        }
+#ifndef LIBDVBCSA
+          if (newRange)
+          {
+            r += 2;
+            newRange = false;
+            range[r] = &data[l];
+            range[r + 2] = 0;
+          }
+          range[r + 1] = &data[l + TS_SIZE];
+#else
+          data[l + 3] &= 0x3f;    // consider it decrypted now
+          if (((ev_od & 0x40) >> 6) == 0)
+          {
+            cs_tsbbatch_even[cs_fill_even].data = &data[l + offset];
+            cs_tsbbatch_even[cs_fill_even].len = payload_len;
+            cs_fill_even++;
+          }
+          else
+          {
+            cs_tsbbatch_odd[cs_fill_odd].data = &data[l + offset];
+            cs_tsbbatch_odd[cs_fill_odd].len = payload_len;
+            cs_fill_odd++;
+          }
 #endif
-        if (++ccs >= cs)
-          break;
+          if (++ccs >= cs)
+            break;
+        }
       }
 #ifndef LIBDVBCSA
       else
@@ -249,6 +282,8 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       // nothing, we don't create holes for unencrypted packets
     }
   }
+  if (algo[currIdx] == CA_ALGO_DES)
+    return true;
 #ifndef LIBDVBCSA
   if (r >= 0)
   {                             // we have some range

@@ -39,8 +39,26 @@
 #define DVBAPI_CLIENT_INFO     0xFFFF0001
 #define DVBAPI_SERVER_INFO     0xFFFF0002
 #define DVBAPI_ECM_INFO        0xFFFF0003
+#define CA_SET_DESCR_MODE      0x400c6f88
 
 #define INFO_VERSION "vdr-plugin-dvbapi " VERSION " / VDR " VDRVERSION
+
+enum ca_descr_algo {
+        CA_ALGO_DVBCSA,
+        CA_ALGO_DES,
+        CA_ALGO_AES128,
+};
+
+enum ca_descr_cipher_mode {
+        CA_MODE_ECB,
+        CA_MODE_CBC,
+};
+
+typedef struct ca_descr_mode {
+        uint32_t index;
+        enum ca_descr_algo algo;
+        enum ca_descr_cipher_mode cipher_mode;
+} ca_descr_mode_t;
 
 extern int OSCamNetworkMode;
 extern char OSCamHost[HOST_NAME_MAX];
@@ -64,6 +82,7 @@ private:
   int sock;
   cMutex mutex;
   ca_descr_t ca_descr;
+  ca_descr_mode_t ca_descr_mode;
   ca_pid_t ca_pid;
   dmx_sct_filter_params sFP2;
   cTimeMs checkTimer;

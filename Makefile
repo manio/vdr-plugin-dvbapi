@@ -58,7 +58,7 @@ endif
 
 ### The object files (add further files here):
 
-OBJS = CAPMT.o DeCSA.o DVBAPI.o DVBAPISetup.o SocketHandler.o SCCIAdapter.o Frame.o SCCAMSlot.o Filter.o
+OBJS = CAPMT.o DeCSA.o DVBAPI.o DVBAPISetup.o SocketHandler.o SCCIAdapter.o Frame.o SCCAMSlot.o Filter.o cscrypt/des.o
 
 ifndef LIBDVBCSA
 # FFdeCSA

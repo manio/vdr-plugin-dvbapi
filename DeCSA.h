@@ -51,6 +51,8 @@ private:
   struct dvbcsa_bs_key_s *cs_key_even[MAX_CSA_IDX];
   struct dvbcsa_bs_key_s *cs_key_odd[MAX_CSA_IDX];
 #endif
+  uint32_t des_key_schedule[MAX_CSA_IDX][2][32];
+  uint32_t algo[MAX_CSA_IDX];
   time_t cwSeen[MAX_CSA_IDX];   // last time the CW for the related key was seen
   map<pair<int, int>, unsigned char> pidmap;
   cMutex mutex;
@@ -67,6 +69,7 @@ public:
   bool Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool force);
   bool SetDescr(ca_descr_t *ca_descr, bool initial);
   bool SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid);
+  void SetAlgo(uint32_t index, uint32_t usedAlgo);
 };
 
 extern DeCSA *decsa;
