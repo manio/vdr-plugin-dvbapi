@@ -240,6 +240,8 @@ void SocketHandler::Action(void)
       cRead = recv(sock, buff+4, sizeof(ca_pid_t), MSG_DONTWAIT);
     else if (*request == CA_SET_DESCR)
       cRead = recv(sock, buff+4, sizeof(ca_descr_t), MSG_DONTWAIT);
+    else if (*request == CA_SET_DESCR_MODE)
+      cRead = recv(sock, buff+4, sizeof(ca_descr_mode_t), MSG_DONTWAIT);
     else if (*request == DMX_SET_FILTER)
       cRead = recv(sock, buff+4, sizeof(struct dmx_sct_filter_params), MSG_DONTWAIT);
     else if (*request == DMX_STOP)
@@ -278,11 +280,27 @@ void SocketHandler::Action(void)
     }
     else if (*request == CA_SET_DESCR)
     {
-      DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d", __FUNCTION__, adapter_index);
       memcpy(&ca_descr, &buff[sizeof(int)], sizeof(ca_descr_t));
       ca_descr.index = ntohl(ca_descr.index);
       ca_descr.parity = ntohl(ca_descr.parity);
       decsa->SetDescr(&ca_descr, false);
+      DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr.index);
+    }
+    else if (*request == CA_SET_DESCR_MODE)
+    {
+      memcpy(&ca_descr_mode, &buff[sizeof(int)], sizeof(ca_descr_mode_t));
+      if (protocol_version >= 1)
+      {
+        ca_descr_mode.index = ntohl(ca_descr_mode.index);
+        ca_descr_mode.algo = (ca_descr_algo) ntohl(ca_descr_mode.algo);
+      }
+      else if (changeEndianness)
+      {
+        ca_descr_mode.index = htonl(ca_descr_mode.index);
+        ca_descr_mode.algo = (ca_descr_algo) htonl(ca_descr_mode.algo);
+      }
+      decsa->SetAlgo(ca_descr_mode.index, ca_descr_mode.algo);
+      DEBUGLOG("%s: Got CA_SET_DESCR_MODE request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr.index);
     }
     else if (*request == DMX_SET_FILTER)
     {
@@ -382,6 +400,6 @@ void SocketHandler::Action(void)
       capmt->UpdateEcmInfo(adapter_index, sid, caid, pid, prid, ecmtime, cardsystem, reader, from, protocol, hops);
     }
     else
-      DEBUGLOG("%s: unknown request", __FUNCTION__);
+      DEBUGLOG("%s: Unknown request: %02X %02X %02X %02X", __FUNCTION__, request[0], request[1], request[2], request[3]);
   }
 }
