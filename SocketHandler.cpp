@@ -380,7 +380,6 @@ void SocketHandler::Action(void)
     }
     else if (*request == CA_SET_DESCR)
     {
-      DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d", __FUNCTION__, adapter_index);
       memcpy(&ca_descr, &buff[sizeof(int)], sizeof(ca_descr_t));
       if (protocol_version >= 1)
       {
@@ -393,6 +392,7 @@ void SocketHandler::Action(void)
         ca_descr.parity = htonl(ca_descr.parity);
       }
       decsa->SetDescr(&ca_descr, false);
+      DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr.index);
     }
     else if (*request == DMX_SET_FILTER)
     {
@@ -508,6 +508,6 @@ void SocketHandler::Action(void)
       capmt->UpdateEcmInfo(adapter_index, sid, caid, pid, prid, ecmtime, cardsystem, reader, from, protocol, hops);
     }
     else
-      DEBUGLOG("%s: unknown request", __FUNCTION__);
+      DEBUGLOG("%s: Unknown request: %02X %02X %02X %02X", __FUNCTION__, request[0], request[1], request[2], request[3]);
   }
 }
