@@ -289,16 +289,8 @@ void SocketHandler::Action(void)
     else if (*request == CA_SET_DESCR_MODE)
     {
       memcpy(&ca_descr_mode, &buff[sizeof(int)], sizeof(ca_descr_mode_t));
-      if (protocol_version >= 1)
-      {
-        ca_descr_mode.index = ntohl(ca_descr_mode.index);
-        ca_descr_mode.algo = (ca_descr_algo) ntohl(ca_descr_mode.algo);
-      }
-      else if (changeEndianness)
-      {
-        ca_descr_mode.index = htonl(ca_descr_mode.index);
-        ca_descr_mode.algo = (ca_descr_algo) htonl(ca_descr_mode.algo);
-      }
+      ca_descr_mode.index = ntohl(ca_descr_mode.index);
+      ca_descr_mode.algo = (ca_descr_algo) ntohl(ca_descr_mode.algo);
       decsa->SetAlgo(ca_descr_mode.index, ca_descr_mode.algo);
       DEBUGLOG("%s: Got CA_SET_DESCR_MODE request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr.index);
     }
