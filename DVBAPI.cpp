@@ -166,6 +166,13 @@ bool DVBAPI::SetupParse(const char *Name, const char *Value)
     strn0cpy(OSCamHost, Value, sizeof(OSCamHost));
   else if (!strcasecmp(Name, CONFNAME_OSCAMPORT))
     OSCamPort = atoi(Value);
+  else if (!strcasecmp(Name, CONFNAME_ADAPTERINDEXOFFSET))
+  {
+    if (AdapterIndexOffset)
+      INFOLOG("ignoring config parameter: dvbapi.%s (offset is forced in plugin command line)", CONFNAME_ADAPTERINDEXOFFSET);
+    else
+      AdapterIndexOffset = atoi(Value);
+  }
   else
     return false;
   return true;

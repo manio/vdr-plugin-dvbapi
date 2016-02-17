@@ -160,6 +160,9 @@ to adapter indexes resulting in:
 
 This way all adapters/clients will be handled correctly by single OSCam.
 
+NOTE: you can set this option permanently in setup.conf, like eg:
+dvbapi.AdapterIndexOffset = 2
+It is not exposed to the plugin setup as it is an advanced option.
 
 Disable CW expiration check:
 ----------------------------
