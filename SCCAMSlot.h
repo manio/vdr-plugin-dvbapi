@@ -36,10 +36,10 @@ class DeCSAFillControl
 {
 private:
   int maxWaterMark, timeout, dataInterval;
-  int minWaterMark;
-  int lowWaterMark, lastCount;
+  int minWaterMark, sleepInterval;
+  int lowWaterMark, lastCount, timeSlept;
   const uchar *lastData;
-  enum {READY, SLEEP1, SLEEP2, WRAP} state;
+  enum {READY, SLEEP, WRAP} state;
   int fltTap1, fltTap2;
   int Filter(int Input);
 public:
