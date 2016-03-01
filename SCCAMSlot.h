@@ -26,6 +26,43 @@
 
 #define SLOT_CAID_CHECK   10000
 
+// This class helps to use a parallel descrambler efficiently by ensuring
+// that there are always enough packets to descramble. It is done by
+// keeping a low-water mark that tracks TS bitrate and is updated with
+// the number of bytes arrived during a timeout period. Descrambling is
+// allowed only if there are at least low-water mark bytes in the
+// input buffer (must be cRingBufferLinear based).
+class DeCSAFillControl
+{
+private:
+  int maxWaterMark, timeout, dataInterval;
+  int minWaterMark;
+  int lowWaterMark, lastCount;
+  const uchar *lastData;
+  enum {READY, SLEEP1, SLEEP2, WRAP} state;
+  int fltTap1, fltTap2;
+  int Filter(int Input);
+public:
+  DeCSAFillControl(int MaxWaterMark, int Timeout, int DataInterval);
+  // MaxWaterMark  a reasonable limit. The more, the better; but consider
+  //               the ring buffer size.
+  // Timeout       wait timeout in ms; should be chosen so that the number
+  //               of packets of a video stream with the lowest bitrate
+  //               which arrive within this interval is roughly equal
+  //               to the maximum batch size. The more, the better, but
+  //               it is limited by the MaxWaterMark and is added to the
+  //               zapping time. For example, 128 packets within 100 ms
+  //               gives (128 * 188 * 8) / 0.1 = 1.9 Mbit/s.
+  // DataInterval  an interval in ms within which at least one packet
+  //               arrives from the device. If not known, should be
+  //               set to Timeout.
+  bool CanProcess(const uchar *Data, int Count);
+  // Should be called on each cCamSlot::Decrypt(), on each packet (not only
+  // encrypted). If it returns false, Decrypt() should return NULL and
+  // set Count to 0.
+  void Reset(void);
+};
+
 class cDvbapiFilter;
 class SCCIAdapter;
 
@@ -40,6 +77,7 @@ private:
   eModuleStatus lastStatus;
   cRingBufferLinear rb;
   Frame frame;
+  DeCSAFillControl decsaFillControl;
 
 public:
   SCCAMSlot(SCCIAdapter *ca, int cardIndex, int slot);
@@ -58,6 +96,7 @@ public:
   uchar *Decrypt(uchar *Data, int &Count);
   virtual const char *GetCamName(void);
   bool ProvidesCa(const int *CaSystemIds);
+  virtual void StartDecrypting(void);
 };
 
 #endif // ___SCCAMSLOT_H

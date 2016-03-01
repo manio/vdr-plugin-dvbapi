@@ -40,6 +40,7 @@ SCCAMSlot::SCCAMSlot(SCCIAdapter *sCCIAdapter, int cardIndex, int slot)
  : cCamSlot(sCCIAdapter, true)
  , checkTimer(-SLOT_CAID_CHECK - 1000)
  , rb(KILOBYTE(4), 5 + LEN_OFF, false, "SC-CI slot answer")
+ , decsaFillControl(500000, 100, 50)
 {
   this->sCCIAdapter = sCCIAdapter;
   this->cardIndex = cardIndex;
@@ -134,6 +135,11 @@ int SCCAMSlot::GetLength(const unsigned char *&data)
 
 uchar *SCCAMSlot::Decrypt(uchar *Data, int &Count)
 {
+  if (!decsaFillControl.CanProcess(Data, Count))
+  {
+    Count = 0;
+    return NULL;
+  }
   if (Data[3] & TS_SCRAMBLING_CONTROL)
     decsa->Decrypt(cardIndex, Data, Count, true);
   else
@@ -303,3 +309,94 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
     break;
   }
 }
+
+void SCCAMSlot::StartDecrypting(void)
+{
+  cCamSlot::StartDecrypting();
+  decsaFillControl.Reset();
+}
+
+DeCSAFillControl::DeCSAFillControl(int MaxWaterMark, int Timeout, int DataInterval)
+{
+  maxWaterMark = MaxWaterMark;
+  timeout = Timeout;
+  dataInterval = DataInterval;
+  if (dataInterval > timeout)
+    dataInterval = timeout;
+  minWaterMark = 2 * TS_SIZE;
+  Reset();
+}
+
+bool DeCSAFillControl::CanProcess(const uchar *Data, int Count)
+{
+  switch (state)
+  {
+    case READY:
+      if (Count < lowWaterMark)
+      {
+        lastCount = Count;
+        lastData = Data;
+        cCondWait::SleepMs(dataInterval);
+        state = SLEEP1;
+        return false;
+      }
+      return true;
+    case SLEEP1:
+      if (Count == lastCount && Data == lastData)
+      {
+        // we are probably stuck at the end of the ringbuffer
+        state = WRAP;
+        return true;
+      }
+      // go on sleeping until timeout expires
+      if (timeout > dataInterval)
+        cCondWait::SleepMs(timeout - dataInterval);
+      state = SLEEP2;
+      return false;
+    case SLEEP2:
+      lowWaterMark = Count - lastCount;
+      if (lowWaterMark > maxWaterMark)
+        lowWaterMark = maxWaterMark;
+      if (lowWaterMark < minWaterMark)
+        lowWaterMark = minWaterMark;
+      lowWaterMark = Filter(lowWaterMark);
+      state = READY;
+      return false;
+    case WRAP:
+      // we are here in 2 cases:
+      //   1. at the end of the ringbuffer
+      //   2. if no data arrived from the device within dataInterval ms
+      // check the end pointer
+      if (Data + Count != lastData + lastCount)
+      {
+        // keep lowWaterMark
+        state = READY;
+        return false;
+      }
+      lastData = Data;
+      lastCount = Count;
+      return true;
+  }
+  return true;
+}
+
+int DeCSAFillControl::Filter(int Input)
+{
+  int ret;
+  if (fltTap1 >= 0 && fltTap2 >= 0)
+    // 3-tap median filter
+    ret = std::min(std::max(std::min(Input, fltTap1), fltTap2), std::max(Input, fltTap1));
+  else
+    ret = Input;
+  fltTap2 = fltTap1;
+  fltTap1 = Input;
+  return ret;
+}
+
+void DeCSAFillControl::Reset(void)
+{
+  state = READY;
+  lowWaterMark = maxWaterMark;
+  fltTap1 = fltTap2 = -1;
+}
+
