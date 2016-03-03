@@ -40,7 +40,7 @@ SCCAMSlot::SCCAMSlot(SCCIAdapter *sCCIAdapter, int cardIndex, int slot)
  : cCamSlot(sCCIAdapter, true)
  , checkTimer(-SLOT_CAID_CHECK - 1000)
  , rb(KILOBYTE(4), 5 + LEN_OFF, false, "SC-CI slot answer")
- , decsaFillControl(500000, 100, 50)
+ , decsaFillControl(200000, 100, 40)
 {
   this->sCCIAdapter = sCCIAdapter;
   this->cardIndex = cardIndex;
@@ -323,6 +323,7 @@ DeCSAFillControl::DeCSAFillControl(int MaxWaterMark, int Timeout, int DataInterv
   dataInterval = DataInterval;
   if (dataInterval > timeout)
     dataInterval = timeout;
+  sleepInterval = 20;
   minWaterMark = 2 * TS_SIZE;
   Reset();
 }
@@ -336,31 +337,31 @@ bool DeCSAFillControl::CanProcess(const uchar *Data, int Count)
       {
         lastCount = Count;
         lastData = Data;
-        cCondWait::SleepMs(dataInterval);
-        state = SLEEP1;
+        state = SLEEP;
+        timeSlept = 0;
+        cCondWait::SleepMs(sleepInterval);
         return false;
       }
       return true;
-    case SLEEP1:
-      if (Count == lastCount && Data == lastData)
+    case SLEEP:
+      timeSlept += sleepInterval;
+      if (timeSlept >= dataInterval && Count == lastCount && Data == lastData)
       {
         // we are probably stuck at the end of the ringbuffer
         state = WRAP;
         return true;
       }
-      // go on sleeping until timeout expires
-      if (timeout > dataInterval)
-        cCondWait::SleepMs(timeout - dataInterval);
-      state = SLEEP2;
-      return false;
-    case SLEEP2:
-      lowWaterMark = Count - lastCount;
-      if (lowWaterMark > maxWaterMark)
-        lowWaterMark = maxWaterMark;
-      if (lowWaterMark < minWaterMark)
-        lowWaterMark = minWaterMark;
-      lowWaterMark = Filter(lowWaterMark);
-      state = READY;
+      if (timeSlept >= timeout || Count - lastCount > maxWaterMark)
+      {
+        lowWaterMark = Count - lastCount;
+        if (lowWaterMark > maxWaterMark)
+          lowWaterMark = maxWaterMark;
+        if (lowWaterMark < minWaterMark)
+          lowWaterMark = minWaterMark;
+        lowWaterMark = Filter(lowWaterMark);
+        state = READY;
+      }
+      cCondWait::SleepMs(sleepInterval);
       return false;
     case WRAP:
       // we are here in 2 cases:
