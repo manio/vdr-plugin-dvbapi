@@ -5,7 +5,8 @@ TOC
 4. VDR and OScam compatibility
 5. Plugin and OSCam setup
 6. Commandline options
-7. Contact and support
+7. Note for a plugin developers
+8. Contact and support
 
 -----------------------------------------------------------------------------
 1. Introduction
@@ -174,7 +175,19 @@ CW in OSCam) you may need to disable this check, starting VDR like this:
   vdr -P"dvbapi -d"
 
 -----------------------------------------------------------------------------
-7. Contact and support
+7. Note for a plugin developers
+-----------------------------------------------------------------------------
+
+If you want your device to use a full performance of this dvbapi plugin,
+then I strongly recommend that your plugin's device ring bufer to be set
+to 5MB of size or more.
+
+You can find the explanation in the following pull requests:
+https://github.com/manio/vdr-plugin-dvbapi/pull/104
+https://github.com/manio/vdr-plugin-dvbapi/pull/105
+
+-----------------------------------------------------------------------------
+8. Contact and support
 -----------------------------------------------------------------------------
 
 If you want discuss about the plugin or get help, use the following thread:
