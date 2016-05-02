@@ -179,7 +179,7 @@ CW in OSCam) you may need to disable this check, starting VDR like this:
 -----------------------------------------------------------------------------
 
 If you want your device to use a full performance of this dvbapi plugin,
-then I strongly recommend that your plugin's device ring bufer to be set
+then I strongly recommend that your plugin's device ring buffer to be set
 to 5MB of size or more.
 
 You can find the explanation in the following pull requests:
