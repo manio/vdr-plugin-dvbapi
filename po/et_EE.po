@@ -22,9 +22,6 @@ msgstr "Tarkvaraline CAM OSCam-ile"
 msgid "Log level (0-3)"
 msgstr "Logimise tase (0-3)"
 
-msgid "Enable OSCam network mode"
-msgstr "OSCam võrgurežiimi kasutamine"
-
 msgid "Host"
 msgstr "Aadress"
 

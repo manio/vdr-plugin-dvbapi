@@ -22,7 +22,6 @@
 #include <vdr/plugin.h>
 
 #define CONFNAME_LOGLEVEL            "LogLevel"
-#define CONFNAME_OSCAMNETWORK        "OSCamNetwork"
 #define CONFNAME_OSCAMHOST           "OSCamHost"
 #define CONFNAME_OSCAMPORT           "OSCamPort"
 #define CONFNAME_ADAPTERINDEXOFFSET  "AdapterIndexOffset"
@@ -31,12 +30,9 @@ class cMenuSetupDVBAPI : public cMenuSetupPage
 {
 private:
   int newLogLevel;
-  int newOSCamNetworkMode;
   char newOSCamHost[HOST_NAME_MAX];
   int newOSCamPort;
-  void Setup(void);
 protected:
-  virtual eOSState ProcessKey(eKeys Key);
   virtual void Store(void);
 public:
   cMenuSetupDVBAPI(void);

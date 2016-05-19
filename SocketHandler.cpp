@@ -44,63 +44,46 @@ void SocketHandler::OpenConnection()
 {
   cMutexLock lock(&mutex);
 
-  if (OSCamNetworkMode)
+  // connecting via TCP socket to OSCam
+  struct addrinfo hints, *servinfo, *p;
+  int rv;
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+
+  if ((rv = getaddrinfo(OSCamHost, itoa(OSCamPort), &hints, &servinfo)) != 0)
   {
-    // connecting via TCP socket to OSCam
-    struct addrinfo hints, *servinfo, *p;
-    int rv;
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-
-    if ((rv = getaddrinfo(OSCamHost, itoa(OSCamPort), &hints, &servinfo)) != 0)
-    {
-      ERRORLOG("getaddrinfo error: %s", gai_strerror(rv));
-      return;
-    }
-
-    // loop through all the results and connect to the first we can
-    for (p = servinfo; p != NULL; p = p->ai_next)
-    {
-      int sockfd;
-      if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
-      {
-          ERRORLOG("%s: socket error: %s", __FUNCTION__, strerror(errno));
-          continue;
-      }
-      if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1)
-      {
-          close(sockfd);
-          ERRORLOG("%s: connect error: %s", __FUNCTION__, strerror(errno));
-          continue;
-      }
-      sock = sockfd;
-      break; // if we get here, we must have connected successfully
-    }
-
-    if (p == NULL)
-    {
-      // looped off the end of the list with no connection
-      ERRORLOG("Cannot connect to OSCam. Check your configuration and firewall settings.");
-      sock = 0;
-    }
-
-    freeaddrinfo(servinfo); // all done with this structure
+    ERRORLOG("getaddrinfo error: %s", gai_strerror(rv));
+    return;
   }
-  else
+
+  // loop through all the results and connect to the first we can
+  for (p = servinfo; p != NULL; p = p->ai_next)
   {
-    // connecting to /tmp/camd.socket
-    sock = socket(AF_LOCAL, SOCK_STREAM, 0);
-    sockaddr_un serv_addr_un;
-    memset(&serv_addr_un, 0, sizeof(serv_addr_un));
-    serv_addr_un.sun_family = AF_LOCAL;
-    snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
-    if (connect(sock, (const sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
+    int sockfd;
+    if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
     {
-      ERRORLOG("Cannot connect to /tmp/camd.socket, Do you have OSCam running?");
-      sock = 0;
+        ERRORLOG("%s: socket error: %s", __FUNCTION__, strerror(errno));
+        continue;
     }
+    if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1)
+    {
+        close(sockfd);
+        ERRORLOG("%s: connect error: %s", __FUNCTION__, strerror(errno));
+        continue;
+    }
+    sock = sockfd;
+    break; // if we get here, we must have connected successfully
   }
+
+  if (p == NULL)
+  {
+    // looped off the end of the list with no connection
+    ERRORLOG("Cannot connect to OSCam. Check your configuration and firewall settings.");
+    sock = 0;
+  }
+
+  freeaddrinfo(servinfo); // all done with this structure
 
   if (sock)
     DEBUGLOG("created socket with socket_fd=%d", sock);

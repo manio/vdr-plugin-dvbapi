@@ -60,7 +60,6 @@ typedef struct ca_descr_mode {
         enum ca_descr_cipher_mode cipher_mode;
 } ca_descr_mode_t;
 
-extern int OSCamNetworkMode;
 extern char OSCamHost[HOST_NAME_MAX];
 extern int OSCamPort;
 

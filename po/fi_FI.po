@@ -22,9 +22,6 @@ msgstr "OSCam-salauksenpurku"
 msgid "Log level (0-3)"
 msgstr "Logitustaso (0-3)"
 
-msgid "Enable OSCam network mode"
-msgstr "Käytä OSCam-palvelinta verkon yli"
-
 msgid "Host"
 msgstr "Osoite"
 

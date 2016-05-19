@@ -22,9 +22,6 @@ msgstr "SoftCAM für OSCam"
 msgid "Log level (0-3)"
 msgstr "Loglevel (0-3)"
 
-msgid "Enable OSCam network mode"
-msgstr "Netzwerkmodus für OSCam verwenden"
-
 msgid "Host"
 msgstr "Server Adresse"
 
