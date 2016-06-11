@@ -172,6 +172,27 @@ unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet)
   }
 }
 
+int DeCSA::SearchPIDinMAP(int adapter_index, int pid)
+{
+  //we must search for pid, otherwise on tune start we use always idx 0
+  int idx = -1;
+
+  map<pair<int, int>, unsigned char>::iterator it;
+  for (it = pidmap.begin(); it != pidmap.end(); ++it)
+  {
+    std::pair<int, int> p = it->first;
+    int iadapter = p.first;
+    int ipid = p.second;
+    if (adapter_index == iadapter && ipid == pid)
+    {
+      idx = it->second;
+      return idx;
+    }
+  }
+
+  return idx;
+}
+
 bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool force)
 {
   cMutexLock lock(&mutex);
@@ -219,14 +240,14 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       payload_len = TS_SIZE - offset;
 #endif
       int pid = ((data[l + 1] << 8) + data[l + 2]) & MAX_CSA_PID;
-      int idx = pidmap[make_pair(adapter_index, pid)];
-      if ((pid < MAX_CSA_PID) && (currIdx < 0 || idx == currIdx))
+      int idx = SearchPIDinMAP(adapter_index, pid);
+      if ((idx >= 0 && pid < MAX_CSA_PID) && (currIdx < 0 || idx == currIdx))
       {                         // same or no index
         currIdx = idx;
         // return if the key is expired
         if (CheckExpiredCW && time(NULL) - cwSeen[currIdx] > MAX_KEY_WAIT)
           return false;
-        if (algo[currIdx] == CA_ALGO_DES)
+        if (currIdx >= 0 && algo[currIdx] == CA_ALGO_DES)
         {
           if ((ev_od & 0x40) == 0)
           {
@@ -289,7 +310,7 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
   {                             // we have some range
     if (ccs >= cs || force)
     {
-      if (GetKeyStruct(currIdx))
+      if (currIdx >= 0 && GetKeyStruct(currIdx))
       {
         int n = decrypt_packets(keys[currIdx], range);
         if (n > 0)
@@ -298,7 +319,7 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
     }
   }
 #else
-  if (GetKeyStruct(currIdx))
+  if (currIdx >= 0 && GetKeyStruct(currIdx))
   {
     if (cs_fill_even)
     {
