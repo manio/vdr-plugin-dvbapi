@@ -28,6 +28,8 @@
 extern "C" {
 #include <dvbcsa/dvbcsa.h>
 }
+#else
+#include "FFdecsa/FFdecsa.h"
 #endif
 
 #define MAX_CSA_PID  0x1FFF

@@ -20,10 +20,6 @@
 #include "Log.h"
 #include "cscrypt/des.h"
 
-#ifndef LIBDVBCSA
-#include "FFdecsa/FFdecsa.h"
-#endif
-
 DeCSA *decsa = NULL;
 
 bool CheckNull(const unsigned char *data, int len)
