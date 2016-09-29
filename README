@@ -6,7 +6,6 @@ TOC
 5. Plugin and OSCam setup
 6. Commandline options
 7. Note for a plugin developers
-8. Contact and support
 
 -----------------------------------------------------------------------------
 1. Introduction
@@ -176,18 +175,3 @@ to 5MB of size or more.
 You can find the explanation in the following pull requests:
 https://github.com/manio/vdr-plugin-dvbapi/pull/104
 https://github.com/manio/vdr-plugin-dvbapi/pull/105
-
------------------------------------------------------------------------------
-8. Contact and support
------------------------------------------------------------------------------
-
-If you want discuss about the plugin or get help, use the following thread:
-http://www.streamboard.tv/wbb2/thread.php?threadid=40060
-(It is the main OSCam forum, user registration is required)
-
-If you want to report a bug - you can create an issue on GitHub:
-https://github.com/manio/vdr-plugin-dvbapi/issues
-
-You can also join our IRC channel #dvbapi on freenode.
-
-Or you can send me an e-mail: manio@skyboo.net
