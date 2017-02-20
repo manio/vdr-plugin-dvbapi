@@ -53,3 +53,7 @@ libdvbcsa library support
  then you need to pass additinal argument when compiling the plugin, eg:
 
    make LIBDVBCSA=1
+
+libcrypto and libssl
+====================
+ If you want decode AES keys, you need install libcrypto and libssl libraries.

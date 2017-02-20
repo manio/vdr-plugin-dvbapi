@@ -32,6 +32,7 @@
 #include <vdr/thread.h>
 #include <linux/dvb/dmx.h>
 #include "Filter.h"
+#include "CA.h"
 
 #define DVBAPI_PROTOCOL_VERSION         2
 
@@ -39,6 +40,7 @@
 #define DVBAPI_CLIENT_INFO     0xFFFF0001
 #define DVBAPI_SERVER_INFO     0xFFFF0002
 #define DVBAPI_ECM_INFO        0xFFFF0003
+#define CA_SET_DESCR_AES       0x40106f87
 #define CA_SET_DESCR_MODE      0x400c6f88
 
 #define INFO_VERSION "vdr-plugin-dvbapi " VERSION " / VDR " VDRVERSION
@@ -80,6 +82,7 @@ private:
   int sock;
   cMutex mutex;
   ca_descr_t ca_descr;
+  ca_descr_aes_t ca_descr_aes;
   ca_descr_mode_t ca_descr_mode;
   ca_pid_t ca_pid;
   dmx_sct_filter_params sFP2;

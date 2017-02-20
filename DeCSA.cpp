@@ -30,6 +30,37 @@ bool CheckNull(const unsigned char *data, int len)
   return true;
 }
 
+#ifdef LIBSSL
+struct aes_keys_t
+{
+  AES_KEY even;
+  AES_KEY odd;
+};
+
+void aes_set_control_words(void *aeskeys, const unsigned char *ev, const unsigned char *od)
+{
+  AES_set_decrypt_key(ev, 128, &((struct aes_keys_t *) aeskeys)->even);
+  AES_set_decrypt_key(od, 128, &((struct aes_keys_t *) aeskeys)->odd);
+}
+
+void * aes_get_key_struct(void)
+{
+  struct aes_keys_t *aeskeys = (struct aes_keys_t *) malloc(sizeof(struct aes_keys_t));
+  if (aeskeys)
+  {
+    static const unsigned char packet[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    aes_set_control_words(aeskeys, packet, packet);
+  }
+  return aeskeys;
+}
+
+void aes_free_key_struct(void *aeskeys)
+{
+  if (aeskeys)
+    free(aeskeys);
+}
+#endif
+
 DeCSA::DeCSA()
 {
 #ifndef LIBDVBCSA
@@ -46,6 +77,9 @@ DeCSA::DeCSA()
   memset(cs_key_odd, 0, sizeof(cs_key_odd));
 #endif
   memset(cwSeen, 0, sizeof(cwSeen));
+#ifdef LIBSSL
+  memset(csa_aes_keys, 0, sizeof(csa_aes_keys));
+#endif
   ResetState();
 }
 
@@ -66,6 +100,11 @@ DeCSA::~DeCSA()
   free(cs_tsbbatch_even);
   free(cs_tsbbatch_odd);
 #endif
+#ifdef LIBSSL
+  for (int i = 0; i < MAX_CSA_IDX; i++)
+    if (csa_aes_keys[i])
+      aes_free_key_struct(csa_aes_keys[i]);
+#endif
 }
 
 void DeCSA::ResetState(void)
@@ -78,17 +117,28 @@ void DeCSA::ResetState(void)
 
 bool DeCSA::GetKeyStruct(int idx)
 {
-#ifndef LIBDVBCSA
-  if (!keys[idx])
-    keys[idx] = get_key_struct();
-  return keys[idx] != 0;
-#else
-  if (!cs_key_even[idx])
-    cs_key_even[idx] = dvbcsa_bs_key_alloc();
-  if (!cs_key_odd[idx])
-    cs_key_odd[idx] = dvbcsa_bs_key_alloc();
-  return (cs_key_even[idx] != 0) && (cs_key_odd[idx] != 0);
+#ifdef LIBSSL
+  if (Aes[idx])
+  {
+    if (!csa_aes_keys[idx])
+      csa_aes_keys[idx] = aes_get_key_struct();
+    return csa_aes_keys[idx] != 0;
+  }
+  else
 #endif
+  {
+#ifndef LIBDVBCSA
+    if (!keys[idx])
+      keys[idx] = get_key_struct();
+    return keys[idx] != 0;
+#else
+    if (!cs_key_even[idx])
+      cs_key_even[idx] = dvbcsa_bs_key_alloc();
+    if (!cs_key_odd[idx])
+      cs_key_odd[idx] = dvbcsa_bs_key_alloc();
+    return (cs_key_even[idx] != 0) && (cs_key_odd[idx] != 0);
+#endif
+  }
 }
 
 bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
@@ -121,6 +171,28 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
   return true;
 }
 
+bool DeCSA::SetDescrAes(ca_descr_aes_t *ca_descr_aes, bool initial)
+{
+  DEBUGLOG("%s", __FUNCTION__);
+  cMutexLock lock(&mutex);
+  int idx = ca_descr_aes->index;
+  if (idx < MAX_CSA_IDX && GetKeyStruct(idx))
+  {
+    DEBUGLOG("%d: %4s aes key set", idx, ca_descr_aes->parity ? "odd" : "even");
+    if (ca_descr_aes->parity == 0)
+    {
+#ifdef LIBSSL
+      AES_set_decrypt_key(ca_descr_aes->cw, 128, &((struct aes_keys_t *) csa_aes_keys[idx])->even);
+    }
+    else
+    {
+      AES_set_decrypt_key(ca_descr_aes->cw, 128, &((struct aes_keys_t *) csa_aes_keys[idx])->odd);
+#endif
+    }
+  }
+  return true;
+}
+
 bool DeCSA::SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid)
 {
   cMutexLock lock(&mutex);
@@ -138,6 +210,12 @@ void DeCSA::SetAlgo(uint32_t index, uint32_t usedAlgo)
 {
   if (index < MAX_CSA_IDX)
     algo[index] = usedAlgo;
+}
+
+void DeCSA::SetAes(uint32_t index, bool usedAes)
+{
+  if (index < MAX_CSA_IDX)
+    Aes[index] = usedAes;
 }
 
 unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet)
@@ -182,12 +260,13 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
   }
 
   int offset;
+  int currIdx = -1;
 #ifndef LIBDVBCSA
-  int r = -2, ccs = 0, currIdx = -1;
+  int r = -2, ccs = 0;
   bool newRange = true;
   range[0] = 0;
 #else
-  int ccs = 0, currIdx = -1;
+  int ccs = 0;
   int payload_len;
   int cs_fill_even = 0;
   int cs_fill_odd = 0;
@@ -220,7 +299,7 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       {                         // same or no index
         currIdx = idx;
         // return if the key is expired
-        if (CheckExpiredCW && time(NULL) - cwSeen[currIdx] > MAX_KEY_WAIT)
+        if (!Aes[currIdx] && CheckExpiredCW && time(NULL) - cwSeen[currIdx] > MAX_KEY_WAIT)
           return false;
         if (algo[currIdx] == CA_ALGO_DES)
         {
@@ -238,6 +317,33 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
           }
           data[l + 3] &= 0x3f;    // consider it decrypted now
         }
+#ifdef LIBSSL
+        else if (Aes[currIdx])
+        {
+          AES_KEY aes_key;
+          data[l + 3] &= 0x3f;    // consider it decrypted now
+
+          if (data[l+3] & 0x20)
+          {
+            if ((188 - offset) >> 4 == 0)
+              return true;
+          }
+          else
+            offset = 4;
+
+          if (((ev_od & 0x40) >> 6) == 0)
+          {
+            aes_key = ((struct aes_keys_t *) csa_aes_keys[currIdx])->even;
+          }
+          else
+          {
+            aes_key = ((struct aes_keys_t *) csa_aes_keys[currIdx])->odd;
+          }
+          for (int j = offset; j + 16 <= 188; j += 16)
+            AES_ecb_encrypt(&data[l + j], &data[l + j], &aes_key, AES_DECRYPT);
+
+        }
+#endif
         else
         {
 #ifndef LIBDVBCSA
@@ -278,7 +384,7 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       // nothing, we don't create holes for unencrypted packets
     }
   }
-  if (algo[currIdx] == CA_ALGO_DES)
+  if (algo[currIdx] == CA_ALGO_DES || Aes[currIdx])
     return true;
 #ifndef LIBDVBCSA
   if (r >= 0)

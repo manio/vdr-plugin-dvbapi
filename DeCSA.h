@@ -32,11 +32,16 @@ extern "C" {
 #include "FFdecsa/FFdecsa.h"
 #endif
 
+#ifdef LIBSSL
+#include "openssl/aes.h"
+#endif
+
 #define MAX_CSA_PID  0x1FFF
 #define MAX_CSA_IDX  16
 #define MAX_KEY_WAIT 25         // max seconds to consider a CW as valid
 
 #include "DVBAPI.h"
+#include "CA.h"
 
 using namespace std;
 
@@ -53,9 +58,13 @@ private:
   struct dvbcsa_bs_key_s *cs_key_even[MAX_CSA_IDX];
   struct dvbcsa_bs_key_s *cs_key_odd[MAX_CSA_IDX];
 #endif
+#ifdef LIBSSL
+  void *csa_aes_keys[MAX_CSA_IDX];
+#endif
   uint32_t des_key_schedule[MAX_CSA_IDX][2][32];
   uint32_t algo[MAX_CSA_IDX];
   time_t cwSeen[MAX_CSA_IDX];   // last time the CW for the related key was seen
+  bool Aes[MAX_CSA_IDX];
   map<pair<int, int>, unsigned char> pidmap;
   cMutex mutex;
   bool GetKeyStruct(int idx);
@@ -69,8 +78,10 @@ public:
   ~DeCSA();
   bool Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool force);
   bool SetDescr(ca_descr_t *ca_descr, bool initial);
+  bool SetDescrAes(ca_descr_aes_t *ca_descr_aes, bool initial);
   bool SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid);
   void SetAlgo(uint32_t index, uint32_t usedAlgo);
+  void SetAes(uint32_t index, bool usedAes);
 };
 
 extern DeCSA *decsa;

@@ -223,6 +223,8 @@ void SocketHandler::Action(void)
       cRead = recv(sock, buff+4, sizeof(ca_pid_t), MSG_DONTWAIT);
     else if (*request == CA_SET_DESCR)
       cRead = recv(sock, buff+4, sizeof(ca_descr_t), MSG_DONTWAIT);
+    else if (*request == CA_SET_DESCR_AES)
+      cRead = recv(sock, buff+4, sizeof(ca_descr_aes_t), MSG_DONTWAIT);
     else if (*request == CA_SET_DESCR_MODE)
       cRead = recv(sock, buff+4, sizeof(ca_descr_mode_t), MSG_DONTWAIT);
     else if (*request == DMX_SET_FILTER)
@@ -266,8 +268,18 @@ void SocketHandler::Action(void)
       memcpy(&ca_descr, &buff[sizeof(int)], sizeof(ca_descr_t));
       ca_descr.index = ntohl(ca_descr.index);
       ca_descr.parity = ntohl(ca_descr.parity);
+      decsa->SetAes(ca_descr_aes.index, false);
       decsa->SetDescr(&ca_descr, false);
       DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr.index);
+    }
+    else if (*request == CA_SET_DESCR_AES)
+    {
+      memcpy(&ca_descr_aes, &buff[sizeof(int)], sizeof(ca_descr_aes_t));
+      ca_descr_aes.index = ntohl(ca_descr_aes.index);
+      ca_descr_aes.parity = ntohl(ca_descr_aes.parity);
+      decsa->SetAes(ca_descr_aes.index, true);
+      decsa->SetDescrAes(&ca_descr_aes, false);
+      DEBUGLOG("%s: Got CA_SET_DESCR_AES request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr_aes.index);
     }
     else if (*request == CA_SET_DESCR_MODE)
     {
