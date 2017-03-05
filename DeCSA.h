@@ -68,6 +68,7 @@ private:
   map<pair<int, int>, unsigned char> pidmap;
   cMutex mutex;
   bool GetKeyStruct(int idx);
+  bool GetKeyStructAes(int idx);
   void ResetState(void);
   // to prevent copy constructor and assignment
   DeCSA(const DeCSA&);

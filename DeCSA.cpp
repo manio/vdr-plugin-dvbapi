@@ -77,6 +77,7 @@ DeCSA::DeCSA()
   memset(cs_key_odd, 0, sizeof(cs_key_odd));
 #endif
   memset(cwSeen, 0, sizeof(cwSeen));
+  memset(Aes,0,sizeof(Aes));
 #ifdef LIBSSL
   memset(csa_aes_keys, 0, sizeof(csa_aes_keys));
 #endif
@@ -117,29 +118,27 @@ void DeCSA::ResetState(void)
 
 bool DeCSA::GetKeyStruct(int idx)
 {
-#ifdef LIBSSL
-  if (Aes[idx])
-  {
-    if (!csa_aes_keys[idx])
-      csa_aes_keys[idx] = aes_get_key_struct();
-    return csa_aes_keys[idx] != 0;
-  }
-  else
-#endif
-  {
 #ifndef LIBDVBCSA
-    if (!keys[idx])
-      keys[idx] = get_key_struct();
-    return keys[idx] != 0;
+  if (!keys[idx])
+    keys[idx] = get_key_struct();
+  return keys[idx] != 0;
 #else
-    if (!cs_key_even[idx])
-      cs_key_even[idx] = dvbcsa_bs_key_alloc();
-    if (!cs_key_odd[idx])
-      cs_key_odd[idx] = dvbcsa_bs_key_alloc();
-    return (cs_key_even[idx] != 0) && (cs_key_odd[idx] != 0);
+  if (!cs_key_even[idx])
+    cs_key_even[idx] = dvbcsa_bs_key_alloc();
+  if (!cs_key_odd[idx])
+    cs_key_odd[idx] = dvbcsa_bs_key_alloc();
+  return (cs_key_even[idx] != 0) && (cs_key_odd[idx] != 0);
 #endif
-  }
 }
+
+#ifdef LIBSSL
+bool DeCSA::GetKeyStructAes(int idx)
+{
+  if (!csa_aes_keys[idx])
+    csa_aes_keys[idx] = aes_get_key_struct();
+  return csa_aes_keys[idx] != 0;
+}
+#endif
 
 bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
 {
@@ -174,22 +173,22 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial)
 bool DeCSA::SetDescrAes(ca_descr_aes_t *ca_descr_aes, bool initial)
 {
   DEBUGLOG("%s", __FUNCTION__);
+#ifdef LIBSSL
   cMutexLock lock(&mutex);
   int idx = ca_descr_aes->index;
-  if (idx < MAX_CSA_IDX && GetKeyStruct(idx))
+  if (idx < MAX_CSA_IDX && GetKeyStructAes(idx))
   {
     DEBUGLOG("%d: %4s aes key set", idx, ca_descr_aes->parity ? "odd" : "even");
     if (ca_descr_aes->parity == 0)
     {
-#ifdef LIBSSL
       AES_set_decrypt_key(ca_descr_aes->cw, 128, &((struct aes_keys_t *) csa_aes_keys[idx])->even);
     }
     else
     {
       AES_set_decrypt_key(ca_descr_aes->cw, 128, &((struct aes_keys_t *) csa_aes_keys[idx])->odd);
-#endif
     }
   }
+#endif
   return true;
 }
 
@@ -328,9 +327,6 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
             if ((188 - offset) >> 4 == 0)
               return true;
           }
-          else
-            offset = 4;
-
           if (((ev_od & 0x40) >> 6) == 0)
           {
             aes_key = ((struct aes_keys_t *) csa_aes_keys[currIdx])->even;
@@ -341,7 +337,6 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
           }
           for (int j = offset; j + 16 <= 188; j += 16)
             AES_ecb_encrypt(&data[l + j], &data[l + j], &aes_key, AES_DECRYPT);
-
         }
 #endif
         else
