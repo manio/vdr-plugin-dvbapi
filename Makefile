@@ -77,8 +77,6 @@ LIBSSL = $(shell pkg-config --libs --silence-errors libcrypto libssl)
 ifneq ($(strip $(LIBSSL)),)
 DEFINES    += -DLIBSSL
 DECSALIB   += -lcrypto -lssl
-else
-$(info For AES key please install libssl and libcrypto)
 endif
 
 ### The main target:
