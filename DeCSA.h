@@ -21,7 +21,6 @@
 
 #include <map>
 #include <linux/dvb/ca.h>
-#include <vdr/dvbdevice.h>
 #include <vdr/thread.h>
 
 #ifdef LIBDVBCSA

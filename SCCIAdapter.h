@@ -39,25 +39,17 @@ struct TPDU
 class SCCIAdapter : public cCiAdapter
 {
 private:
-  cDevice *device;
-  bool softcsa, fullts;
-  int cardIndex;
   cMutex ciMutex;
-  SCCAMSlot *slots[1];
+  SCCAMSlot *slots[MAXDEVICES];
   int version;
-  int fd_ca;
   int tcid;
   cTimeMs readTimer;
   Frame frame;
   cRingBufferLinear *rb;
 
 public:
-  SCCIAdapter(cDevice *Device, int CardIndex, int cafd, bool SoftCSA, bool FullTS);
+  SCCIAdapter(void);
   ~SCCIAdapter();
-  int Adapter()
-  {
-    return cardIndex;
-  }
   int GetVersion()
   {
     return version;

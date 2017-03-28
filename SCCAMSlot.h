@@ -19,7 +19,6 @@
 #ifndef ___SCCAMSLOT_H
 #define ___SCCAMSLOT_H
 
-#include <vdr/dvbdevice.h>
 #include "SCCIAdapter.h"
 #include "Frame.h"
 #include "Filter.h"
@@ -80,7 +79,7 @@ private:
   DeCSAFillControl decsaFillControl;
 
 public:
-  SCCAMSlot(SCCIAdapter *ca, int cardIndex, int slot);
+  SCCAMSlot(SCCIAdapter *ca, int cardIndex, int slot, cCamSlot *MasterSlot);
   int GetLength(const unsigned char *&data);
   int LengthSize(int n);
   void SetSize(int n, unsigned char *&p);
@@ -94,6 +93,7 @@ public:
     return &frame;
   }
   uchar *Decrypt(uchar *Data, int &Count);
+  virtual bool Assign(cDevice *Device, bool Query = false);
   virtual const char *GetCamName(void);
   bool ProvidesCa(const int *CaSystemIds);
   virtual void StartDecrypting(void);

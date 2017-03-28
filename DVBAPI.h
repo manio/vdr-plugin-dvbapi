@@ -52,7 +52,7 @@ struct sDVBAPIEcmInfo {
 class DVBAPI : public cPlugin
 {
 private:
-  SCCIAdapter *sCCIAdapter[MAXDEVICES];
+  SCCIAdapter *sCCIAdapter;
 public:
   DVBAPI(void);
   virtual ~DVBAPI();

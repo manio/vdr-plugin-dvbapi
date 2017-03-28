@@ -20,7 +20,6 @@
 #define ___CAPMT_H
 
 #include <linux/dvb/ca.h>
-#include <vdr/dvbdevice.h>
 #include <vdr/thread.h>
 #include <vector>
 #include "SocketHandler.h"

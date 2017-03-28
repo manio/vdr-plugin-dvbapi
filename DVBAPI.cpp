@@ -33,8 +33,7 @@ unsigned int AdapterIndexOffset = 0;
 
 DVBAPI::DVBAPI(void)
 {
-  for (int i = 0; i < MAXDEVICES; i++)
-    sCCIAdapter[i] = NULL;
+  sCCIAdapter = NULL;
 }
 
 DVBAPI::~DVBAPI()
@@ -93,28 +92,16 @@ bool DVBAPI::Start(void)
   filter = new cDvbapiFilter;
   SockHandler = new SocketHandler;
 
-  for (int i = 0; i < cDevice::NumDevices(); i++)
-  {
-    if (const cDevice *Device = cDevice::GetDevice(i))
-    {
-      if (Device->NumProvidedSystems())
-      {
-        INFOLOG("Creating sCCIAdapter for device %d", Device->CardIndex());
-        sCCIAdapter[i] = new SCCIAdapter(NULL, Device->CardIndex(), 0, true, true);
-      }
-    }
-  }
+  INFOLOG("Creating sCCIAdapter");
+  sCCIAdapter = new SCCIAdapter;
   INFOLOG("plugin started");
   return true;
 }
 
 void DVBAPI::Stop(void)
 {
-  for (int i = 0; i < MAXDEVICES; i++)
-  {
-    delete sCCIAdapter[i];
-    sCCIAdapter[i] = NULL;
-  }
+  delete sCCIAdapter;
+  sCCIAdapter = NULL;
   delete SockHandler;
   SockHandler = NULL;
   delete filter;

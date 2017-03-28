@@ -25,8 +25,6 @@
 
 #include <linux/dvb/ca.h>
 #include <vdr/ci.h>
-#include <vdr/dvbdevice.h>
-#include <vdr/dvbci.h>
 #include <vdr/thread.h>
 #include "SCCIAdapter.h"
 #include "Log.h"
@@ -36,13 +34,8 @@
 #define T_RCV          0x81
 #define T_DATA_LAST    0xA0
 
-SCCIAdapter::SCCIAdapter(cDevice *Device, int cardIndex, int cafd, bool SoftCSA, bool FullTS)
+SCCIAdapter::SCCIAdapter(void)
 {
-  this->cardIndex = cardIndex;
-  device = Device;
-  fd_ca = cafd;
-  softcsa = SoftCSA;
-  fullts = FullTS;
   tcid = 0;
 
   version = 1;
@@ -54,8 +47,20 @@ SCCIAdapter::SCCIAdapter(cDevice *Device, int cardIndex, int cafd, bool SoftCSA,
     rb->SetTimeouts(0, CAM_READ_TIMEOUT);
     frame.SetRb(rb);
   }
-  SetDescription("SC-CI adapter on device %d", cardIndex);
-  slots[0] = new SCCAMSlot(this, cardIndex, 0);
+  SetDescription("SC-CI adapter");
+  int SlotIndex = 0;
+  for (int i = 0; i < cDevice::NumDevices(); i++)
+  {
+    if (const cDevice *Device = cDevice::GetDevice(i))
+    {
+      if (Device->NumProvidedSystems())
+      {
+        INFOLOG("Creating SCCAMSlot for device %d", Device->CardIndex() + 1);
+        slots[SlotIndex] = new SCCAMSlot(this, Device->CardIndex(), SlotIndex, SlotIndex ? slots[0] : NULL);
+        SlotIndex++;
+      }
+    }
+  }
   Start();
 }
 
@@ -71,7 +76,7 @@ int SCCIAdapter::Read(unsigned char *Buffer, int MaxLength)
       if (s <= MaxLength)
         memcpy(Buffer, data, s);
       else
-        ERRORLOG("internal: sc-ci %d rb frame size exceeded %d", cardIndex, s);
+        ERRORLOG("internal: sc-ci rb frame size exceeded %d", s);
       frame.Del();
       if (Buffer[2] != 0x80)
         readTimer.Set();
@@ -158,7 +163,7 @@ void SCCIAdapter::Write(const unsigned char *buff, int len)
     }
   }
   else
-    DEBUGLOG("%d: short write (buff=%d len=%d)", cardIndex, buff != 0, len);
+    DEBUGLOG("short write (buff=%d len=%d)", buff != 0, len);
 }
 
 SCCIAdapter::~SCCIAdapter()
@@ -188,5 +193,5 @@ eModuleStatus SCCIAdapter::ModuleStatus(int Slot)
 
 bool SCCIAdapter::Assign(cDevice *Device, bool Query)
 {
-  return Device ? (Device->CardIndex() == cardIndex) : true;
+  return true;
 }

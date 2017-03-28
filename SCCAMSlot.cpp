@@ -25,8 +25,6 @@
 
 #include <linux/dvb/ca.h>
 #include <vdr/ci.h>
-#include <vdr/dvbdevice.h>
-#include <vdr/dvbci.h>
 #include <vdr/thread.h>
 #include "SCCAMSlot.h"
 #include "Log.h"
@@ -36,8 +34,8 @@
 #define AOT_CA_INFO                 0x9F8031
 #define AOT_CA_PMT                  0x9f8032
 
-SCCAMSlot::SCCAMSlot(SCCIAdapter *sCCIAdapter, int cardIndex, int slot)
- : cCamSlot(sCCIAdapter, true)
+SCCAMSlot::SCCAMSlot(SCCIAdapter *sCCIAdapter, int cardIndex, int slot, cCamSlot *MasterSlot)
+ : cCamSlot(sCCIAdapter, true, MasterSlot)
  , checkTimer(-SLOT_CAID_CHECK - 1000)
  , rb(KILOBYTE(4), 5 + LEN_OFF, false, "SC-CI slot answer")
  , decsaFillControl(200000, 100, 40)
@@ -108,6 +106,13 @@ bool SCCAMSlot::Check(void)
     checkTimer.Set(SLOT_CAID_CHECK);
   }
   return res;
+}
+
+bool SCCAMSlot::Assign(cDevice *Device, bool Query)
+{
+  if (!Device || Device->CardIndex() == cardIndex)
+    return cCamSlot::Assign(Device, Query);
+  return false;
 }
 
 const char *SCCAMSlot::GetCamName(void)
