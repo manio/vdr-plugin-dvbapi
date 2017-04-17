@@ -140,6 +140,8 @@ int SCCAMSlot::GetLength(const unsigned char *&data)
 
 uchar *SCCAMSlot::Decrypt(uchar *Data, int &Count)
 {
+  if (!Data)
+    return NULL;
   if (!decsaFillControl.CanProcess(Data, Count))
   {
     Count = 0;
