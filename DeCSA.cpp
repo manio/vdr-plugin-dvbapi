@@ -192,6 +192,40 @@ bool DeCSA::SetDescrAes(ca_descr_aes_t *ca_descr_aes, bool initial)
   return true;
 }
 
+bool DeCSA::SetData(ca_descr_data_t *ca_descr_data, bool initial)
+{
+  DEBUGLOG("%s", __FUNCTION__);
+#ifdef LIBSSL
+  cMutexLock lock(&mutex);
+  int idx = ca_descr_data->index;
+  if (ca_descr_data->data_type == CA_DATA_IV)
+  {
+    if (idx < MAX_CSA_IDX)
+    {
+      DEBUGLOG("%d: ivec set", idx);
+      ivec[idx] = ca_descr_data->data;
+    }
+  }
+  else if (ca_descr_data->data_type == CA_DATA_KEY)
+  {
+    if (idx < MAX_CSA_IDX && GetKeyStructAes(idx))
+    {
+      DEBUGLOG("%d: %4s aes key set", idx, ca_descr_data->parity ? "odd" : "even");
+      if (ca_descr_data->parity == CA_PARITY_EVEN)
+      {
+        AES_set_decrypt_key(ca_descr_data->data, 8 * ca_descr_data->length, &((struct aes_keys_t *) csa_aes_keys[idx])->even);
+      }
+      else
+      {
+        AES_set_decrypt_key(ca_descr_data->data, 8 * ca_descr_data->length, &((struct aes_keys_t *) csa_aes_keys[idx])->odd);
+      }
+    }
+  }
+#endif
+  return true;
+}
+
+
 bool DeCSA::SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid)
 {
   cMutexLock lock(&mutex);
@@ -215,6 +249,12 @@ void DeCSA::SetAes(uint32_t index, bool usedAes)
 {
   if (index < MAX_CSA_IDX)
     Aes[index] = usedAes;
+}
+
+void DeCSA::SetCipherMode(uint32_t index, uint32_t usedCipherMode)
+{
+  if (index < MAX_CSA_IDX)
+    cipher_mode[index] = usedCipherMode;
 }
 
 unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet)
@@ -297,8 +337,8 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       if ((pid < MAX_CSA_PID) && (currIdx < 0 || idx == currIdx))
       {                         // same or no index
         currIdx = idx;
-        // return if the key is expired
-        if (!Aes[currIdx] && CheckExpiredCW && time(NULL) - cwSeen[currIdx] > MAX_KEY_WAIT)
+        // return if the key is expired, todo - some channels with aes not change key
+        if (!cipher_mode[currIdx] == CA_MODE_ECB && !Aes[currIdx] && CheckExpiredCW && time(NULL) - cwSeen[currIdx] > MAX_KEY_WAIT)
           return false;
         if (algo[currIdx] == CA_ALGO_DES)
         {
@@ -317,6 +357,51 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
           data[l + 3] &= 0x3f;    // consider it decrypted now
         }
 #ifdef LIBSSL
+        else if (algo[currIdx] == CA_ALGO_AES128)   //extended cw mode
+        {
+            if (cipher_mode[currIdx] == CA_MODE_ECB)
+            {
+                AES_KEY aes_key;
+                data[l + 3] &= 0x3f;    // consider it decrypted now
+
+                if (data[l+3] & 0x20)
+                {
+                    if ((188 - offset) >> 4 == 0)
+                        return true;
+                }
+                if (((ev_od & 0x40) >> 6) == 0)
+                {
+                    aes_key = ((struct aes_keys_t *) csa_aes_keys[currIdx])->even;
+                }
+                else
+                {
+                    aes_key = ((struct aes_keys_t *) csa_aes_keys[currIdx])->odd;
+                }
+                for (int j = offset; j + 16 <= 188; j += 16)
+                    AES_ecb_encrypt(&data[l + j], &data[l + j], &aes_key, AES_DECRYPT);
+            }
+            else if (cipher_mode[currIdx] == CA_MODE_CBC)
+            {
+                AES_KEY aes_key;
+                data[l + 3] &= 0x3f;    // consider it decrypted now
+
+                if (data[l+3] & 0x20)
+                {
+                    if ((188 - offset) >> 4 == 0)
+                        return true;
+                }
+                if (((ev_od & 0x40) >> 6) == 0)
+                {
+                    aes_key = ((struct aes_keys_t *) csa_aes_keys[currIdx])->even;
+                }
+                else
+                {
+                    aes_key = ((struct aes_keys_t *) csa_aes_keys[currIdx])->odd;
+                }
+                for (int j = offset; j + 16 <= 188; j += 16)
+                    AES_cbc_encrypt(&data[l + j], &data[l + j], 16, &aes_key, ivec[currIdx], AES_DECRYPT);
+            }
+        }
         else if (Aes[currIdx])
         {
           AES_KEY aes_key;
@@ -379,7 +464,7 @@ bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool fo
       // nothing, we don't create holes for unencrypted packets
     }
   }
-  if (algo[currIdx] == CA_ALGO_DES || Aes[currIdx])
+  if (algo[currIdx] == CA_ALGO_DES || Aes[currIdx] || algo[currIdx] == CA_ALGO_AES128)
     return true;
 #ifndef LIBDVBCSA
   if (r >= 0)

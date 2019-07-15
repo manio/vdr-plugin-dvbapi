@@ -42,6 +42,7 @@
 #define DVBAPI_ECM_INFO        0xFFFF0003
 #define CA_SET_DESCR_AES       0x40106f87
 #define CA_SET_DESCR_MODE      0x400c6f88
+#define CA_SET_DESCR_DATA      0x40186f89
 
 #define INFO_VERSION "vdr-plugin-dvbapi " VERSION " / VDR " VDRVERSION
 
@@ -84,10 +85,12 @@ private:
   ca_descr_t ca_descr;
   ca_descr_aes_t ca_descr_aes;
   ca_descr_mode_t ca_descr_mode;
+  ca_descr_data_t ca_descr_data;
   ca_pid_t ca_pid;
   dmx_sct_filter_params sFP2;
   cTimeMs checkTimer;
   uint16_t protocol_version;
+  unsigned char data[16];
 };
 
 extern SocketHandler *SockHandler;
