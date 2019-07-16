@@ -59,9 +59,11 @@ private:
 #endif
 #ifdef LIBSSL
   void *csa_aes_keys[MAX_CSA_IDX];
+  unsigned char *ivec[MAX_CSA_IDX];
 #endif
   uint32_t des_key_schedule[MAX_CSA_IDX][2][32];
   uint32_t algo[MAX_CSA_IDX];
+  uint32_t cipher_mode[MAX_CSA_IDX];
   time_t cwSeen[MAX_CSA_IDX];   // last time the CW for the related key was seen
   bool Aes[MAX_CSA_IDX];
   map<pair<int, int>, unsigned char> pidmap;
@@ -82,6 +84,8 @@ public:
   bool SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid);
   void SetAlgo(uint32_t index, uint32_t usedAlgo);
   void SetAes(uint32_t index, bool usedAes);
+  void SetCipherMode(uint32_t index, uint32_t usedCipherMode);
+  bool SetData(ca_descr_data_t *ca_descr_data, bool initial);
 };
 
 extern DeCSA *decsa;

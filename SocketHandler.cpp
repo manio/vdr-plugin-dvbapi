@@ -227,6 +227,8 @@ void SocketHandler::Action(void)
       cRead = recv(sock, buff+4, sizeof(ca_descr_aes_t), MSG_DONTWAIT);
     else if (*request == CA_SET_DESCR_MODE)
       cRead = recv(sock, buff+4, sizeof(ca_descr_mode_t), MSG_DONTWAIT);
+    else if (*request == CA_SET_DESCR_DATA)
+      cRead = recv(sock, buff+4, sizeof(ca_descr_data_t), MSG_DONTWAIT);
     else if (*request == DMX_SET_FILTER)
       cRead = recv(sock, buff+4, sizeof(struct dmx_sct_filter_params), MSG_DONTWAIT);
     else if (*request == DMX_STOP)
@@ -286,8 +288,27 @@ void SocketHandler::Action(void)
       memcpy(&ca_descr_mode, &buff[sizeof(int)], sizeof(ca_descr_mode_t));
       ca_descr_mode.index = ntohl(ca_descr_mode.index);
       ca_descr_mode.algo = (ca_descr_algo) ntohl(ca_descr_mode.algo);
+      ca_descr_mode.cipher_mode = (ca_descr_cipher_mode) ntohl(ca_descr_mode.cipher_mode);
       decsa->SetAlgo(ca_descr_mode.index, ca_descr_mode.algo);
-      DEBUGLOG("%s: Got CA_SET_DESCR_MODE request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr.index);
+      decsa->SetCipherMode(ca_descr_mode.index, ca_descr_mode.cipher_mode);
+      DEBUGLOG("%s: Got CA_SET_DESCR_MODE request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr_mode.index);
+    }
+    else if (*request == CA_SET_DESCR_DATA)
+    {
+      memcpy(&ca_descr_data, &buff[sizeof(int)], sizeof(ca_descr_data_t));
+      ca_descr_data.index = ntohl(ca_descr_data.index);
+      ca_descr_data.parity = (ca_descr_parity) ntohl(ca_descr_data.parity);
+      ca_descr_data.data_type = (ca_descr_data_type) ntohl(ca_descr_data.data_type);
+      ca_descr_data.length = ntohl(ca_descr_data.length);
+      memcpy(&data, &buff[sizeof(int) + 16], 16 + ca_descr_data.length - sizeof(ca_descr_data_t));
+
+      //We have a size of CA_SET_DESCR_DATA message > size of ca_descr_data_t because the ca_descr_data.data is a pointer
+      //Size of CA_SET_DESCR_DATA message is a 16 + ca_descr_data.length, see Oscam module-dvbapi.c
+      recv(sock, data + (16 + ca_descr_data.length - sizeof(ca_descr_data_t)), ca_descr_data.length - (16 + ca_descr_data.length - sizeof(ca_descr_data_t)), MSG_DONTWAIT);
+      ca_descr_data.data = data;
+      decsa->SetAes(ca_descr_aes.index, false);
+      decsa->SetData(&ca_descr_data, false);
+      DEBUGLOG("%s: Got CA_SET_DESCR_DATA request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr_data.index);
     }
     else if (*request == DMX_SET_FILTER)
     {
