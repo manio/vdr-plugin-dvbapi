@@ -27,7 +27,7 @@
 #define GITVERSION ""
 #endif
 
-#define VERSION                   "2.2.4" GITVERSION
+#define VERSION                   "2.2.5" GITVERSION
 static const char *DESCRIPTION    = trNOOP("SoftCAM for OSCam");
 
 class SCCIAdapter;
