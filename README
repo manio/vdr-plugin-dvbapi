@@ -53,13 +53,18 @@ For sample installation instructions refer to INSTALL file.
 
 Recommended VDR version for recent plugin versions is the stable VDR 2.2.0 or
 further Developer versions.
-You also need OScam svn rev >= 10389.
+You also need OScam svn rev >= 11534.
 
 *** NOTE FOR OLDER VDR VERSIONS:
     If you are using older VDR stable versions or developer version older
     then 2.1.4 then you also need an older plugin version:
     - version 1.0.6 is the last plugin revision that will work for you;
     you also need OScam svn rev >= 7314 and <= 9854 in this case.
+
+*** NOTE FOR OLDER OSCAM VERSIONS:
+    If you are using older OScam svn versions older then 11534 then you
+    also need an older plugin version:
+    - version 2.2.5 is the last plugin revision that will work for you.
 
 -----------------------------------------------------------------------------
 5. Plugin and OSCam setup

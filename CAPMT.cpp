@@ -163,16 +163,23 @@ void CAPMT::send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt)
 
   caPMT[12] = 0x01;             //ca_pmt_cmd_id = CAPMT_CMD_OK_DESCRAMBLING
   //adding own descriptor with demux and adapter_id
-  caPMT[13] = 0x82;             //CAPMT_DESC_DEMUX
-  caPMT[14] = 0x02;             //length
-  caPMT[15] = 0x00;             //demux id
-  caPMT[16] = (char) adapter + AdapterIndexOffset;   //adapter id
+  caPMT[13] = 0x83;             //adapter_device_descriptor
+  caPMT[14] = 0x01;             //length
+  caPMT[15] = (char) adapter + AdapterIndexOffset;   //adapter id
+
+  caPMT[16] = 0x86;             //demux_device_descriptor
+  caPMT[17] = 0x01;             //length
+  caPMT[18] = 0x00;             //demux id
+
+  caPMT[19] = 0x87;             //ca_device_descriptor
+  caPMT[20] = 0x01;             //length
+  caPMT[21] = (char) adapter + AdapterIndexOffset;   //ca id
 
   //adding CA_PMT from vdr
   caPMT[10] = pmt->pilen[0];                  //reserved+program_info_length
-  caPMT[11] = pmt->pilen[1] + 1 + 4;          //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
-  memcpy(caPMT + 17, pmt->data, pmt->len);    //copy ca_pmt data from vdr
-  length_field = 17 + pmt->len - 6;           //-6 = 3 bytes for AOT_CA_PMT and 3 for size
+  caPMT[11] = pmt->pilen[1] + 1 + 3 + 3 + 3;  //reserved+program_info_length (+1 for ca_pmt_cmd_id, +3 +3 +3 are three descriptors)
+  memcpy(caPMT + 22, pmt->data, pmt->len);    //copy ca_pmt data from vdr
+  length_field = 22 + pmt->len - 6;           //-6 = 3 bytes for AOT_CA_PMT and 3 for size
 
   //calculating length_field()
   caPMT[4] = length_field >> 8;
