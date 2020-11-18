@@ -24,6 +24,7 @@
 #include <vector>
 #include "SocketHandler.h"
 
+
 #define CAPMT_BUFFER_SIZE    1024
 
 #define MAX_SOCKETS          16   // max sockets (simultaneus channels) per demux
@@ -70,13 +71,17 @@ public:
   CAPMT();
   ~CAPMT();
   void send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt);
-  void ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen);
+  void ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned char *vdr_caPMT, int vdr_caPMTLen);  
   bool Empty()
   {
     cMutexLock lock(&mutex);
     return pmt.empty();
   }
   void SendAll();
+  
+  uint16_t GetCAIDFromSid(int adapter_index, int sid);
+  uint16_t GetCAIDFromPid(int adapter_index, int pid, int& sid);
+
   void UpdateEcmInfo(int adapter_index, int sid, uint16_t caid, uint16_t pid, uint32_t prid, uint32_t ecmtime, char *cardsystem, char *reader, char *from, char *protocol, int8_t hops);
   bool FillEcmInfo(sDVBAPIEcmInfo *ecminfo);
 };

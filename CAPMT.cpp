@@ -72,6 +72,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
       break;
     }
   }
+  
   //nothing to update/remove
   if (ca_lm == 0x05 && !removed && !vdr_caPMTLen)
     return;
@@ -190,6 +191,49 @@ void CAPMT::send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt)
 
   //sending data
   SockHandler->Write(caPMT, toWrite);
+}
+
+uint16_t CAPMT::GetCAIDFromPid(int adapter_index, int pid, int& sid)
+{
+	sid = 0;
+	if (pid <= 0) return 0;
+	//DEBUGLOG("%s: adapter_index:%d pid:%d", __FUNCTION__, adapter_index, pid);
+	cMutexLock lock(&mutex);
+
+	vector<pmtobj>::iterator it;
+
+	if (!pmt.empty())
+	{
+		for (it = pmt.begin(); it != pmt.end(); ++it)
+		{
+			//DEBUGLOG("%s: TEST adapter_index:%d pid:%d SID:%04X CAID:%04X", __FUNCTION__, it->adapter, it->pid, it->sid, it->caid);
+			if (it->pid == pid && it->adapter == adapter_index)
+			{
+				sid = it->sid;
+				//DEBUGLOG("%s: FOUND adapter_index:%d pid:%d SID:%04X CAID:%04X", __FUNCTION__, it->adapter, it->pid, it->sid, it->caid);
+				return it->caid;
+			}
+		}
+	}
+	return 0;
+}
+
+uint16_t CAPMT::GetCAIDFromSid(int adapter_index, int sid)
+{
+	cMutexLock lock(&mutex);
+	vector<pmtobj>::iterator it;
+
+	if (!pmt.empty())
+	{
+		for (it = pmt.begin(); it != pmt.end(); ++it)
+		{
+			if (it->sid == sid && it->adapter == adapter_index)
+			{
+				return it->caid;
+			}
+		}
+	}
+	return 0;
 }
 
 void CAPMT::UpdateEcmInfo(int adapter_index, int sid, uint16_t caid, uint16_t pid, uint32_t prid, uint32_t ecmtime, char *cardsystem, char *reader, char *from, char *protocol, int8_t hops)

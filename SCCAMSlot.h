@@ -97,6 +97,7 @@ public:
   virtual const char *GetCamName(void);
   bool ProvidesCa(const int *CaSystemIds);
   virtual void StartDecrypting(void);
+  virtual void StopDecrypting(void); 
 };
 
 #endif // ___SCCAMSLOT_H

@@ -35,38 +35,122 @@ extern "C" {
 #include "openssl/aes.h"
 #endif
 
+#include "DVBAPI.h"
+
 #define MAX_CSA_PID  0x1FFF
-#define MAX_CSA_IDX  16
+#define MAX_CSA_IDX  32    
+#define MAXADAPTER 64     
 #define MAX_KEY_WAIT 25         // max seconds to consider a CW as valid
 
-#include "DVBAPI.h"
 #include "CA.h"
 
 using namespace std;
 
-class DeCSA
+class DeCSA;
+class DeCSAKey //Helper for FFdecsa
 {
-private:
-  int cs;
+public:
+  DeCSAKey();
+  ~DeCSAKey();
+
 #ifndef LIBDVBCSA
-  unsigned char **range, *lastData;
-  void *keys[MAX_CSA_IDX];
+  void* key;
+#else
+  struct dvbcsa_bs_key_s *cs_key_even;
+  struct dvbcsa_bs_key_s *cs_key_odd;
+#endif
+
+  time_t cwSeen;		// last time the CW for the related key was seen
+  time_t lastcwlog;	
+    
+#ifdef LIBSSL
+  void *csa_aes_key;
+#endif    
+  bool Aes;
+  uint32_t algo;
+  uint32_t des_key_schedule[2][32];
+
+  int index;
+
+  bool CWExpired(); //return true if expired
+  bool GetorCreateKeyStruct();
+#ifdef LIBSSL    
+  bool GetorCreateAesKeyStruct();
+#endif 
+  void Des(uint8_t* data, unsigned char parity);
+  void Des_set_key(const unsigned char *cw, unsigned char parity);    
+  bool Set_even_control_word(const unsigned char *even);
+  bool Set_odd_control_word(const unsigned char *odd);
+    
+#ifndef LIBDVBCSA 
+  bool Get_control_words(unsigned char *even, unsigned char *odd);
+  int Decrypt_packets(unsigned char **cluster);
+  void SetFastECMPid(int pid);
+  void Get_FastECM_CAID(int* caid);
+  void Get_FastECM_SID(int* caSid);
+  void Get_FastECM_PID(int* caPid);
+  bool Get_FastECM_struct(FAST_ECM& fecm);
+  void Init_Parity2(bool binitcsa = true);	
+  bool SetFastECMCaidSid(int caid, int sid);
+  int Set_FastECM_CW_Parity(int pid, int parity, bool bforce, int& oldparity, bool& bfirsttimecheck, bool& bnextparityset, bool& bactivparitypatched);
+  void SetActiveParity2(int pid,int parity2);	
+  void InitFastEcmOnCaid(int Caid);
+  bool GetActiveParity(int pid, int& aparity, int& aparity2);
+#endif
+
+  void SetAes(uint32_t usedAes);
+  uint32_t GetAes();
+
+  void SetAlgo(uint32_t usedAlgo);
+  uint32_t GetAlgo();
+
+  cMutex mutexKEY;
+};
+
+
+class DeCSAAdapter
+{
+public:
+  DeCSAAdapter();	
+  ~DeCSAAdapter();
+
+  int cardindex;
+
+  map<int, unsigned char> AdapterPidMap;
+
+  void Init_Parity(DeCSAKey *keys, int sid, int slot,bool bdelete); 
+  void SetDVBAPIPid(DeCSA* parent, int slot, int dvbapiPID);
+  void SetCaPid(int pid, int index);
+  int SearchPIDinMAP(int pid);
+  int GetCaid(DeCSA* parent, int pid);
+  bool Decrypt(DeCSA* parent,unsigned char *data, int len, bool force);
+  void CancelWait();
+
+  cMutex mutexAdapter;
+  cMutex mutexDecrypt;
+  cMutex mutexStopDecrypt;
+
+  int csnew;
+
+#ifndef LIBDVBCSA
+  unsigned char **rangenew;
 #else
   struct dvbcsa_bs_batch_s *cs_tsbbatch_even;
   struct dvbcsa_bs_batch_s *cs_tsbbatch_odd;
-  struct dvbcsa_bs_key_s *cs_key_even[MAX_CSA_IDX];
-  struct dvbcsa_bs_key_s *cs_key_odd[MAX_CSA_IDX];
 #endif
-#ifdef LIBSSL
-  void *csa_aes_keys[MAX_CSA_IDX];
+
+  bool bCW_Waiting;
+  bool bAbort;	
+};
+
+class DeCSA
+{
+public:  
+  DeCSAAdapter DeCSAArray[MAXADAPTER]; 
+  DeCSAKey DeCSAKeyArray[MAX_CSA_IDX]; //maximum MAX_CSA_IDX crypted channesl over all adapters
   unsigned char *ivec[MAX_CSA_IDX];
-#endif
-  uint32_t des_key_schedule[MAX_CSA_IDX][2][32];
-  uint32_t algo[MAX_CSA_IDX];
   uint32_t cipher_mode[MAX_CSA_IDX];
-  time_t cwSeen[MAX_CSA_IDX];   // last time the CW for the related key was seen
-  bool Aes[MAX_CSA_IDX];
-  map<pair<int, int>, unsigned char> pidmap;
+  
   cMutex mutex;
   bool GetKeyStruct(int idx);
   bool GetKeyStructAes(int idx);
@@ -79,15 +163,27 @@ public:
   DeCSA();
   ~DeCSA();
   bool Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool force);
-  bool SetDescr(ca_descr_t *ca_descr, bool initial);
+  bool SetDescr(ca_descr_t *ca_descr, bool initial, int adapter_index); 
   bool SetDescrAes(ca_descr_aes_t *ca_descr_aes, bool initial);
   bool SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid);
   void SetAlgo(uint32_t index, uint32_t usedAlgo);
   void SetAes(uint32_t index, bool usedAes);
   void SetCipherMode(uint32_t index, uint32_t usedCipherMode);
-  bool SetData(ca_descr_data_t *ca_descr_data, bool initial);
+  bool SetData(ca_descr_data_t *ca_descr_data, bool initial);  
+  
+  void SetDVBAPIPid(int adapter, int slot, int dvbapiPID);
+  void SetFastECMPid(int cardindex, int idx, int slot, int dvbapiPID);
+  void StopDecrypt(int adapter_index,int filter_num,int pid);
+  void Init_Parity(int cardindex, int sid, int slot,bool bdelete);
+  void DebugLogPidmap();
+  void InitFastEcmOnCaid(int Caid);
+  int GetCaid(uint8_t adapter_index, int pid);
+  uint32_t GetAlgo(int idx);  
+  uint32_t GetAes(int idx);  
+  void CancelWait();
 };
 
+extern bool IsFastECMCAID(int caCaid);
 extern DeCSA *decsa;
 
 #endif // ___DECSA_H

@@ -21,6 +21,20 @@
 #ifndef FFDECSA_H
 #define FFDECSA_H
 
+//FASTECM helper struct
+#include <map>
+struct FAST_ECM {
+    int nextparity;   //0 undefinded, 1 even, 2 odd
+    uint64_t evenparityTime;
+    uint64_t oddparityTime;
+    int csaSid;
+    int csaCaid;
+    int csaPid;
+
+    std::map <int, int> activparity;  //pid , activeparity, //0 undefinded, 1 even, 2 odd
+    std::map <int, int> activparity2; //pid , activeparity, //0 undefinded, 1 even, 2 odd
+};
+
 //----- public interface
 
 // -- how many packets can be decrypted at the same time
@@ -52,11 +66,24 @@ void set_even_control_word(void *keys, const unsigned char *even);
 void set_odd_control_word(void *keys, const unsigned char *odd);
 
 // -- get control words, 8 bytes each
-//void get_control_words(void *keys, unsigned char *even, unsigned char *odd);
+void get_control_words(void *keys, unsigned char *even, unsigned char *odd);
 
 // -- decrypt many TS packets
 // This interface is a bit complicated because it is designed for maximum speed.
 // Please read doc/how_to_use.txt.
 int decrypt_packets(void *keys, unsigned char **cluster);
+
+//FASTECM start
+int set_FastECM_CW_Parity(void *keys, int pid, int parity,bool bforce, int& oldparity, bool& bfirsttimecheck, bool& bnextparityset, bool& bactivparitypatched);
+void Init_FastECM(void *keys, bool binitcsa);
+void setFastECMCaidSid(void *keys, int caid, int sid);
+void setFastECMPid(void *keys, int pid);
+void get_FastECM_SID(void *keys, int* sid);
+void get_FastECM_PID(void *keys, int* pid);
+void get_FastECM_CAID(void *keys, int* caid);
+struct FAST_ECM* get_FastECM_struct(void *keys);
+void getActiveParity(void *keys, int pid, int& aparity, int& aparity2);
+uint64_t GetTick(void);
+//FASTECM end
 
 #endif

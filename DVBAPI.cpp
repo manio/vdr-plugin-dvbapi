@@ -30,6 +30,7 @@ static const char *DECSALIB       = "libdvbcsa";
 
 bool CheckExpiredCW = true;
 unsigned int AdapterIndexOffset = 0;
+int ENABLEFASTECM=1;
 
 DVBAPI::DVBAPI(void)
 {
@@ -151,6 +152,8 @@ bool DVBAPI::SetupParse(const char *Name, const char *Value)
     strn0cpy(OSCamHost, Value, sizeof(OSCamHost));
   else if (!strcasecmp(Name, CONFNAME_OSCAMPORT))
     OSCamPort = atoi(Value);
+  else if (!strcasecmp(Name, CONFNAME_OSCAMFASTECM))
+    ENABLEFASTECM = atoi(Value);    
   else if (!strcasecmp(Name, CONFNAME_ADAPTERINDEXOFFSET))
   {
     if (AdapterIndexOffset)
