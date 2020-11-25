@@ -153,7 +153,7 @@ bool DVBAPI::SetupParse(const char *Name, const char *Value)
   else if (!strcasecmp(Name, CONFNAME_OSCAMPORT))
     OSCamPort = atoi(Value);
   else if (!strcasecmp(Name, CONFNAME_OSCAMFASTECM))
-    ENABLEFASTECM = atoi(Value);    
+    ENABLEFASTECM = atoi(Value);
   else if (!strcasecmp(Name, CONFNAME_ADAPTERINDEXOFFSET))
   {
     if (AdapterIndexOffset)

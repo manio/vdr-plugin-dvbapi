@@ -300,19 +300,15 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
       if (ci_cmd == 0x04 || (ci_cmd == -1 && sid == 0 && ca_lm == 0x03))
       {
         DEBUGLOG("%d.%d stop decrypt", cardIndex, slot);
-        capmt->ProcessSIDRequest(cardIndex, sid, ca_lm, NULL, 0);   
+        capmt->ProcessSIDRequest(cardIndex, sid, ca_lm, NULL, 0);
         if (decsa)
-        {
-          decsa->Init_Parity(cardIndex, sid,-1,true);
-        }
+          decsa->Init_Parity(cardIndex, sid, -1, true);
       }
       else if (ci_cmd == 0x01 || (ci_cmd == -1 && sid != 0 && (ca_lm == 0x03 || ca_lm == 0x04 || ca_lm == 0x05)))
       {
         INFOLOG("%d.%d set CAM decrypt (SID %d (0x%04X), caLm %d, HasCaDescriptors %d)", cardIndex, slot, sid, sid, ca_lm, HasCaDescriptors);
         if (decsa)
-        {
-          decsa->Init_Parity(cardIndex,sid,-1,false);
-        }
+          decsa->Init_Parity(cardIndex, sid, -1, false);
 
         if (!HasCaDescriptors)
         {
@@ -337,9 +333,7 @@ void SCCAMSlot::StartDecrypting(void)
 void SCCAMSlot::StopDecrypting(void)
 {
   if (decsa)
-  {
     decsa->CancelWait();
-  }	
 
   cCamSlot::StopDecrypting();
 }

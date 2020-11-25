@@ -33,7 +33,7 @@ private:
   int newLogLevel;
   char newOSCamHost[HOST_NAME_MAX];
   int newOSCamPort;
-  int newENABLEFASTECM;  
+  int newENABLEFASTECM;
 protected:
   virtual void Store(void);
 public:

@@ -16,21 +16,20 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/* ----------------- FASTECM description:
+   The encrypted control word is broadcast in an ECM approximately once every two seconds
+   The Control Word used to encrypt the transport stream packets are changed regularly,
+   usually every 10 seconds.If the Control Words change stops for whatever reason the STBs can use the same Control Word
+   to decrypt the incoming signal until the problem is fixed.This is a serious security issue.
 
-//FASTECM
-//The encrypted control word is broadcast in an ECM approximately once every two seconds
-//The Control Word used to encrypt the transport stream packets are changed regularly,
-//usually every 10 seconds.If the Control Words change stops for whatever reason the STBs can use the same Control Word
-//to decrypt the incoming signal until the problem is fixed.This is a serious security issue.
+   In each PID header there are 2 bits telling the decoder if the Odd or Even Control Word should be used.The ECM
+   normally contains two Control Words.This mechanism allows the ECM to carry both the Control Word currently used
+   and the Control Word which will be used for scrambling the next time the Control Word changes.This ensures that the
+   STB always has the Control Word needed to descramble the content.
 
-//In each PID header there are 2 bits telling the decoder if the Odd or Even Control Word should be used.The ECM
-//normally contains two Control Words.This mechanism allows the ECM to carry both the Control Word currently used
-//and the Control Word which will be used for scrambling the next time the Control Word changes.This ensures that the
-//STB always has the Control Word needed to descramble the content.
-
-//Sky Germany only has one Control Word.
-//We can see the CW around 620ms before it shoul be used.
-
+   Sky Germany only has one Control Word.
+   We can see the CW around 620ms before it shoul be used.
+*/
 
 #include "DeCSA.h"
 #include "Log.h"
@@ -41,12 +40,13 @@ DeCSA *decsa = NULL;
 #define lldcast long long int
 bool IsFastECMCAID(int caCaid)
 {
-  if (caCaid == 0x09C4 || caCaid == 0x098C || caCaid == 0x098D || caCaid == 0x09AF ||//SKY DE 09AF is OBSOLETE
-    caCaid == 0x09CD || //Sky IT
-    caCaid == 0x0963) //Sky UK
+  if (caCaid == 0x09C4 || caCaid == 0x098C || caCaid == 0x098D || caCaid == 0x09AF || //SKY DE 09AF is OBSOLETE
+      caCaid == 0x09CD || //Sky IT
+      caCaid == 0x0963)   //Sky UK
   {
     return true;
   }
+
   return false;
 }
 
@@ -133,7 +133,7 @@ DeCSAKey::DeCSAKey()
   cs_key_odd = NULL;
 #endif
 
-#ifdef LIBSSL    
+#ifdef LIBSSL
   csa_aes_key = NULL;
 #endif
   lastcwlog = 0;
@@ -160,7 +160,7 @@ DeCSAKey::~DeCSAKey()
     dvbcsa_bs_key_free(cs_key_odd);
   cs_key_odd = NULL;
 }
-#endif 
+#endif
 
 #ifdef LIBSSL
   if (csa_aes_key)
@@ -196,7 +196,7 @@ uint32_t DeCSAKey::GetAlgo()
   return algo;
 }
 
-#ifdef LIBSSL 
+#ifdef LIBSSL
 bool DeCSAKey::GetorCreateAesKeyStruct()
 {
   cMutexLock lock(&mutexKEY);
@@ -251,7 +251,7 @@ bool DeCSAKey::CWExpired()
   return false;
 }
 
-#ifndef LIBDVBCSA 
+#ifndef LIBDVBCSA
 bool DeCSAKey::SetFastECMCaidSid(int caid, int sid)
 {
   cMutexLock lock(&mutexKEY);
@@ -287,9 +287,7 @@ void DeCSAKey::Get_FastECM_CAID(int* caid)
   cMutexLock lock(&mutexKEY);
   *caid = 0;
   if (key)
-  {		
     get_FastECM_CAID(key,caid);
-  }
 }
 
 void DeCSAKey::Get_FastECM_SID(int* caSid)
@@ -392,7 +390,7 @@ bool DeCSAKey::Get_control_words(unsigned char *even, unsigned char *odd)
 #endif
 
 void DeCSAKey::Des(uint8_t* data, unsigned char parity)
-{	
+{
   cMutexLock lock(&mutexKEY);
   des(data, des_key_schedule[parity], 0);
 }
@@ -442,9 +440,9 @@ bool DeCSAKey::Set_odd_control_word(const unsigned char *odd)
   return false;
 }
 
-#ifndef LIBDVBCSA 
+#ifndef LIBDVBCSA
 void DeCSAKey::Init_Parity2(bool binitcsa)
-{	
+{
   cMutexLock lock(&mutexKEY);
   if (key)
   {
@@ -466,7 +464,7 @@ DeCSAAdapter::DeCSAAdapter()
   bAbort = false;
 
 #ifndef LIBDVBCSA
-  csnew = get_suggested_cluster_size();  
+  csnew = get_suggested_cluster_size();
   rangenew = MALLOC(unsigned char *, (csnew * 2 + 5));
 #else
   cs = dvbcsa_bs_batch_size();
@@ -486,7 +484,6 @@ DeCSAAdapter::~DeCSAAdapter()
   free(cs_tsbbatch_odd);
 #endif
 }
-
 
 void DeCSAAdapter::CancelWait()
 {
@@ -548,8 +545,8 @@ void DeCSAAdapter::Init_Parity(DeCSAKey *keys, int sid, int slot,bool bdelete)
         DEBUGLOG("Init_Parity delete AdapterPidMap2 cardindex:%d keyindex:%d pid:%d", cardindex, iidx, ipid);
         AdapterPidMap.erase(ipid);
         bEND = false;
-        break;                
-      }			            
+        break;
+      }
     }
   }
   while (bEND == false);
@@ -576,7 +573,7 @@ int DeCSAAdapter::SearchPIDinMAP(int pid)
   return -1;
 }
 
-void DeCSAAdapter::SetCaPid(int pid, int index) 
+void DeCSAAdapter::SetCaPid(int pid, int index)
 {
   cMutexLock lock(&mutexAdapter);
   DEBUGLOG("%s: SetCaPid cardindex:%d pid:%d index:%d", __FUNCTION__, cardindex, pid, index);
@@ -691,19 +688,13 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial, int adapter_index)
       idx, adapter_index,
       ca_descr->parity ? "odd" : "even", ca_descr->index,
       ca_descr->cw[0], ca_descr->cw[1], ca_descr->cw[2], ca_descr->cw[3], ca_descr->cw[4], ca_descr->cw[5], ca_descr->cw[6], ca_descr->cw[7],
-      initial);		
-
+      initial);
 
     DeCSAKeyArray[idx].Des_set_key(ca_descr->cw, ca_descr->parity);
-
     if (ca_descr->parity == 0)
-    {
       DeCSAKeyArray[idx].Set_even_control_word(ca_descr->cw);
-    }
     else
-    {
       DeCSAKeyArray[idx].Set_odd_control_word(ca_descr->cw);
-    }
   }
   return true;
 }
@@ -719,13 +710,13 @@ bool DeCSA::SetDescrAes(ca_descr_aes_t *ca_descr_aes, bool initial)
     DEBUGLOG("%d: %4s aes key set", idx, ca_descr_aes->parity ? "odd" : "even");
     if (ca_descr_aes->parity == 0)
     {
-    	if (DeCSAKeyArray[idx].csa_aes_key)
-        AES_set_decrypt_key(ca_descr_aes->cw, 128, &((struct aes_keys_t *) DeCSAKeyArray[idx].csa_aes_key)->even);     
+      if (DeCSAKeyArray[idx].csa_aes_key)
+        AES_set_decrypt_key(ca_descr_aes->cw, 128, &((struct aes_keys_t *) DeCSAKeyArray[idx].csa_aes_key)->even);
     }
     else
     {
-    	if (DeCSAKeyArray[idx].csa_aes_key)
-        AES_set_decrypt_key(ca_descr_aes->cw, 128, &((struct aes_keys_t *) DeCSAKeyArray[idx].csa_aes_key)->odd);   	      
+      if (DeCSAKeyArray[idx].csa_aes_key)
+        AES_set_decrypt_key(ca_descr_aes->cw, 128, &((struct aes_keys_t *) DeCSAKeyArray[idx].csa_aes_key)->odd);
     }
   }
 #endif
@@ -752,13 +743,9 @@ bool DeCSA::SetData(ca_descr_data_t *ca_descr_data, bool initial)
     {
       DEBUGLOG("%d: %4s aes key set", idx, ca_descr_data->parity ? "odd" : "even");
       if (ca_descr_data->parity == CA_PARITY_EVEN)
-      {
-        AES_set_decrypt_key(ca_descr_data->data, 8 * ca_descr_data->length, &((struct aes_keys_t*) DeCSAKeyArray[idx].csa_aes_key)->even);       
-      }
+        AES_set_decrypt_key(ca_descr_data->data, 8 * ca_descr_data->length, &((struct aes_keys_t*) DeCSAKeyArray[idx].csa_aes_key)->even);
       else
-      {
-        AES_set_decrypt_key(ca_descr_data->data, 8 * ca_descr_data->length, &((struct aes_keys_t*) DeCSAKeyArray[idx].csa_aes_key)->odd);       
-      }
+        AES_set_decrypt_key(ca_descr_data->data, 8 * ca_descr_data->length, &((struct aes_keys_t*) DeCSAKeyArray[idx].csa_aes_key)->odd);
     }
   }
 #endif
@@ -772,9 +759,7 @@ bool DeCSA::SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid)
   if (ca_pid->index < MAX_CSA_IDX && ca_pid->pid < MAX_CSA_PID)
   {
     if (ca_pid->index >= 0 && adapter_index>=0 && adapter_index<MAXADAPTER)
-    {
       DeCSAArray[adapter_index].SetCaPid(ca_pid->pid,ca_pid->index);
-    }  	
     DEBUGLOG("%d.%d: set pid 0x%04x", adapter_index, ca_pid->index, ca_pid->pid);
   }
   else
@@ -785,17 +770,13 @@ bool DeCSA::SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid)
 void DeCSA::SetAlgo(uint32_t index, uint32_t usedAlgo)
 {
   if (index >= 0 && index < MAX_CSA_IDX)
-  {
     DeCSAKeyArray[index].SetAlgo(usedAlgo);
-  }   
 }
 
 void DeCSA::SetAes(uint32_t index, bool usedAes)
 {
   if (index >= 0 && index < MAX_CSA_IDX)
-  {
     DeCSAKeyArray[index].SetAes(usedAes);
-  }    
 }
 
 void DeCSA::SetCipherMode(uint32_t index, uint32_t usedCipherMode)
@@ -834,22 +815,22 @@ unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet)
 
 bool DeCSA::Decrypt(uint8_t adapter_index, unsigned char *data, int len, bool force)
 {
-  if (adapter_index < 0 || adapter_index >= MAXADAPTER) return false;
-  return DeCSAArray[adapter_index].Decrypt(this,data, len, force);
+  if (adapter_index < 0 || adapter_index >= MAXADAPTER)
+    return false;
+  return DeCSAArray[adapter_index].Decrypt(this, data, len, force);
 }
 
 int DeCSA::GetCaid(uint8_t adapter_index, int pid)
 {
-  if (adapter_index < 0 || adapter_index >= MAXADAPTER) return 0;
-  return DeCSAArray[adapter_index].GetCaid(this,pid);
+  if (adapter_index < 0 || adapter_index >= MAXADAPTER)
+    return 0;
+  return DeCSAArray[adapter_index].GetCaid(this, pid);
 }
 
 void DeCSA::CancelWait()
 {
   for (int i = 0;i < MAXADAPTER;i++)
-  {
-    DeCSAArray[i].CancelWait();		
-  }
+    DeCSAArray[i].CancelWait();
 }
 
 void DeCSA::DebugLogPidmap()
@@ -862,7 +843,7 @@ void DeCSA::DebugLogPidmap()
     {
       map<int, unsigned char>::iterator it;
       for (it = DeCSAArray[iadapter].AdapterPidMap.begin(); it != DeCSAArray[iadapter].AdapterPidMap.end(); ++it)
-      {				
+      {
         int ipid = it->first;
         int iidx = it->second;
         FAST_ECM fecm;
@@ -885,42 +866,37 @@ void DeCSA::DebugLogPidmap()
             aparity, aparity2, fecm.nextparity, (lldcast)evendelta, (lldcast)odddelta);
         }
       }
-    }		
+    }
   }
 }
 
 void DeCSA::Init_Parity(int cardindex, int sid, int slot,bool bdelete)
 {
-  if (cardindex < 0) return;
-  if (sid < 0 && slot < 0) return;	
+  if (cardindex < 0)
+    return;
+  if (sid < 0 && slot < 0)
+    return;
   DeCSAArray[cardindex].Init_Parity(DeCSAKeyArray, sid,slot,bdelete);
 }
 
 void DeCSA::SetDVBAPIPid(int adapter, int slot, int dvbapiPID)
 {
   if (adapter>=0 && dvbapiPID >= 0 && slot >= 0 && slot<MAX_CSA_IDX)
-  {
     DeCSAArray[adapter].SetDVBAPIPid(this,slot, dvbapiPID);
-  }
-  else
-  {
-  }
 }
 
 void DeCSA::InitFastEcmOnCaid(int Caid)
 {
   //called when timeout occurs
   //reset all stream with Caid
-  
+
   //initialize disable check (wait for odd, even and so on..)
   for (int i = 0;i < MAX_CSA_IDX;i++)
-  {
-    DeCSAKeyArray[i].InitFastEcmOnCaid(Caid);		
-  }
+    DeCSAKeyArray[i].InitFastEcmOnCaid(Caid);
 }
 
 void DeCSA::SetFastECMPid(int cardindex, int idx,int slot,int dvbapiPID)
-{	
+{
   if (idx>=0 && GetKeyStruct(idx))
   {
     DEBUGLOG("SetDVBAPIPid %d.%d (PID %d (0x%04X))  keyindex:%d",cardindex, slot, dvbapiPID, dvbapiPID, idx);
@@ -929,16 +905,17 @@ void DeCSA::SetFastECMPid(int cardindex, int idx,int slot,int dvbapiPID)
   }
 }
 
-
 uint32_t DeCSA::GetAlgo(int idx)
 {
-  if (idx < 0 || idx >= MAX_CSA_IDX) return -1;
+  if (idx < 0 || idx >= MAX_CSA_IDX)
+    return -1;
   return DeCSAKeyArray[idx].GetAlgo();
 }
 
 uint32_t DeCSA::GetAes(int idx)
 {
-  if (idx < 0 || idx >= MAX_CSA_IDX) return -1;
+  if (idx < 0 || idx >= MAX_CSA_IDX)
+    return -1;
   return DeCSAKeyArray[idx].GetAes();
 }
 
@@ -959,16 +936,14 @@ int DeCSAAdapter::GetCaid(DeCSA* parent, int pid)
           int caCaid = 0;
           parent->DeCSAKeyArray[idx].Get_FastECM_CAID(&caCaid);
           DEBUGLOG("%s: cardindex:%d pid:%d pid:%d  keyindex:%d caid:0x%04X", __FUNCTION__, cardindex,pid,it->first,idx,caCaid);
-        }                
+        }
       }
     }
 
     int caCaid = 0;
     int idx = SearchPIDinMAP(pid);
     if (idx >= 0 && (pid < MAX_CSA_PID))
-    {
       parent->DeCSAKeyArray[idx].Get_FastECM_CAID(&caCaid);
-    }
     DEBUGLOG("%s: DeCSAAdapter::GetCaid %d 0x%04X", __FUNCTION__, pid,caCaid);
     ret = caCaid;
   }
@@ -981,16 +956,16 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
 
   bool blogfull = false;
   cTimeMs starttime(cTimeMs::Now());
-  	
-  cMutexLockHelper lockDecrypt(&mutexDecrypt);      
+
+  cMutexLockHelper lockDecrypt(&mutexDecrypt);
   cMutexLockHelper lockPIDMAPnew(&mutexAdapter);
-  uint64_t sleeptime = 0; 	
-  
+  uint64_t sleeptime = 0;
+
   int itimeout = 2500; //FASTECM maximum wait time for CW
   int iSleep = 50;
-  int imaxSleep = itimeout / iSleep;    
+  int imaxSleep = itimeout / iSleep;
   cTimeMs TimerTimeout(itimeout);
-          	
+
 #ifndef LIBDVBCSA
   if (!rangenew)
 #else
@@ -1000,7 +975,7 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
     ERRORLOG("%s: Error allocating memory for DeCSA", __FUNCTION__);
     return false;
   }
-  
+
   int offset;
 #ifndef LIBDVBCSA
   int r = -2, ccs = 0, currIdx = -1;
@@ -1012,17 +987,16 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
   int cs_fill_even = 0;
   int cs_fill_odd = 0;
 #endif
-
   len -= (TS_SIZE - 1);
   int l;
-  
+
   int wantsparity = 0;
   int curPid = 0;
-    
+
   for (l = 0; l < len; l += TS_SIZE)
   {
     if (data[l] != TS_SYNC_BYTE) // let higher level cope with that
-    {                           
+    {
       break;
     }
     unsigned int ev_od = data[l + 3] & 0xC0;
@@ -1034,7 +1008,7 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
        '11' (0xC0) = Scrambled with odd key
     */
     if (ev_od & 0x80) // encrypted
-    {                           
+    {
       offset = ts_packet_get_payload_offset(data + l);
       #ifdef LIBDVBCSA
       payload_len = TS_SIZE - offset;
@@ -1042,30 +1016,24 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
 
       int pid = ((data[l + 1] << 8) + data[l + 2]) & MAX_CSA_PID;
       int idx = SearchPIDinMAP(pid);
-      
-      //one idx has several pids (all pids belong to channel) 
-      if (idx >= 0 && (pid < MAX_CSA_PID) && (currIdx < 0 || idx == currIdx)) // same or no index      
-      {                         
+
+      //one idx has several pids (all pids belong to channel)
+      if (idx >= 0 && (pid < MAX_CSA_PID) && (currIdx < 0 || idx == currIdx)) // same or no index
+      {
         currIdx = idx;
         curPid = pid;
-        
-        if (ev_od == 0x80) //even
-	      {
-	          wantsparity = 1;
-	      }
-	      else if (ev_od == 0xC0) //odd
-	      {
-	          wantsparity = 2;
-	      }
-	
-	      if (currIdx<0 || (currIdx + 1) >= MAX_CSA_IDX)
-	      {
-	          ERRORLOG("%s: CheckExpiredCW currIdx is out of range %d", __FUNCTION__, currIdx);
-	      }
 
-		    if (!parent->cipher_mode[currIdx] == CA_MODE_ECB && !parent->GetAes(currIdx) && parent->DeCSAKeyArray[currIdx].CWExpired())
-			    return false;
-          
+        if (ev_od == 0x80) //even
+          wantsparity = 1;
+        else if (ev_od == 0xC0) //odd
+          wantsparity = 2;
+
+        if (currIdx<0 || (currIdx + 1) >= MAX_CSA_IDX)
+          ERRORLOG("%s: CheckExpiredCW currIdx is out of range %d", __FUNCTION__, currIdx);
+
+        if (!parent->cipher_mode[currIdx] == CA_MODE_ECB && !parent->GetAes(currIdx) && parent->DeCSAKeyArray[currIdx].CWExpired())
+          return false;
+
         if (parent->GetAlgo(currIdx) == CA_ALGO_DES)
         {
           if ((ev_od & 0x40) == 0)
@@ -1081,51 +1049,43 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
           data[l + 3] &= 0x3f;    // consider it decrypted now
         }
 #ifdef LIBSSL
-		    else if (parent->GetAlgo(currIdx) == CA_ALGO_AES128)   //extended cw mode
-		    {
-			    if (parent->cipher_mode[currIdx] == CA_MODE_ECB)
-			    {
-				    AES_KEY aes_key;
-				    data[l + 3] &= 0x3f;    // consider it decrypted now
+        else if (parent->GetAlgo(currIdx) == CA_ALGO_AES128)   //extended cw mode
+        {
+          if (parent->cipher_mode[currIdx] == CA_MODE_ECB)
+          {
+            AES_KEY aes_key;
+            data[l + 3] &= 0x3f;    // consider it decrypted now
 
-				    if (data[l + 3] & 0x20)
-				    {
-					    if ((188 - offset) >> 4 == 0)
-						    return true;
-				    }
-				    if (((ev_od & 0x40) >> 6) == 0)
-				    {
-					    aes_key = ((struct aes_keys_t*) parent->DeCSAKeyArray[currIdx].csa_aes_key)->even;
-				    }
-				    else
-				    {
-					    aes_key = ((struct aes_keys_t*) parent->DeCSAKeyArray[currIdx].csa_aes_key)->odd;
-				    }
-				    for (int j = offset; j + 16 <= 188; j += 16)
-					    AES_ecb_encrypt(&data[l + j], &data[l + j], &aes_key, AES_DECRYPT);
-			    }
-			    else if (parent->cipher_mode[currIdx] == CA_MODE_CBC)
-			    {
-				    AES_KEY aes_key;
-				    data[l + 3] &= 0x3f;    // consider it decrypted now
+            if (data[l + 3] & 0x20)
+            {
+              if ((188 - offset) >> 4 == 0)
+                return true;
+            }
+            if (((ev_od & 0x40) >> 6) == 0)
+              aes_key = ((struct aes_keys_t*) parent->DeCSAKeyArray[currIdx].csa_aes_key)->even;
+            else
+              aes_key = ((struct aes_keys_t*) parent->DeCSAKeyArray[currIdx].csa_aes_key)->odd;
+            for (int j = offset; j + 16 <= 188; j += 16)
+              AES_ecb_encrypt(&data[l + j], &data[l + j], &aes_key, AES_DECRYPT);
+          }
+          else if (parent->cipher_mode[currIdx] == CA_MODE_CBC)
+          {
+            AES_KEY aes_key;
+            data[l + 3] &= 0x3f;    // consider it decrypted now
 
-				    if (data[l + 3] & 0x20)
-				    {
-					    if ((188 - offset) >> 4 == 0)
-						    return true;
-				    }
-				    if (((ev_od & 0x40) >> 6) == 0)
-				    {
-					    aes_key = ((struct aes_keys_t*) parent->DeCSAKeyArray[currIdx].csa_aes_key)->even;
-				    }
-				    else
-				    {
-					    aes_key = ((struct aes_keys_t*) parent->DeCSAKeyArray[currIdx].csa_aes_key)->odd;
-				    }
-				    for (int j = offset; j + 16 <= 188; j += 16)
-					    AES_cbc_encrypt(&data[l + j], &data[l + j], 16, &aes_key, parent->ivec[currIdx], AES_DECRYPT);
-			    }
-	      }
+            if (data[l + 3] & 0x20)
+            {
+              if ((188 - offset) >> 4 == 0)
+                return true;
+            }
+            if (((ev_od & 0x40) >> 6) == 0)
+              aes_key = ((struct aes_keys_t*) parent->DeCSAKeyArray[currIdx].csa_aes_key)->even;
+            else
+              aes_key = ((struct aes_keys_t*) parent->DeCSAKeyArray[currIdx].csa_aes_key)->odd;
+            for (int j = offset; j + 16 <= 188; j += 16)
+              AES_cbc_encrypt(&data[l + j], &data[l + j], 16, &aes_key, parent->ivec[currIdx], AES_DECRYPT);
+          }
+        }
         else if (parent->GetAes(currIdx))
         {
           AES_KEY aes_key;
@@ -1137,14 +1097,14 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
               return true;
           }
           if (((ev_od & 0x40) >> 6) == 0)
-          {              
+          {
             if (parent->DeCSAKeyArray[currIdx].csa_aes_key)
-              aes_key = ((struct aes_keys_t *) parent->DeCSAKeyArray[currIdx].csa_aes_key)->even; 
+              aes_key = ((struct aes_keys_t *) parent->DeCSAKeyArray[currIdx].csa_aes_key)->even;
           }
           else
           {
             if (parent->DeCSAKeyArray[currIdx].csa_aes_key)
-              aes_key = ((struct aes_keys_t *) parent->DeCSAKeyArray[currIdx].csa_aes_key)->odd; 
+              aes_key = ((struct aes_keys_t *) parent->DeCSAKeyArray[currIdx].csa_aes_key)->odd;
           }
           for (int j = offset; j + 16 <= 188; j += 16)
             AES_ecb_encrypt(&data[l + j], &data[l + j], &aes_key, AES_DECRYPT);
@@ -1161,7 +1121,7 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
             rangenew[r + 2] = 0;
           }
           rangenew[r + 1] = &data[l + TS_SIZE];
-#else  
+#else
           data[l + 3] &= 0x3f;    // consider it decrypted now
           if (((ev_od & 0x40) >> 6) == 0)
           {
@@ -1169,13 +1129,13 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
             cs_tsbbatch_even[cs_fill_even].len = payload_len;
             cs_fill_even++;
           }
-    	    else
+          else
           {
             cs_tsbbatch_odd[cs_fill_odd].data = &data[l + offset];
             cs_tsbbatch_odd[cs_fill_odd].len = payload_len;
             cs_fill_odd++;
           }
-#endif      
+#endif
           if (++ccs >= csnew)
             break;
         }
@@ -1183,26 +1143,26 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
 #ifndef LIBDVBCSA
     else
       newRange = true;        // other index, create hole
-#endif      
+#endif
     }
     else // unencrypted
-    {                           
+    {
       // nothing, we don't create holes for unencrypted packets
     }
   }
-  
+
   if (currIdx >= 0 && (parent->GetAlgo(currIdx) == CA_ALGO_DES || parent->DeCSAKeyArray[currIdx].Aes || parent->GetAlgo(currIdx) == CA_ALGO_AES128))
-	  return true;
+    return true;
 
 #ifndef LIBDVBCSA
   if (r >= 0) // we have some range
-  {                             
+  {
     if (ccs >= csnew || force)
     {
       if (currIdx >= 0 && parent->GetKeyStruct(currIdx))
       {
-      	if (wantsparity > 0)
-        {            			
+        if (wantsparity > 0)
+        {
           bool bFastECM = false;
           int caCaid = -1;
           int caSid = -1;
@@ -1232,11 +1192,11 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
               }
             }
 
-				    if (IsFastECMCAID(caCaid))               
+            if (IsFastECMCAID(caCaid))
             {
               if (bdebuglogoCAID)
               {
-                DEBUGLOG("%s: using Fast ECM adapter:%d CAID: %04X SID: %04X parity:%d pid:%d keyindex:%d", 
+                DEBUGLOG("%s: using Fast ECM adapter:%d CAID: %04X SID: %04X parity:%d pid:%d keyindex:%d",
                   __FUNCTION__, adapter_index, caCaid, caSid, wantsparity, curPid, currIdx);
                   parent->DebugLogPidmap();
               }
@@ -1246,7 +1206,7 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
             {
               if (bdebuglogoCAID)
               {
-                DEBUGLOG("%s: not using Fast ECM adapter:%d CAID: %04X SID: %04X parity:%d pid:%d keyindex:%d", 
+                DEBUGLOG("%s: not using Fast ECM adapter:%d CAID: %04X SID: %04X parity:%d pid:%d keyindex:%d",
                   __FUNCTION__, adapter_index, caCaid, caSid, wantsparity, curPid, currIdx);
                   parent->DebugLogPidmap();
               }
@@ -1283,20 +1243,20 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
             //DEBUGLOG("%s: set_FastECM_CW_Parity ALL OK debugev_od:%d", __FUNCTION__, debugev_od);
             if (oldparity != wantsparity)
             {
-                DEBUGLOG("FastECM need new CW Parity - changed from old:%d new:%d pid:%d keyindex:%d adapter:%d", oldparity, wantsparity, curPid, currIdx, adapter_index); 
+                DEBUGLOG("FastECM need new CW Parity - changed from old:%d new:%d pid:%d keyindex:%d adapter:%d", oldparity, wantsparity, curPid, currIdx, adapter_index);
             }
             if (iok == 0 && bFastECM)
             {
               bCW_Waiting = true;
-              cMutexLock lockstop(&mutexStopDecrypt);              
-              ERRORLOG("%s: set_FastECM_CW_Parity MUST WAIT parity:%d pid:%d keyindex:%d adapter:%d len:%d", __FUNCTION__, 
+              cMutexLock lockstop(&mutexStopDecrypt);
+              ERRORLOG("%s: set_FastECM_CW_Parity MUST WAIT parity:%d pid:%d keyindex:%d adapter:%d len:%d", __FUNCTION__,
                 wantsparity, curPid, currIdx, adapter_index, len);
               parent->DebugLogPidmap();
               int isleepcount = 0;
               do
               {
                 isleepcount++;
-                lockPIDMAPnew.UnLock();                        
+                lockPIDMAPnew.UnLock();
                 cCondWait::SleepMs(iSleep);
                 lockPIDMAPnew.ReLock();
                 if (bAbort)
@@ -1319,9 +1279,9 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
                 else
                 {
                   if (TimerTimeout.TimedOut() || isleepcount > imaxSleep)
-                  {										
+                  {
                     parent->DeCSAKeyArray[currIdx].Set_FastECM_CW_Parity(curPid, wantsparity, true, oldparity, bfirsttimecheck, bnextparityset, bactivparitypatched); //otherwise we sleep every time.
-                    //InitFastEcmOnCaid(caCaid); 
+                    //InitFastEcmOnCaid(caCaid);
                     parent->DeCSAKeyArray[currIdx].Init_Parity2(false);
                     sleeptime = starttime.Elapsed();
                     ERRORLOG("%s: set_FastECM_CW_Parity MUST WAIT TIMEOUT parity:%d pid:%d keyindex:%d adapter:%d len:%d time:%lld", __FUNCTION__,
@@ -1343,7 +1303,7 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
           {
             FAST_ECM fecm;
             if (parent->DeCSAKeyArray[currIdx].Get_FastECM_struct(fecm))
-            {						
+            {
               int aparity2 = fecm.activparity2[curPid];
               int oldparity = aparity2;
               parent->DeCSAKeyArray[currIdx].SetActiveParity2(curPid,wantsparity);
@@ -1354,8 +1314,7 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
             }
           }
         }
-          
-             
+
         if (rangenew)
         {
           int n = parent->DeCSAKeyArray[currIdx].Decrypt_packets(rangenew);
@@ -1375,9 +1334,9 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
         }
       }
     }
-  }  
+  }
 #else
-  if (currIdx >= 0  && wantsparity > 0 && parent->GetorCreateKeyStruct(currIdx) )
+  if (currIdx >= 0 && wantsparity > 0 && parent->GetorCreateKeyStruct(currIdx) )
   {
     if (cs_fill_even)
     {
@@ -1395,10 +1354,10 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
   return false;
 }
 
-
 void DeCSA::StopDecrypt(int adapter_index,int filter_num,int pid)
 {
-  if (adapter_index < 0 || adapter_index >= MAXADAPTER) return;
+  if (adapter_index < 0 || adapter_index >= MAXADAPTER)
+    return;
 
   if (DeCSAArray[adapter_index].bCW_Waiting)
   {

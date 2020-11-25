@@ -43,13 +43,13 @@ uint64_t GetTick(void)
                 if (clock_gettime(CLOCK_MONOTONIC, &tp) == 0) {
                     //dsyslog("cTimeMs: using monotonic clock (resolution is %ld ns)", Resolution);
                     monotonic = true;
-                }				
-            }			
+                }
+            }
         }
-        
+
         initialized = true;
     }
-    if (monotonic) 
+    if (monotonic)
     {
         if (clock_gettime(CLOCK_MONOTONIC, &tp) == 0)
             return (uint64_t(tp.tv_sec)) * 1000 + tp.tv_nsec / 1000000;
@@ -584,13 +584,13 @@ void set_control_words(void *keys, const unsigned char *ev, const unsigned char 
 }
 
 void set_even_control_word(void *keys, const unsigned char *pk){
-	((struct csa_keys_t *)keys)->fastecm.nextparity = 1;
+  ((struct csa_keys_t *)keys)->fastecm.nextparity = 1;
   ((struct csa_keys_t *)keys)->fastecm.evenparityTime = GetTick();
   schedule_key(&((struct csa_keys_t *)keys)->even,pk);
 }
 
 void set_odd_control_word(void *keys, const unsigned char *pk){
-	((struct csa_keys_t *)keys)->fastecm.nextparity = 2;
+  ((struct csa_keys_t *)keys)->fastecm.nextparity = 2;
   ((struct csa_keys_t *)keys)->fastecm.oddparityTime = GetTick();
   schedule_key(&((struct csa_keys_t *)keys)->odd,pk);
 }
@@ -962,8 +962,6 @@ DBG(dump_mem("23jd_after_ib_decrypt_data ",encp[g],8,8));
   return advanced;
 }
 
-
-
 //FASTECM START
 void get_FastECM_SID(void *keys, int* sid)
 {
@@ -973,7 +971,6 @@ void get_FastECM_SID(void *keys, int* sid)
         *sid = ((struct csa_keys_t *)keys)->fastecm.csaSid;
     }
 }
-
 
 void get_FastECM_PID(void *keys, int* pid)
 {
@@ -993,7 +990,6 @@ void get_FastECM_CAID(void *keys, int* caid)
     }
 }
 
-
 void setFastECMPid(void *keys, int pid)
 {
     if (keys)
@@ -1003,7 +999,6 @@ void setFastECMPid(void *keys, int pid)
         //((struct csa_keys_t *)keys)->csaCaid = 0;
     }
 }
-
 
 void setFastECMCaidSid(void *keys, int caid, int sid)
 {
@@ -1030,7 +1025,7 @@ void Init_FastECM(void *keys,bool binitcsa)
         ((struct csa_keys_t *)keys)->fastecm.nextparity = 0;
 
         ((struct csa_keys_t *)keys)->fastecm.activparity.clear();
-        ((struct csa_keys_t *)keys)->fastecm.activparity2.clear();		
+        ((struct csa_keys_t *)keys)->fastecm.activparity2.clear();
 
         if (binitcsa)
         {
@@ -1040,7 +1035,6 @@ void Init_FastECM(void *keys,bool binitcsa)
         }
     }
 }
-
 
 void getActiveParity(void *keys, int pid, int& aparity, int& aparity2)
 {
@@ -1068,7 +1062,7 @@ void getActiveParity(void *keys, int pid, int& aparity, int& aparity2)
 }
 
 int set_FastECM_CW_Parity(void *keys,int pid, int parity, bool bforce, int& oldparity, bool& bfirsttimecheck, bool& bnextparityset, bool& bactivparitypatched) //XXONURCW
-{	 
+{
     bfirsttimecheck = false;
     bnextparityset = false;
     bactivparitypatched = false;
@@ -1088,7 +1082,7 @@ int set_FastECM_CW_Parity(void *keys,int pid, int parity, bool bforce, int& oldp
         return 1;
 
     if (bforce)
-    {		
+    {
         skeys->fastecm.activparity[pid] = parity;
         return 1;
     }
@@ -1104,7 +1098,7 @@ int set_FastECM_CW_Parity(void *keys,int pid, int parity, bool bforce, int& oldp
         skeys->fastecm.activparity[pid] = parity;
         if (skeys->fastecm.nextparity == parity)
         {
-            //das nächste ist die größere time
+            //das nÃ¤chste ist die grÃ¶ÃŸere time
             if (skeys->fastecm.evenparityTime > 0 && skeys->fastecm.evenparityTime >= skeys->fastecm.oddparityTime)
             {
                 skeys->fastecm.nextparity = 1;
@@ -1129,7 +1123,7 @@ int set_FastECM_CW_Parity(void *keys,int pid, int parity, bool bforce, int& oldp
             skeys->fastecm.activparity[pid] = parity;
             return 1;
         }
-        else 
+        else
         {
             //on decrypt start, even and odd comes together. sky germany only send one CW, other channels send both every time
             //in that case both paritys are correct?
