@@ -271,7 +271,7 @@ void SocketHandler::Action(void)
       ca_descr.index = ntohl(ca_descr.index);
       ca_descr.parity = ntohl(ca_descr.parity);
       decsa->SetAes(ca_descr_aes.index, false);
-      decsa->SetDescr(&ca_descr, false);
+      decsa->SetDescr(&ca_descr, false, adapter_index);
       DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr.index);
     }
     else if (*request == CA_SET_DESCR_AES)

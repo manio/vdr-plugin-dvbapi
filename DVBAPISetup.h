@@ -25,6 +25,7 @@
 #define CONFNAME_OSCAMHOST           "OSCamHost"
 #define CONFNAME_OSCAMPORT           "OSCamPort"
 #define CONFNAME_ADAPTERINDEXOFFSET  "AdapterIndexOffset"
+#define CONFNAME_OSCAMFASTECM        "OSCamFastECM"
 
 class cMenuSetupDVBAPI : public cMenuSetupPage
 {
@@ -32,6 +33,7 @@ private:
   int newLogLevel;
   char newOSCamHost[HOST_NAME_MAX];
   int newOSCamPort;
+  int newENABLEFASTECM;
 protected:
   virtual void Store(void);
 public:

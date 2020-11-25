@@ -19,6 +19,8 @@
 #ifndef ___DVBAPI_H
 #define ___DVBAPI_H
 
+extern int ENABLEFASTECM;
+
 #include <getopt.h>
 #include <vdr/plugin.h>
 #include "SCCIAdapter.h"

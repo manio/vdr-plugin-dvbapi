@@ -16,6 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include "DVBAPI.h"
 #include "DVBAPISetup.h"
 
 int LogLevel = 2;
@@ -30,6 +31,8 @@ cMenuSetupDVBAPI::cMenuSetupDVBAPI(void)
   Add(new cMenuEditStrItem( *cString::sprintf("OSCam %s", tr("Host")), newOSCamHost, sizeof(newOSCamHost)));
   Add(new cMenuEditIntItem( *cString::sprintf("OSCam %s", tr("Port")), &newOSCamPort, 1, 0xffff));
   Add(new cMenuEditIntItem( tr("Log level (0-3)"), &newLogLevel, 0, 3));
+  newENABLEFASTECM = ENABLEFASTECM;
+  Add(new cMenuEditIntItem( tr("Enable FastECM"), &newENABLEFASTECM, 0, 1));
 }
 
 void cMenuSetupDVBAPI::Store(void)
@@ -39,4 +42,5 @@ void cMenuSetupDVBAPI::Store(void)
   SetupStore(CONFNAME_LOGLEVEL, LogLevel = newLogLevel);
   SetupStore(CONFNAME_OSCAMHOST, strn0cpy(OSCamHost, newOSCamHost, sizeof(OSCamHost)));
   SetupStore(CONFNAME_OSCAMPORT, OSCamPort = newOSCamPort);
+  SetupStore(CONFNAME_OSCAMFASTECM, ENABLEFASTECM = newENABLEFASTECM);
 }

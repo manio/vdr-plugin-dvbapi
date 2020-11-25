@@ -77,6 +77,8 @@ public:
     return pmt.empty();
   }
   void SendAll();
+  uint16_t GetCAIDFromSid(int adapter_index, int sid);
+  uint16_t GetCAIDFromPid(int adapter_index, int pid, int& sid);
   void UpdateEcmInfo(int adapter_index, int sid, uint16_t caid, uint16_t pid, uint32_t prid, uint32_t ecmtime, char *cardsystem, char *reader, char *from, char *protocol, int8_t hops);
   bool FillEcmInfo(sDVBAPIEcmInfo *ecminfo);
 };

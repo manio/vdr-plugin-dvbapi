@@ -6,6 +6,7 @@ TOC
 5. Plugin and OSCam setup
 6. Commandline options
 7. Note for a plugin developers
+8. Fast ECM
 
 -----------------------------------------------------------------------------
 1. Introduction
@@ -180,3 +181,25 @@ to 5MB of size or more.
 You can find the explanation in the following pull requests:
 https://github.com/manio/vdr-plugin-dvbapi/pull/104
 https://github.com/manio/vdr-plugin-dvbapi/pull/105
+
+-----------------------------------------------------------------------------
+8. Fast ECM
+-----------------------------------------------------------------------------
+
+Description:
+CW Changes usually come 5 seconds before they are needed (enough time to
+decrypt). Some Providers (Sky Germany) are sending CW changes only 600 ms
+before it should be used in Data Stream.
+
+When decryption is delayed the new CW arrives to late and the decryption
+fails. Fast ECM can hold the data stream up to 2500ms until the CW is
+available (odd/even check).
+While this works very good for recordings, live video/audio will stop
+for a brief moment (but usually only for the first time fastecm kicks in).
+
+VDR compatibility:
+Fast ECM needs 16 Megabyte Buffer to work perfect.
+you should patch this in vdr code in file dvbdevice.c, Function cDvbDevice::OpenDvr
+tsBuffer = new cTSBuffer(fd_dvr, MEGABYTE(5), CardIndex() + 1); should be
+tsBuffer = new cTSBuffer(fd_dvr, MEGABYTE(16), CardIndex() + 1);
+Maybe this will get default in later vdr releases (>2.4.4).
