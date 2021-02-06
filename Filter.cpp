@@ -32,11 +32,11 @@ bool cDvbapiFilter::SetFilter(uint8_t adapter_index, int pid, int start, unsigne
   if ((unsigned) pid < MAX_CSA_PID)
   {
     DEBUGLOG("%s: adapter=%d set FILTER pid=%04X start=%d, demux=%d, filter=%d", __FUNCTION__, adapter_index, pid, start, demux, num);
-
+#ifndef LIBDVBCSA
     int inum = num;
     if (decsa && inum==1)
       decsa->SetDVBAPIPid(adapter_index, demux, pid);
-
+#endif
     vector<dmxfilter> *flt = pidmap[make_pair(adapter_index, pid)];
     vector<dmxfilter>::iterator it;
     if (start == 1 && filter && mask)

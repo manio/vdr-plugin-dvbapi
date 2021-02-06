@@ -58,6 +58,7 @@ public:
 #else
   struct dvbcsa_bs_key_s *cs_key_even;
   struct dvbcsa_bs_key_s *cs_key_odd;
+  ca_descr_t *ca_descr;
 #endif
 
   time_t cwSeen;                // last time the CW for the related key was seen
@@ -118,10 +119,14 @@ public:
   map<int, unsigned char> AdapterPidMap;
 
   void Init_Parity(DeCSAKey *keys, int sid, int slot,bool bdelete);
+#ifndef LIBDVBCSA
   void SetDVBAPIPid(DeCSA* parent, int slot, int dvbapiPID);
+#endif
   void SetCaPid(int pid, int index);
   int SearchPIDinMAP(int pid);
+#ifndef LIBDVBCSA
   int GetCaid(DeCSA* parent, int pid);
+#endif
   bool Decrypt(DeCSA* parent,unsigned char *data, int len, bool force);
   void CancelWait();
 
@@ -134,6 +139,7 @@ public:
 #ifndef LIBDVBCSA
   unsigned char **rangenew;
 #else
+  unsigned int cs;
   struct dvbcsa_bs_batch_s *cs_tsbbatch_even;
   struct dvbcsa_bs_batch_s *cs_tsbbatch_odd;
 #endif
@@ -170,19 +176,23 @@ public:
   void SetCipherMode(uint32_t index, uint32_t usedCipherMode);
   bool SetData(ca_descr_data_t *ca_descr_data, bool initial);
 
+  void StopDecrypt(int adapter_index,int filter_num,int pid);
+#ifndef LIBDVBCSA
+  void Init_Parity(int cardindex, int sid, int slot,bool bdelete);
   void SetDVBAPIPid(int adapter, int slot, int dvbapiPID);
   void SetFastECMPid(int cardindex, int idx, int slot, int dvbapiPID);
-  void StopDecrypt(int adapter_index,int filter_num,int pid);
-  void Init_Parity(int cardindex, int sid, int slot,bool bdelete);
   void DebugLogPidmap();
   void InitFastEcmOnCaid(int Caid);
   int GetCaid(uint8_t adapter_index, int pid);
+#endif
   uint32_t GetAlgo(int idx);
   uint32_t GetAes(int idx);
   void CancelWait();
 };
 
+#ifndef LIBDVBCSA
 extern bool IsFastECMCAID(int caCaid);
+#endif
 extern DeCSA *decsa;
 
 #endif // ___DECSA_H
