@@ -139,7 +139,7 @@ public:
 #ifndef LIBDVBCSA
   unsigned char **rangenew;
 #else
-  unsigned int cs;
+  int cs;
   struct dvbcsa_bs_batch_s *cs_tsbbatch_even;
   struct dvbcsa_bs_batch_s *cs_tsbbatch_odd;
 #endif

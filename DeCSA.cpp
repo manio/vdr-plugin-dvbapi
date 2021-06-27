@@ -202,7 +202,7 @@ bool DeCSAKey::GetorCreateAesKeyStruct()
   cMutexLock lock(&mutexKEY);
   if (!csa_aes_key)
   {
-    DEBUGLOG("GetorCreateAesKeyStruct - Init_Parity  keyindex:%d", index);
+    DEBUGLOG("GetorCreateAesKeyStruct - keyindex:%d", index);
     csa_aes_key = aes_get_key_struct();
   }
   return csa_aes_key != 0;
@@ -215,15 +215,21 @@ bool DeCSAKey::GetorCreateKeyStruct()
 #ifndef LIBDVBCSA
   if (!key)
   {
-    DEBUGLOG("GetorCreateKeyStruct - Init_Parity  keyindex:%d", index);
+    DEBUGLOG("GetorCreateKeyStruct - keyindex:%d", index);
     key = get_key_struct();
   }
   return key != 0;
 #else
   if (!cs_key_even)
+  {
+    DEBUGLOG("GetorCreateKeyStruct - even, keyindex:%d", index);
     cs_key_even = dvbcsa_bs_key_alloc();
+  }
   if (!cs_key_odd)
+  {
+    DEBUGLOG("GetorCreateKeyStruct - odd, keyindex:%d", index);
     cs_key_odd = dvbcsa_bs_key_alloc();
+  }
   return (cs_key_even != 0) && (cs_key_odd != 0);
 #endif
 }
@@ -684,13 +690,13 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial, int adapter_index)
       idx, adapter_index,
       cwodd[0], cwodd[1], cwodd[2], cwodd[3], cwodd[4], cwodd[5], cwodd[6], cwodd[7],
       (lldcast)odddelta, fecm.nextparity, fecm.csaSid, fecm.csaCaid, fecm.csaPid);
-
+#endif
     DEBUGLOG("keyindex:%d adapter:%d  %4s CW key set index:%d CW: %02x %02x %02x %02x %02x %02x %02x %02x initial:%d",
       idx, adapter_index,
       ca_descr->parity ? "odd" : "even", ca_descr->index,
       ca_descr->cw[0], ca_descr->cw[1], ca_descr->cw[2], ca_descr->cw[3], ca_descr->cw[4], ca_descr->cw[5], ca_descr->cw[6], ca_descr->cw[7],
       initial);
-#endif
+
     DeCSAKeyArray[idx].Des_set_key(ca_descr->cw, ca_descr->parity);
     if (ca_descr->parity == 0)
       DeCSAKeyArray[idx].Set_even_control_word(ca_descr->cw);
@@ -1129,6 +1135,9 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
             rangenew[r + 2] = 0;
           }
           rangenew[r + 1] = &data[l + TS_SIZE];
+
+          if (++ccs >= csnew)
+            break;
 #else
           data[l + 3] &= 0x3f;    // consider it decrypted now
           if (((ev_od & 0x40) >> 6) == 0)
@@ -1143,9 +1152,10 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
             cs_tsbbatch_odd[cs_fill_odd].len = payload_len;
             cs_fill_odd++;
           }
-#endif
-          if (++ccs >= csnew)
+
+          if (++ccs >= cs)
             break;
+#endif
         }
       }
 #ifndef LIBDVBCSA
