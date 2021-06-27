@@ -23,6 +23,7 @@
 
 //FASTECM helper struct
 #include <map>
+#include <cstdint>
 struct FAST_ECM {
     int nextparity;   //0 undefinded, 1 even, 2 odd
     uint64_t evenparityTime;
