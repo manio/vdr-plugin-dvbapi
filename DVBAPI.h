@@ -29,7 +29,7 @@ extern int ENABLEFASTECM;
 #define GITVERSION ""
 #endif
 
-#define VERSION                   "2.2.5" GITVERSION
+#define VERSION                   "2.2.6" GITVERSION
 static const char *DESCRIPTION    = trNOOP("SoftCAM for OSCam");
 
 class SCCIAdapter;
