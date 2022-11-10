@@ -61,10 +61,10 @@ void free_key_struct(void *keys);
 void set_control_words(void *keys, const unsigned char *even, const unsigned char *odd);
 
 // -- set even control word, 8 bytes
-void set_even_control_word(void *keys, const unsigned char *even);
+void set_even_control_word(void *keys, const unsigned char *even, const unsigned char ecm);
 
 // -- set odd control word, 8 bytes
-void set_odd_control_word(void *keys, const unsigned char *odd);
+void set_odd_control_word(void *keys, const unsigned char *odd, const unsigned char ecm);
 
 // -- get control words, 8 bytes each
 void get_control_words(void *keys, unsigned char *even, unsigned char *odd);

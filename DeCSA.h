@@ -80,8 +80,8 @@ public:
 #endif
   void Des(uint8_t* data, unsigned char parity);
   void Des_set_key(const unsigned char *cw, unsigned char parity);
-  bool Set_even_control_word(const unsigned char *even);
-  bool Set_odd_control_word(const unsigned char *odd);
+  bool Set_even_control_word(const unsigned char *even, const unsigned char ecm);
+  bool Set_odd_control_word(const unsigned char *odd, const unsigned char ecm);
 
 #ifndef LIBDVBCSA
   bool Get_control_words(unsigned char *even, unsigned char *odd);

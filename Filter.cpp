@@ -137,6 +137,61 @@ void cDvbapiFilter::StopAllFilters()
   pidmap.clear();
 }
 
+unsigned char cDvbapiFilter::GetECM(uint8_t adapter_index, ca_descr_t* ca_descr) //XX_ICAM_XX
+{
+  if (!ca_descr) return 0;
+  map<pair<int, int>, vector<dmxfilter>*>::iterator it;
+  for (it = pidmap.begin(); it != pidmap.end(); ++it)
+  {
+    auto p1 = it->first;
+    int adapter_index2 = p1.first;
+    int pid = p1.second;
+    if (adapter_index2 == adapter_index)
+    {
+      vector<dmxfilter>* flt = it->second;
+      if (flt)
+      {
+        vector<dmxfilter>::iterator it2;
+        for (it2 = flt->begin(); it2 != flt->end(); ++it2)
+        {
+          if (pid>0 && ca_descr->index == it2->demux_id)
+          {
+            unsigned char ecm = 0;
+            {
+              if (ca_descr->parity == 0)
+              {
+                ecm = it2->ecm_even;
+              }
+              else
+              {
+                ecm = it2->ecm_odd;
+              }
+            }
+            return ecm;
+          }
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+void cDvbapiFilter::SetECM(dmxfilter* filter, int adapter_index, int pid, const unsigned char* data, int len)
+{
+  if (filter && data && len > 0x15)
+  {
+    unsigned char ecm = (data[2] - data[4]) == 4 ? data[0x15] : 0; //if (data[2] - data[4]) == 4) then set ecm to data[0x15]
+    if (data[0] == 0x80)  //even
+    {
+      filter->ecm_even = ecm;
+    }
+    else if (data[0] == 0x81) //odd
+    {
+      filter->ecm_odd = ecm;
+    }
+  }
+}
+
 void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
 {
   cMutexLock lock(&mutex);
@@ -181,6 +236,7 @@ void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
               if (tablelen <= TS_SIZE - 8)       //data fits in one TS_PACKET
               {
                 DEBUGLOG("%s: all data in one TS packet, immediate send", __FUNCTION__);
+                SetECM(&(*it), adapter_index, pid, dat, tablelen + 3);
                 SockHandler->SendFilterData(it->demux_id, it->filter_num, dat, tablelen + 3);
               }
               else              //copying the first part of data
@@ -213,6 +269,7 @@ void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
           if (it->size == it->len)      //we've got all data
           {
             DEBUGLOG("%s: filter data assembled, sending len=%d", __FUNCTION__, it->len + 3);
+            SetECM(&(*it), adapter_index, pid, it->data, it->len + 3);
             SockHandler->SendFilterData(it->demux_id, it->filter_num, it->data, it->len + 3);
             //we don't need this data anymore
             delete it->data;

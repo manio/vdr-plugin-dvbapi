@@ -37,6 +37,9 @@ struct dmxfilter
   unsigned int len;       //total len
   unsigned int size;      //size of saved data
   int lastcc;             //last continuity counter
+
+  unsigned char ecm_even;
+  unsigned char ecm_odd;
 };
 
 class cDvbapiFilter
@@ -50,6 +53,8 @@ public:
   void Analyze(uint8_t adapter_index, unsigned char *data, int len);
   bool SetFilter(uint8_t adapter_index, int pid, int start, unsigned char demux, unsigned char num, unsigned char *filter, unsigned char *mask);
   void StopAllFilters();
+  void SetECM(dmxfilter* filter, int adapter_index, int pid, const unsigned char* data, int len);
+  unsigned char GetECM(uint8_t adapter_index, ca_descr_t* ca_descr);
 };
 
 extern cDvbapiFilter *filter;

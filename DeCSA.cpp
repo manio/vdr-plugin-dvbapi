@@ -406,38 +406,38 @@ void DeCSAKey::Des_set_key(const unsigned char *cw, unsigned char parity)
   des_set_key(cw, des_key_schedule[parity]);
 }
 
-bool DeCSAKey::Set_even_control_word(const unsigned char *even)
+bool DeCSAKey::Set_even_control_word(const unsigned char *even, const unsigned char ecm)
 {
   cMutexLock lock(&mutexKEY);
 #ifndef LIBDVBCSA
   if (key)
   {
-    set_even_control_word(key, even);
+    set_even_control_word(key, even, ecm);
     return true;
   }
 #else
   if (cs_key_even)
   {
-    dvbcsa_bs_key_set(even, cs_key_even);
+    dvbcsa_bs_key_set(even, cs_key_even,ecm); //todo lib must be upgraded to support this.
     return true;
   }
 #endif
   return false;
 }
 
-bool DeCSAKey::Set_odd_control_word(const unsigned char *odd)
+bool DeCSAKey::Set_odd_control_word(const unsigned char *odd, const unsigned char ecm)
 {
   cMutexLock lock(&mutexKEY);
 #ifndef LIBDVBCSA
   if (key)
   {
-    set_odd_control_word(key, odd);
+    set_odd_control_word(key, odd, ecm);
     return true;
   }
 #else
   if (cs_key_odd)
   {
-    dvbcsa_bs_key_set(odd, cs_key_odd);
+    dvbcsa_bs_key_set(odd, cs_key_odd, ecm); //todo lib must be upgraded to support this.
     return true;
   }
 #endif
@@ -698,10 +698,11 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial, int adapter_index)
       initial);
 
     DeCSAKeyArray[idx].Des_set_key(ca_descr->cw, ca_descr->parity);
+    unsigned char ecm = filter->GetECM(adapter_index, ca_descr);
     if (ca_descr->parity == 0)
-      DeCSAKeyArray[idx].Set_even_control_word(ca_descr->cw);
+      DeCSAKeyArray[idx].Set_even_control_word(ca_descr->cw,ecm);
     else
-      DeCSAKeyArray[idx].Set_odd_control_word(ca_descr->cw);
+      DeCSAKeyArray[idx].Set_odd_control_word(ca_descr->cw,ecm);
   }
   return true;
 }
