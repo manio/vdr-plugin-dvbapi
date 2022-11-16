@@ -154,7 +154,7 @@ unsigned char cDvbapiFilter::GetECM(uint8_t adapter_index, ca_descr_t* ca_descr)
         vector<dmxfilter>::iterator it2;
         for (it2 = flt->begin(); it2 != flt->end(); ++it2)
         {
-          if (pid>0 && ca_descr->index == it2->demux_id)
+          if (pid>0 && ca_descr->index == (uint32_t)it2->demux_id)
           {
             unsigned char ecm = 0;
             {
