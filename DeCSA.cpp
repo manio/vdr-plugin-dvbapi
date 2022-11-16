@@ -418,7 +418,11 @@ bool DeCSAKey::Set_even_control_word(const unsigned char *even, const unsigned c
 #else
   if (cs_key_even)
   {
+#ifdef LIBDVBCSA_NEW
     dvbcsa_bs_key_set(even, cs_key_even,ecm); //todo lib must be upgraded to support this.
+#else
+    dvbcsa_bs_key_set(even, cs_key_even); //todo lib must be upgraded to support this.
+#endif
     return true;
   }
 #endif
@@ -437,7 +441,11 @@ bool DeCSAKey::Set_odd_control_word(const unsigned char *odd, const unsigned cha
 #else
   if (cs_key_odd)
   {
+#ifdef LIBDVBCSA_NEW
     dvbcsa_bs_key_set(odd, cs_key_odd, ecm); //todo lib must be upgraded to support this.
+#else
+    dvbcsa_bs_key_set(odd, cs_key_odd); //todo lib must be upgraded to support this.
+#endif
     return true;
   }
 #endif
