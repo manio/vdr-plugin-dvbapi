@@ -419,7 +419,7 @@ bool DeCSAKey::Set_even_control_word(const unsigned char *even, const unsigned c
   if (cs_key_even)
   {
 #ifdef LIBDVBCSA_NEW
-    dvbcsa_bs_key_set_ecm(even, cs_key_even, ecm); //todo lib must be upgraded to support this.
+    dvbcsa_bs_key_set_ecm(ecm, even, cs_key_even); //libdvbcsa must be upgraded to support this.
 #else
     dvbcsa_bs_key_set(even, cs_key_even);
 #endif
@@ -442,7 +442,7 @@ bool DeCSAKey::Set_odd_control_word(const unsigned char *odd, const unsigned cha
   if (cs_key_odd)
   {
 #ifdef LIBDVBCSA_NEW
-    dvbcsa_bs_key_set_ecm(odd, cs_key_odd, ecm); //todo lib must be upgraded to support this.
+    dvbcsa_bs_key_set_ecm(ecm, odd, cs_key_odd); //libdvbcsa must be upgraded to support this.
 #else
     dvbcsa_bs_key_set(odd, cs_key_odd);
 #endif
