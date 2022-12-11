@@ -60,6 +60,11 @@ endif
 
 OBJS = CAPMT.o DeCSA.o DVBAPI.o DVBAPISetup.o SocketHandler.o SCCIAdapter.o Frame.o SCCAMSlot.o Filter.o cscrypt/des.o
 
+# libdvbcsa with icam support
+ifdef LIBDVBCSA_NEW
+LIBDVBCSA = 1
+DEFINES    += -DLIBDVBCSA_NEW
+endif
 ifndef LIBDVBCSA
 # FFdeCSA
 PARALLEL   ?= PARALLEL_128_SSE2
