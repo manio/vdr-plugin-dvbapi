@@ -54,6 +54,10 @@ libdvbcsa library support
 
    make LIBDVBCSA=1
 
+ If you have libdvbcsa with icam support:
+
+   make LIBDVBCSA_NEW=1
+
 libcrypto and libssl
 ====================
  If you want decode AES keys, you need install libcrypto and libssl libraries.
