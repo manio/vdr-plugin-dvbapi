@@ -246,6 +246,7 @@ void SocketHandler::Action(void)
     else
     {
       ERRORLOG("%s: read failed unknown command: %08x", __FUNCTION__, *request);
+      CloseConnection();
       cCondWait::SleepMs(20);
       continue;
     }
