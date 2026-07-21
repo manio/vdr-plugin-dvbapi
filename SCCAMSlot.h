@@ -19,6 +19,7 @@
 #ifndef ___SCCAMSLOT_H
 #define ___SCCAMSLOT_H
 
+#include <atomic>
 #include "SCCIAdapter.h"
 #include "Frame.h"
 #include "Filter.h"
@@ -36,10 +37,13 @@ class DeCSAFillControl
 private:
   int maxWaterMark, timeout, dataInterval;
   int minWaterMark, sleepInterval;
-  int lowWaterMark, lastCount, timeSlept;
-  const uchar *lastData;
-  enum {READY, SLEEP, WRAP} state;
-  int fltTap1, fltTap2;
+  // Reset() runs on channel switches, CanProcess() on the receiver thread; a
+  // mixed view only nudges the heuristic for one batch, so no lock is needed
+  std::atomic<int> lowWaterMark, lastCount, timeSlept;
+  std::atomic<const uchar *> lastData;
+  enum eState {READY, SLEEP, WRAP};
+  std::atomic<eState> state;
+  std::atomic<int> fltTap1, fltTap2;
   int Filter(int Input);
 public:
   DeCSAFillControl(int MaxWaterMark, int Timeout, int DataInterval);

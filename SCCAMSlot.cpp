@@ -409,12 +409,14 @@ bool DeCSAFillControl::CanProcess(const uchar *Data, int Count)
 int DeCSAFillControl::Filter(int Input)
 {
   int ret;
-  if (fltTap1 >= 0 && fltTap2 >= 0)
+  const int tap1 = fltTap1.load();
+  const int tap2 = fltTap2.load();
+  if (tap1 >= 0 && tap2 >= 0)
     // 3-tap median filter
-    ret = std::min(std::max(std::min(Input, fltTap1), fltTap2), std::max(Input, fltTap1));
+    ret = std::min(std::max(std::min(Input, tap1), tap2), std::max(Input, tap1));
   else
     ret = Input;
-  fltTap2 = fltTap1;
+  fltTap2 = tap1;
   fltTap1 = Input;
   return ret;
 }
