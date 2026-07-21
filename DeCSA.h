@@ -124,6 +124,7 @@ public:
 #endif
   void SetCaPid(int pid, int index);
   int SearchPIDinMAP(int pid);
+  int SearchPIDinMAP_locked(int pid);   // with mutexAdapter held
 #ifndef LIBDVBCSA
   int GetCaid(DeCSA* parent, int pid);
 #endif
