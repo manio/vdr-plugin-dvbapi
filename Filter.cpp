@@ -154,7 +154,9 @@ unsigned char cDvbapiFilter::GetECM(uint8_t adapter_index, ca_descr_t* ca_descr)
         vector<dmxfilter>::iterator it2;
         for (it2 = flt->begin(); it2 != flt->end(); ++it2)
         {
-          if (pid>0 && ca_descr->index == (uint32_t)it2->demux_id)
+          // the CAT, SDT and EMM filters of the demux share its index
+          if (pid>0 && ca_descr->index == (uint32_t)it2->demux_id &&
+              (it2->filter[0] & 0xFE) == 0x80)
           {
             unsigned char ecm = 0;
             {
@@ -178,9 +180,14 @@ unsigned char cDvbapiFilter::GetECM(uint8_t adapter_index, ca_descr_t* ca_descr)
 
 void cDvbapiFilter::SetECM(dmxfilter* filter, int adapter_index, int pid, const unsigned char* data, int len)
 {
-  if (filter && data && len > 0x15)
+  if (filter && data && len > 4)
   {
-    unsigned char ecm = (data[2] - data[4]) == 4 ? data[0x15] : 0; //if (data[2] - data[4]) == 4) then set ecm to data[0x15]
+    // as OSCam's select_csa_alt() ? get_ecm_mode() : 0; the CAID is unknown
+    // until OSCam's ECM_INFO, so the ECM structure has to decide
+    int sid = 0;
+    uint16_t caid = capmt ? capmt->GetCAIDFromPid(adapter_index, pid, sid) : 0;
+    bool videoguard = (caid == 0 || (caid >> 8) == 0x09) && data[4] != 0 && data[2] - data[4] == 4;
+    unsigned char ecm = videoguard ? (unsigned char)(data[len - 1] & 0x0F) : 0;
     if (data[0] == 0x80)  //even
     {
       filter->ecm_even = ecm;

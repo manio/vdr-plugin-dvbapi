@@ -78,7 +78,7 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
   //adding new or updating existing PMT data
   if (ca_lm == 0x04 || ca_lm == 0x03)
   {
-    pmtobj pmto;
+    pmtobj pmto = {};
     pmto.sid = sid;
     pmto.len = vdr_caPMTLen;
     pmto.adapter = card_index;
