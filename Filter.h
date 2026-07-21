@@ -38,8 +38,8 @@ struct dmxfilter
   unsigned int size;      //size of saved data
   int lastcc;             //last continuity counter
 
-  unsigned char ecm_even;
-  unsigned char ecm_odd;
+  unsigned char ecm_even = 0;
+  unsigned char ecm_odd = 0;
 };
 
 class cDvbapiFilter
