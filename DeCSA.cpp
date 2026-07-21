@@ -567,22 +567,21 @@ void DeCSAAdapter::Init_Parity(DeCSAKey *keys, int sid, int slot,bool bdelete)
 }
 #endif
 
-int DeCSAAdapter::SearchPIDinMAP(int pid)
+int DeCSAAdapter::SearchPIDinMAP_locked(int pid)
 {
-  cMutexLock lock(&mutexAdapter);
   //we must search for pid, otherwise on tune start we use always idx 0
-  //int idx = -1;
-  map<int, unsigned char>::iterator it;
-  for (it = AdapterPidMap.begin(); it != AdapterPidMap.end(); ++it)
-  {
-    if (it->first == pid)
-    {
-      return it->second;
-    }
-  }
+  map<int, unsigned char>::iterator it = AdapterPidMap.find(pid);
+  if (it != AdapterPidMap.end())
+    return it->second;
 
   //DEBUGLOG("%s: pid not found in m_pidmap cardindex:%d pid:%d(0x%04X) l:%d len:%d", __FUNCTION__, adapter_index,pid,pid, l,len);
   return -1;
+}
+
+int DeCSAAdapter::SearchPIDinMAP(int pid)
+{
+  cMutexLock lock(&mutexAdapter);
+  return SearchPIDinMAP_locked(pid);
 }
 
 void DeCSAAdapter::SetCaPid(int pid, int index)
@@ -1037,7 +1036,7 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
 #endif
 
       int pid = ((data[l + 1] << 8) + data[l + 2]) & MAX_CSA_PID;
-      int idx = SearchPIDinMAP(pid);
+      int idx = SearchPIDinMAP_locked(pid);   // lockPIDMAPnew holds mutexAdapter
 
       // The caller consumes this packet even if its PID is not mapped.
       // Do not repeatedly scan the remaining buffer on its behalf.
