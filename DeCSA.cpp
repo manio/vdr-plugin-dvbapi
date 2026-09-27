@@ -123,7 +123,11 @@ void aes_free_key_struct(void *aeskeys)
 
 DeCSAKey::DeCSAKey()
 {
+  // OSCam sends CA_SET_DESCR_MODE only for the extended CW modes
   Aes = false;
+  algo = CA_ALGO_DVBCSA;
+  cipherMode = CA_MODE_ECB;
+  memset(aesIv, 0, sizeof(aesIv));
   index = -1;
 
 #ifndef LIBDVBCSA
@@ -193,6 +197,18 @@ uint32_t DeCSAKey::GetAlgo()
   return algo;
 }
 
+void DeCSAKey::SetCipherMode(uint32_t usedCipherMode)
+{
+  cMutexLock lock(&mutexKEY);
+  cipherMode = usedCipherMode;
+}
+
+uint32_t DeCSAKey::GetCipherMode()
+{
+  cMutexLock lock(&mutexKEY);
+  return cipherMode;
+}
+
 #ifdef LIBSSL
 bool DeCSAKey::GetorCreateAesKeyStruct()
 {
@@ -203,6 +219,33 @@ bool DeCSAKey::GetorCreateAesKeyStruct()
     csa_aes_key = aes_get_key_struct();
   }
   return csa_aes_key != 0;
+}
+
+bool DeCSAKey::SetAesKey(unsigned int parity, const unsigned char *key, int bits)
+{
+  cMutexLock lock(&mutexKEY);
+  if (!csa_aes_key)
+    return false;
+  aes_keys_t *keys = (aes_keys_t *) csa_aes_key;
+  return AES_set_decrypt_key(key, bits, parity ? &keys->odd : &keys->even) == 0;
+}
+
+// copies, under the lock: the socket thread may replace key and IV any time
+bool DeCSAKey::GetAesKey(unsigned int parity, AES_KEY &key, unsigned char *iv)
+{
+  cMutexLock lock(&mutexKEY);
+  if (!csa_aes_key)
+    return false;
+  aes_keys_t *keys = (aes_keys_t *) csa_aes_key;
+  key = parity ? keys->odd : keys->even;
+  memcpy(iv, aesIv, sizeof(aesIv));
+  return true;
+}
+
+void DeCSAKey::SetAesIv(const unsigned char *iv)
+{
+  cMutexLock lock(&mutexKEY);
+  memcpy(aesIv, iv, sizeof(aesIv));
 }
 #endif
 
@@ -630,7 +673,7 @@ bool DeCSA::GetKeyStruct(int idx)
 #ifdef LIBSSL
 bool DeCSA::GetKeyStructAes(int idx)
 {
-  if (idx >= 0)
+  if (idx >= 0 && idx < MAX_CSA_IDX)
   {
     return DeCSAKeyArray[idx].GetorCreateAesKeyStruct();
   }
@@ -645,6 +688,11 @@ bool DeCSA::SetDescr(ca_descr_t *ca_descr, bool initial, int adapter_index)
   cMutexLock lock(&mutex);
 
   int idx = ca_descr->index;
+  if (ca_descr->parity > 1)
+  {
+    ERRORLOG("%s: invalid parity %u for index %d", __FUNCTION__, ca_descr->parity, idx);
+    return true;
+  }
   if (idx < MAX_CSA_IDX && GetKeyStruct(idx))
   {
 #ifndef LIBDVBCSA
@@ -697,16 +745,7 @@ bool DeCSA::SetDescrAes(ca_descr_aes_t *ca_descr_aes, bool initial)
   if (idx < MAX_CSA_IDX && GetKeyStructAes(idx))
   {
     DEBUGLOG("%d: %4s aes key set", idx, ca_descr_aes->parity ? "odd" : "even");
-    if (ca_descr_aes->parity == 0)
-    {
-      if (DeCSAKeyArray[idx].csa_aes_key)
-        AES_set_decrypt_key(ca_descr_aes->cw, 128, &((struct aes_keys_t *) DeCSAKeyArray[idx].csa_aes_key)->even);
-    }
-    else
-    {
-      if (DeCSAKeyArray[idx].csa_aes_key)
-        AES_set_decrypt_key(ca_descr_aes->cw, 128, &((struct aes_keys_t *) DeCSAKeyArray[idx].csa_aes_key)->odd);
-    }
+    DeCSAKeyArray[idx].SetAesKey(ca_descr_aes->parity, ca_descr_aes->cw, 128);
   }
 #endif
   return true;
@@ -720,22 +759,25 @@ bool DeCSA::SetData(ca_descr_data_t *ca_descr_data, bool initial)
   int idx = ca_descr_data->index;
   if (ca_descr_data->data_type == CA_DATA_IV)
   {
-    if (idx < MAX_CSA_IDX)
+    // copied: the data is only valid during this call
+    if (idx < MAX_CSA_IDX && ca_descr_data->length == 16)
     {
       DEBUGLOG("%d: ivec set", idx);
-      ivec[idx] = ca_descr_data->data;
+      DeCSAKeyArray[idx].SetAesIv(ca_descr_data->data);
     }
+    else
+      ERRORLOG("%s: invalid IV (index %d, length %u)", __FUNCTION__, idx, ca_descr_data->length);
   }
   else if (ca_descr_data->data_type == CA_DATA_KEY)
   {
-    if (idx < MAX_CSA_IDX && GetKeyStructAes(idx))
+    uint32_t len = ca_descr_data->length;
+    if (idx < MAX_CSA_IDX && (len == 16 || len == 24 || len == 32) && GetKeyStructAes(idx))
     {
       DEBUGLOG("%d: %4s aes key set", idx, ca_descr_data->parity ? "odd" : "even");
-      if (ca_descr_data->parity == CA_PARITY_EVEN)
-        AES_set_decrypt_key(ca_descr_data->data, 8 * ca_descr_data->length, &((struct aes_keys_t*) DeCSAKeyArray[idx].csa_aes_key)->even);
-      else
-        AES_set_decrypt_key(ca_descr_data->data, 8 * ca_descr_data->length, &((struct aes_keys_t*) DeCSAKeyArray[idx].csa_aes_key)->odd);
+      DeCSAKeyArray[idx].SetAesKey(ca_descr_data->parity != CA_PARITY_EVEN, ca_descr_data->data, 8 * len);
     }
+    else
+      ERRORLOG("%s: invalid AES key (index %d, length %u)", __FUNCTION__, idx, len);
   }
 #endif
   return true;
@@ -771,7 +813,7 @@ void DeCSA::SetAes(uint32_t index, bool usedAes)
 void DeCSA::SetCipherMode(uint32_t index, uint32_t usedCipherMode)
 {
   if (index < MAX_CSA_IDX)
-    cipher_mode[index] = usedCipherMode;
+    DeCSAKeyArray[index].SetCipherMode(usedCipherMode);
 }
 
 unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet)
@@ -1005,6 +1047,13 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
     if (ev_od & 0x80) // encrypted
     {
       offset = ts_packet_get_payload_offset(data + l);
+      if (!offset)            // no payload: leave the packet as it is
+      {
+#ifndef LIBDVBCSA
+        newRange = true;
+#endif
+        continue;
+      }
 #ifdef LIBDVBCSA
       payload_len = TS_SIZE - offset;
 #endif
@@ -1029,81 +1078,36 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
         else if (ev_od == 0xC0) //odd
           wantsparity = 2;
 
-        if (parent->GetAlgo(currIdx) == CA_ALGO_DES)
+        uint32_t algo = parent->GetAlgo(currIdx);
+        bool aes = parent->GetAes(currIdx);
+
+        if (algo == CA_ALGO_DES)
         {
-          if ((ev_od & 0x40) == 0)
-          {
-            for (int j = offset; j + 7 < 188; j += 8)
-              parent->DeCSAKeyArray[currIdx].Des(&data[l + j],0);
-          }
-          else
-          {
-            for (int j = offset; j + 7 < 188; j += 8)
-              parent->DeCSAKeyArray[currIdx].Des(&data[l + j], 1);
-          }
+          unsigned char parity = (ev_od & 0x40) >> 6;
+          for (int j = offset; j + 8 <= TS_SIZE; j += 8)
+            parent->DeCSAKeyArray[currIdx].Des(&data[l + j], parity);
           data[l + 3] &= 0x3f;    // consider it decrypted now
         }
 #ifdef LIBSSL
-        else if (parent->GetAlgo(currIdx) == CA_ALGO_AES128)   //extended cw mode
+        else if (algo == CA_ALGO_AES128 || aes)
         {
-          if (parent->cipher_mode[currIdx] == CA_MODE_ECB)
-          {
-            AES_KEY aes_key;
-            data[l + 3] &= 0x3f;    // consider it decrypted now
-
-            if (data[l + 3] & 0x20)
-            {
-              if ((188 - offset) >> 4 == 0)
-                return true;
-            }
-            if (((ev_od & 0x40) >> 6) == 0)
-              aes_key = ((struct aes_keys_t*) parent->DeCSAKeyArray[currIdx].csa_aes_key)->even;
-            else
-              aes_key = ((struct aes_keys_t*) parent->DeCSAKeyArray[currIdx].csa_aes_key)->odd;
-            for (int j = offset; j + 16 <= 188; j += 16)
-              AES_ecb_encrypt(&data[l + j], &data[l + j], &aes_key, AES_DECRYPT);
-          }
-          else if (parent->cipher_mode[currIdx] == CA_MODE_CBC)
-          {
-            AES_KEY aes_key;
-            data[l + 3] &= 0x3f;    // consider it decrypted now
-
-            if (data[l + 3] & 0x20)
-            {
-              if ((188 - offset) >> 4 == 0)
-                return true;
-            }
-            if (((ev_od & 0x40) >> 6) == 0)
-              aes_key = ((struct aes_keys_t*) parent->DeCSAKeyArray[currIdx].csa_aes_key)->even;
-            else
-              aes_key = ((struct aes_keys_t*) parent->DeCSAKeyArray[currIdx].csa_aes_key)->odd;
-            for (int j = offset; j + 16 <= 188; j += 16)
-              AES_cbc_encrypt(&data[l + j], &data[l + j], 16, &aes_key, parent->ivec[currIdx], AES_DECRYPT);
-          }
-        }
-        else if (parent->GetAes(currIdx))
-        {
+          // AES128 of the extended CW mode (ECB or CBC), or a CA_SET_DESCR_AES key (ECB)
           AES_KEY aes_key;
+          unsigned char iv[16];
+          if (!parent->DeCSAKeyArray[currIdx].GetAesKey((ev_od & 0x40) >> 6, aes_key, iv))
+            continue;           // no key yet: leave the packet scrambled
           data[l + 3] &= 0x3f;    // consider it decrypted now
-
-          if (data[l+3] & 0x20)
-          {
-            if ((188 - offset) >> 4 == 0)
-              return true;
-          }
-          if (((ev_od & 0x40) >> 6) == 0)
-          {
-            if (parent->DeCSAKeyArray[currIdx].csa_aes_key)
-              aes_key = ((struct aes_keys_t *) parent->DeCSAKeyArray[currIdx].csa_aes_key)->even;
-          }
+          // a residue shorter than one block is transmitted in the clear
+          if (algo == CA_ALGO_AES128 && parent->DeCSAKeyArray[currIdx].GetCipherMode() == CA_MODE_CBC)
+            // the chain restarts from the IV in every packet
+            AES_cbc_encrypt(&data[l + offset], &data[l + offset], (TS_SIZE - offset) & ~15, &aes_key, iv, AES_DECRYPT);
           else
-          {
-            if (parent->DeCSAKeyArray[currIdx].csa_aes_key)
-              aes_key = ((struct aes_keys_t *) parent->DeCSAKeyArray[currIdx].csa_aes_key)->odd;
-          }
-          for (int j = offset; j + 16 <= 188; j += 16)
-            AES_ecb_encrypt(&data[l + j], &data[l + j], &aes_key, AES_DECRYPT);
+            for (int j = offset; j + 16 <= TS_SIZE; j += 16)
+              AES_ecb_encrypt(&data[l + j], &data[l + j], &aes_key, AES_DECRYPT);
         }
+#else
+        else if (algo == CA_ALGO_AES128 || aes)
+          continue;             // built without OpenSSL: CSA would only garble it
 #endif
         else
         {
@@ -1152,7 +1156,7 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
     }
   }
 
-  if (currIdx >= 0 && (parent->GetAlgo(currIdx) == CA_ALGO_DES || parent->DeCSAKeyArray[currIdx].Aes || parent->GetAlgo(currIdx) == CA_ALGO_AES128))
+  if (currIdx >= 0 && (parent->GetAlgo(currIdx) == CA_ALGO_DES || parent->GetAlgo(currIdx) == CA_ALGO_AES128 || parent->GetAes(currIdx)))
     return true;
 
 #ifndef LIBDVBCSA
