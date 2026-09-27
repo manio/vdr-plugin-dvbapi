@@ -19,6 +19,7 @@
 #ifndef ___DECSA_H
 #define ___DECSA_H
 
+#include <atomic>
 #include <map>
 #include <linux/dvb/ca.h>
 #include <vdr/thread.h>
@@ -97,6 +98,8 @@ public:
   void SetActiveParity2(int pid,int parity2);
   void InitFastEcmOnCaid(int Caid);
   bool GetActiveParity(int pid, int& aparity, int& aparity2);
+#else
+  void Decrypt_batch(bool odd, struct dvbcsa_bs_batch_s *batch);
 #endif
 
   void SetAes(uint32_t usedAes);
@@ -145,8 +148,9 @@ public:
   struct dvbcsa_bs_batch_s *cs_tsbbatch_odd;
 #endif
 
-  bool bCW_Waiting;
-  bool bAbort;
+  // set by the receiver thread's FastECM wait, cleared by channel switches
+  std::atomic<bool> bCW_Waiting;
+  std::atomic<bool> bAbort;
 };
 
 class DeCSA

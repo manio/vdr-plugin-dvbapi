@@ -452,6 +452,15 @@ bool DeCSAKey::Set_odd_control_word(const unsigned char *odd, const unsigned cha
   return false;
 }
 
+#ifdef LIBDVBCSA
+void DeCSAKey::Decrypt_batch(bool odd, struct dvbcsa_bs_batch_s *batch)
+{
+  // under the lock: the socket thread may set a new control word meanwhile
+  cMutexLock lock(&mutexKEY);
+  dvbcsa_bs_decrypt(odd ? cs_key_odd : cs_key_even, batch, 184);
+}
+#endif
+
 #ifndef LIBDVBCSA
 void DeCSAKey::Init_Parity2(bool binitcsa)
 {
@@ -1374,12 +1383,12 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
     if (cs_fill_even)
     {
       cs_tsbbatch_even[cs_fill_even].data = NULL;
-      dvbcsa_bs_decrypt(parent->DeCSAKeyArray[currIdx].cs_key_even, cs_tsbbatch_even, 184);
+      parent->DeCSAKeyArray[currIdx].Decrypt_batch(false, cs_tsbbatch_even);
     }
     if (cs_fill_odd)
     {
       cs_tsbbatch_odd[cs_fill_odd].data = NULL;
-      dvbcsa_bs_decrypt(parent->DeCSAKeyArray[currIdx].cs_key_odd, cs_tsbbatch_odd, 184);
+      parent->DeCSAKeyArray[currIdx].Decrypt_batch(true, cs_tsbbatch_odd);
     }
     return true;
   }
