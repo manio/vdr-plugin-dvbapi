@@ -66,6 +66,8 @@ public:
 #endif
   bool Aes;
   uint32_t algo;
+  uint32_t cipherMode;
+  unsigned char aesIv[16];      // AES-CBC: the IV every packet starts from
   uint32_t des_key_schedule[2][32];
 
   int index;
@@ -73,6 +75,9 @@ public:
   bool GetorCreateKeyStruct();
 #ifdef LIBSSL
   bool GetorCreateAesKeyStruct();
+  bool SetAesKey(unsigned int parity, const unsigned char *key, int bits);
+  bool GetAesKey(unsigned int parity, AES_KEY &key, unsigned char *iv);
+  void SetAesIv(const unsigned char *iv);
 #endif
   void Des(uint8_t* data, unsigned char parity);
   void Des_set_key(const unsigned char *cw, unsigned char parity);
@@ -102,6 +107,9 @@ public:
 
   void SetAlgo(uint32_t usedAlgo);
   uint32_t GetAlgo();
+
+  void SetCipherMode(uint32_t usedCipherMode);
+  uint32_t GetCipherMode();
 
   cMutex mutexKEY;
 };
@@ -153,8 +161,6 @@ class DeCSA
 public:
   DeCSAAdapter DeCSAArray[MAXADAPTER];
   DeCSAKey DeCSAKeyArray[MAX_CSA_IDX]; //maximum MAX_CSA_IDX crypted channesl over all adapters
-  unsigned char *ivec[MAX_CSA_IDX];
-  uint32_t cipher_mode[MAX_CSA_IDX];
 
   cMutex mutex;
   bool GetKeyStruct(int idx);
