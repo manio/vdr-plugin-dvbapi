@@ -28,7 +28,6 @@ static const char *DECSALIB       = "FFdecsa";
 static const char *DECSALIB       = "libdvbcsa";
 #endif
 
-bool CheckExpiredCW = true;
 unsigned int AdapterIndexOffset = 0;
 int ENABLEFASTECM=1;
 
@@ -45,7 +44,7 @@ const char *DVBAPI::CommandLineHelp(void)
 {
   return "  -o N,     --offset=N     add constant value to all adapter indexes when\n"
          "                           communicating with OSCam (default: 0)\n"
-         "  -d,       --disable-exp  disable CW expiration check\n";
+         "  -d,       --disable-exp  no effect, accepted for compatibility\n";
 }
 
 bool DVBAPI::ProcessArgs(int argc, char *argv[])
@@ -65,7 +64,7 @@ bool DVBAPI::ProcessArgs(int argc, char *argv[])
         AdapterIndexOffset = atoi(optarg);
         break;
       case 'd':
-        CheckExpiredCW = false;
+        // kept for existing setups; the CW expiration check it disabled is gone
         break;
       default:
         return false;
@@ -86,8 +85,6 @@ bool DVBAPI::Start(void)
   INFOLOG("decryption library: %s", DECSALIB);
   if (AdapterIndexOffset)
     INFOLOG("Using value %d as the adapter index offset", AdapterIndexOffset);
-  if (!CheckExpiredCW)
-    INFOLOG("CW expiration check is disabled");
   capmt = new CAPMT;
   decsa = new DeCSA;
   filter = new cDvbapiFilter;
