@@ -35,7 +35,7 @@ SocketHandler::SocketHandler()
 :cThread("Socket Handler")
 {
   DEBUGLOG("%s", __FUNCTION__);
-  sock = 0;
+  sock = -1;
   protocol_version = 0;
   Start();
 }
@@ -80,38 +80,56 @@ void SocketHandler::OpenConnection()
   {
     // looped off the end of the list with no connection
     ERRORLOG("Cannot connect to OSCam. Check your configuration and firewall settings.");
-    sock = 0;
+    sock = -1;
   }
 
   freeaddrinfo(servinfo); // all done with this structure
 
-  if (sock)
-    DEBUGLOG("created socket with socket_fd=%d", sock);
+  if (sock >= 0)
+    DEBUGLOG("created socket with socket_fd=%d", sock.load());
 }
 
 void SocketHandler::CloseConnection()
 {
-  if (sock > 0)
+  // under the mutex, so that a Write() on another thread never uses the fd
+  // after it was closed (or reused)
+  int fd;
   {
-    close(sock);
-    sock = 0;
+    cMutexLock lock(&mutex);
+    fd = sock;
+    sock = -1;
+  }
+  if (fd >= 0)
+  {
+    close(fd);
     filter->StopAllFilters();
   }
 }
 
-void SocketHandler::Write(unsigned char *data, int len)
+void SocketHandler::Write(const unsigned char *data, int len)
 {
-  DEBUGLOG("%s, sock=%d", __FUNCTION__, sock);
-  if (sock > 0)
+  // callers run on several threads: a message must go out whole before the
+  // next one starts
+  cMutexLock lock(&mutex);
+  int fd = sock;
+  DEBUGLOG("%s, sock=%d", __FUNCTION__, fd);
+  if (fd < 0)
+    return;
+  while (len > 0)
   {
-    int wrote = write(sock, data, len);
-    DEBUGLOG("socket_fd=%d len=%d wrote=%d", sock, len, wrote);
-    if (wrote != len)
+    ssize_t wrote = send(fd, data, len, MSG_NOSIGNAL);
+    if (wrote < 0 && errno == EINTR)
+      continue;
+    if (wrote <= 0)
     {
-      ERRORLOG("%s: wrote != len", __FUNCTION__);
-      close(sock);
-      sock = 0;
+      ERRORLOG("%s: write to OSCam failed: %s", __FUNCTION__, wrote < 0 ? strerror(errno) : "no progress");
+      // the socket thread may be reading the fd, so only it closes it; the
+      // shutdown wakes it up to reconnect
+      shutdown(fd, SHUT_RDWR);
+      return;
     }
+    data += wrote;
+    len -= wrote;
   }
 }
 
@@ -171,13 +189,13 @@ void SocketHandler::Action(void)
 
   while (Running())
   {
-    if (sock == 0 && capmt && !capmt->Empty())
+    if (sock < 0)
     {
-      if (faults == 0 || (faults > 0 && checkTimer.TimedOut()))
+      if (capmt && !capmt->Empty() && (faults == 0 || checkTimer.TimedOut()))
       {
         DEBUGLOG("OSCam not connected, (re)connecting...");
         OpenConnection();
-        if (sock > 0)
+        if (sock >= 0)
         {
           DEBUGLOG("Successfully (re)connected to OSCam");
           faults = 0;

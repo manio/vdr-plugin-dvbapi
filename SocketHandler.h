@@ -19,6 +19,7 @@
 #ifndef ___SOCKETHANDLER_H
 #define ___SOCKETHANDLER_H
 
+#include <atomic>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -73,15 +74,15 @@ public:
   ~SocketHandler();
   void OpenConnection();
   void CloseConnection();
-  void Write(unsigned char *data, int len);
+  void Write(const unsigned char *data, int len);
   virtual void Action(void);
   void SendFilterData(unsigned char demux_id, unsigned char filter_num, unsigned char *data, int len);
   void SendClientInfo();
   void SendStopDescrambling();
 
 private:
-  int sock;
-  cMutex mutex;
+  std::atomic<int> sock;          // -1 when not connected; only Action() closes it
+  cMutex mutex;                   // serializes Write() against connection changes
   ca_descr_t ca_descr;
   ca_descr_aes_t ca_descr_aes;
   ca_descr_mode_t ca_descr_mode;
