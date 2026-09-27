@@ -81,17 +81,14 @@ public:
   void SendStopDescrambling();
 
 private:
+  bool Receive(void *buf, int len);
+  bool ReceiveString(char *str);  // str must hold 256 bytes
+  bool HandleMessage(uint32_t request, uint8_t adapter_index);
+
   std::atomic<int> sock;          // -1 when not connected; only Action() closes it
   cMutex mutex;                   // serializes Write() against connection changes
-  ca_descr_t ca_descr;
-  ca_descr_aes_t ca_descr_aes;
-  ca_descr_mode_t ca_descr_mode;
-  ca_descr_data_t ca_descr_data;
-  ca_pid_t ca_pid;
-  dmx_sct_filter_params sFP2;
   cTimeMs checkTimer;
   uint16_t protocol_version;
-  unsigned char data[16];
 };
 
 extern SocketHandler *SockHandler;
