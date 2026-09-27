@@ -37,7 +37,6 @@ bool cDvbapiFilter::SetFilter(uint8_t adapter_index, int pid, int start, unsigne
     if (decsa && inum==1)
       decsa->SetDVBAPIPid(adapter_index, demux, pid);
 #endif
-    vector<dmxfilter> *flt = pidmap[make_pair(adapter_index, pid)];
     vector<dmxfilter>::iterator it;
     if (start == 1 && filter && mask)
     {
@@ -47,62 +46,48 @@ bool cDvbapiFilter::SetFilter(uint8_t adapter_index, int pid, int start, unsigne
       sprintf(hexdump, "%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X", mask[0], mask[1], mask[2], mask[3], mask[4], mask[5], mask[6], mask[7], mask[8], mask[9], mask[10], mask[11], mask[12], mask[13], mask[14], mask[15]);
       DEBUGLOG("   -->   MASK: %s", hexdump);
 
-      int updated = 0;
-      if (flt)                  //we have filters assigned with this pid
+      vector<dmxfilter> &flt = pidmap[make_pair(adapter_index, pid)].filters;
+      for (it = flt.begin(); it != flt.end(); ++it)
       {
-        for (it = flt->begin(); it != flt->end(); ++it)
+        if (it->demux_id == demux && it->filter_num == num)
         {
-          if (it->demux_id == demux && it->filter_num == num)
-          {
-            DEBUGLOG("%s: filter update, demux=%d, filter_num=%d", __FUNCTION__, demux, num);
-            memcpy(it->filter, filter, DMX_FILTER_SIZE);
-            memcpy(it->mask, mask, DMX_FILTER_SIZE);
-            for (int i = 0; i < DMX_FILTER_SIZE; i++)
-              it->filter[i] &= it->mask[i];
-            updated = 1;
-            break;
-          }
+          DEBUGLOG("%s: filter update, demux=%d, filter_num=%d", __FUNCTION__, demux, num);
+          break;
         }
       }
-      else                      //it seems this is the first filter for this pid - create a list
-      {
-        flt = new vector<dmxfilter>;
-        pidmap[make_pair(adapter_index, pid)] = flt;
-      }
-
-      if (!updated)
+      if (it == flt.end())
       {
         DEBUGLOG("%s: inserting new filter, demux=%d, filter_num=%d", __FUNCTION__, demux, num);
         dmxfilter newfilter;
         newfilter.demux_id = demux;
         newfilter.filter_num = num;
-        newfilter.data = NULL;
-        memcpy(newfilter.filter, filter, DMX_FILTER_SIZE);
-        memcpy(newfilter.mask, mask, DMX_FILTER_SIZE);
-        for (int i = 0; i < DMX_FILTER_SIZE; i++)
-          newfilter.filter[i] &= newfilter.mask[i];
-        flt->push_back(newfilter);
+        flt.push_back(newfilter);
+        it = flt.end() - 1;
       }
+      memcpy(it->filter, filter, DMX_FILTER_SIZE);
+      memcpy(it->mask, mask, DMX_FILTER_SIZE);
+      for (int i = 0; i < DMX_FILTER_SIZE; i++)
+        it->filter[i] &= it->mask[i];
     }
-    else if (flt && start == 0)
+    else if (start == 0)
     {
-      for (it = flt->begin(); it != flt->end(); ++it)
+      map<pair<int, int>, pidfilters>::iterator pmit = pidmap.find(make_pair(adapter_index, pid));
+      if (pmit != pidmap.end())
       {
-        if (it->demux_id == demux && it->filter_num == num)
+        vector<dmxfilter> &flt = pmit->second.filters;
+        for (it = flt.begin(); it != flt.end(); ++it)
         {
-          DEBUGLOG("%s: deleting filter, demux=%d, filter_num=%d", __FUNCTION__, demux, num);
-          if (it->data)
-            delete it->data;
-          flt->erase(it);
-
-          if (flt->empty())
+          if (it->demux_id == demux && it->filter_num == num)
           {
-            DEBUGLOG("%s: deleted the last filter for pid=%04X, removing list", __FUNCTION__, pid);
-            delete flt;
-            pidmap.erase(make_pair(adapter_index, pid));
+            DEBUGLOG("%s: deleting filter, demux=%d, filter_num=%d", __FUNCTION__, demux, num);
+            flt.erase(it);
+            if (flt.empty())
+            {
+              DEBUGLOG("%s: deleted the last filter for pid=%04X, removing list", __FUNCTION__, pid);
+              pidmap.erase(pmit);
+            }
+            break;
           }
-
-          break;
         }
       }
     }
@@ -114,63 +99,29 @@ void cDvbapiFilter::StopAllFilters()
 {
   cMutexLock lock(&mutex);
   DEBUGLOG("%s", __FUNCTION__);
-
-  //release filter data
-  map<pair<int, int>, vector<dmxfilter>*>::iterator it;
-  for (it = pidmap.begin(); it != pidmap.end(); ++it)
-  {
-    vector<dmxfilter> *flt = it->second;
-    if (flt)                  //filter list assigned to this pid
-    {
-      vector<dmxfilter>::iterator it;
-      for (it = flt->begin(); it != flt->end(); ++it)
-      {
-        if (it->data)
-          delete it->data;
-      }
-      flt->clear();
-      delete flt;
-    }
-  }
-
-  //clear map
   pidmap.clear();
 }
 
 unsigned char cDvbapiFilter::GetECM(uint8_t adapter_index, ca_descr_t* ca_descr) //XX_ICAM_XX
 {
   if (!ca_descr) return 0;
-  map<pair<int, int>, vector<dmxfilter>*>::iterator it;
+  // the socket thread changes the filters while this runs on a key update
+  cMutexLock lock(&mutex);
+  map<pair<int, int>, pidfilters>::iterator it;
   for (it = pidmap.begin(); it != pidmap.end(); ++it)
   {
-    auto p1 = it->first;
-    int adapter_index2 = p1.first;
-    int pid = p1.second;
+    int adapter_index2 = it->first.first;
+    int pid = it->first.second;
     if (adapter_index2 == adapter_index)
     {
-      vector<dmxfilter>* flt = it->second;
-      if (flt)
+      vector<dmxfilter>::iterator it2;
+      for (it2 = it->second.filters.begin(); it2 != it->second.filters.end(); ++it2)
       {
-        vector<dmxfilter>::iterator it2;
-        for (it2 = flt->begin(); it2 != flt->end(); ++it2)
+        // the CAT, SDT and EMM filters of the demux share its index
+        if (pid>0 && ca_descr->index == (uint32_t)it2->demux_id &&
+            (it2->filter[0] & 0xFE) == 0x80)
         {
-          // the CAT, SDT and EMM filters of the demux share its index
-          if (pid>0 && ca_descr->index == (uint32_t)it2->demux_id &&
-              (it2->filter[0] & 0xFE) == 0x80)
-          {
-            unsigned char ecm = 0;
-            {
-              if (ca_descr->parity == 0)
-              {
-                ecm = it2->ecm_even;
-              }
-              else
-              {
-                ecm = it2->ecm_odd;
-              }
-            }
-            return ecm;
-          }
+          return ca_descr->parity == 0 ? it2->ecm_even : it2->ecm_odd;
         }
       }
     }
@@ -199,91 +150,119 @@ void cDvbapiFilter::SetECM(dmxfilter* filter, int adapter_index, int pid, const 
   }
 }
 
+void cDvbapiFilter::Deliver(pidfilters &pf, uint8_t adapter_index, int pid, const unsigned char *data, int len)
+{
+  vector<dmxfilter>::iterator it;
+  for (it = pf.filters.begin(); it != pf.filters.end(); ++it)
+  {
+    // as in the Linux demux: filter[0] is matched against the table id,
+    // filter[1..15] against the bytes after the section length
+    int i;
+    for (i = 0; i < DMX_FILTER_SIZE; i++)
+    {
+      int pos = i ? i + 2 : 0;
+      unsigned char b = pos < len ? data[pos] : 0;
+      if ((b & it->mask[i]) != it->filter[i])
+        break;
+    }
+    if (i == DMX_FILTER_SIZE)
+    {
+      DEBUGLOG("%s: pid=%04X sending section len=%d", __FUNCTION__, pid, len);
+      SetECM(&(*it), adapter_index, pid, data, len);
+      SockHandler->SendFilterData(it->demux_id, it->filter_num, (unsigned char *) data, len);
+    }
+  }
+}
+
+void cDvbapiFilter::Collect(pidfilters &pf, uint8_t adapter_index, int pid, const unsigned char *data, int len)
+{
+  if (pf.sectionLen)
+    len = min(len, pf.sectionLen - (int) pf.section.size());
+  pf.section.insert(pf.section.end(), data, data + len);
+  if (!pf.sectionLen && pf.section.size() >= 3)
+  {
+    // the header was split across packets; anything past the section is stuffing
+    pf.sectionLen = 3 + (((pf.section[1] & 0x0F) << 8) | pf.section[2]);
+    if ((int) pf.section.size() > pf.sectionLen)
+      pf.section.resize(pf.sectionLen);
+  }
+  if (pf.sectionLen && (int) pf.section.size() == pf.sectionLen)
+  {
+    Deliver(pf, adapter_index, pid, pf.section.data(), pf.sectionLen);
+    pf.section.clear();
+    pf.sectionLen = 0;
+  }
+}
+
 void cDvbapiFilter::Analyze(uint8_t adapter_index, unsigned char *data, int len)
 {
   cMutexLock lock(&mutex);
   int pid = ((data[1] << 8) + data[2]) & MAX_CSA_PID;
+  if ((unsigned) pid >= MAX_CSA_PID || pid == 0)
+    return;
+  map<pair<int, int>, pidfilters>::iterator pmit = pidmap.find(make_pair(adapter_index, pid));
+  if (pmit == pidmap.end())
+    return;
+  pidfilters &pf = pmit->second;
 
-  int cc = data[3] & 0x0f;      //TS header -> continuity counter
-  if (cc == 0x0f)
-    cc = -1;
+  int afc = (data[3] >> 4) & 0x03;                 // adaptation field control
+  if (!(afc & 0x01))
+    return;                                        // no payload
+  int offset = 4;
+  if (afc & 0x02)
+    offset += 1 + data[4];                         // skip the adaptation field
+  if (offset >= TS_SIZE)
+    return;
+  int cc = data[3] & 0x0F;
+  bool continuous = pf.lastcc >= 0 && cc == ((pf.lastcc + 1) & 0x0F);
+  pf.lastcc = cc;
+  const unsigned char *p = data + offset;
+  int n = TS_SIZE - offset;
 
-  if ((unsigned) pid < MAX_CSA_PID && pid > 0)
+  if (!(data[1] & 0x40))                           // no section starts here
   {
-    vector<dmxfilter> *flt = pidmap[make_pair(adapter_index, pid)];
-    if (flt)                    //filter list assigned to this pid
+    if (continuous && !pf.section.empty())
+      Collect(pf, adapter_index, pid, p, n);
+    else
     {
-      vector<dmxfilter>::iterator it;
-      for (it = flt->begin(); it != flt->end(); ++it)
-      {
-        //PUSI flag set, the first TS packet
-        if (data[1] & 0x40)
-        {
-          int offset = 5;       //skip TS packet header and counter
-          do
-          {
-            unsigned char *filter = it->filter;
-            unsigned char *mask = it->mask;
-            unsigned char *dat = data + offset;
-
-            int tablelen = ((dat[1] << 8) + dat[2]) & 0x0FFF;
-
-            int i = 0, max = DMX_FILTER_SIZE - 1;
-            if ((dat[i] & mask[i]) == filter[i]) //first byte match?
-            {
-              //skip 2 byte length and continue checking
-              for (i = 1; i < max; i++)
-              {
-                if ((dat[i + 2] & mask[i]) != filter[i])
-                  break;
-              }
-            }
-            if (i == max)
-            {
-              if (tablelen <= TS_SIZE - 8)       //data fits in one TS_PACKET
-              {
-                DEBUGLOG("%s: all data in one TS packet, immediate send", __FUNCTION__);
-                SetECM(&(*it), adapter_index, pid, dat, tablelen + 3);
-                SockHandler->SendFilterData(it->demux_id, it->filter_num, dat, tablelen + 3);
-              }
-              else              //copying the first part of data
-              {
-                DEBUGLOG("%s: saving first part of data, tablelen=%d", __FUNCTION__, tablelen);
-                if (it->data)
-                  delete it->data;
-                it->data = new unsigned char[tablelen + 3];
-                it->len = tablelen;
-
-                memcpy(it->data, dat, TS_SIZE - 5);  //copy data
-                it->size = TS_SIZE - 5 - 3;
-                it->lastcc = cc;
-              }
-            }
-            offset += tablelen + 3; //there may be next table in the same TS packet
-          } while (offset <= TS_SIZE);
-        }
-        else if (it->data && (cc == it->lastcc + 1))      //we have a part of data for this filter
-        {
-          int to_copy = it->len - it->size;
-          if (to_copy > TS_SIZE - 4)
-            to_copy = TS_SIZE - 4;
-          DEBUGLOG("%s: PUSI=0, to_copy=%d", __FUNCTION__, to_copy);
-
-          memcpy(it->data + 3 + it->size, data + 4, to_copy);   //copy data
-          it->size += to_copy;
-          it->lastcc = cc;              //TS header -> continuity counter
-
-          if (it->size == it->len)      //we've got all data
-          {
-            DEBUGLOG("%s: filter data assembled, sending len=%d", __FUNCTION__, it->len + 3);
-            SetECM(&(*it), adapter_index, pid, it->data, it->len + 3);
-            SockHandler->SendFilterData(it->demux_id, it->filter_num, it->data, it->len + 3);
-            //we don't need this data anymore
-            delete it->data;
-            it->data = NULL;
-          }
-        }
-      }
+      pf.section.clear();                          // lost a packet: drop the section
+      pf.sectionLen = 0;
     }
+    return;
+  }
+
+  // PUSI: the pointer field says where the first new section starts; the
+  // bytes before it complete the section of the previous packet
+  int pointer = *p++;
+  n--;
+  if (pointer > n)
+  {
+    pf.section.clear();
+    pf.sectionLen = 0;
+    return;
+  }
+  if (continuous && !pf.section.empty())
+    Collect(pf, adapter_index, pid, p, pointer);
+  pf.section.clear();
+  pf.sectionLen = 0;
+  p += pointer;
+  n -= pointer;
+
+  while (n > 0 && *p != 0xFF)                      // 0xFF: stuffing up to the packet end
+  {
+    if (n < 3)
+    {
+      Collect(pf, adapter_index, pid, p, n);       // header continues in the next packet
+      break;
+    }
+    int seclen = 3 + (((p[1] & 0x0F) << 8) | p[2]);
+    if (seclen > n)
+    {
+      Collect(pf, adapter_index, pid, p, n);       // section continues in the next packet
+      break;
+    }
+    Deliver(pf, adapter_index, pid, p, seclen);
+    p += seclen;
+    n -= seclen;
   }
 }
