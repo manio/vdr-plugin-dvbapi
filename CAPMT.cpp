@@ -27,7 +27,6 @@ CAPMT *capmt = NULL;
 
 CAPMT::CAPMT()
 {
-  memset(&caPMT, 0, sizeof(caPMT));
 }
 
 CAPMT::~CAPMT()
@@ -87,20 +86,26 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
       int length;
       int offset = 0;
 
-      pmto.pilen[0] = vdr_caPMT[4];   //reserved+program_info_length
-      pmto.pilen[1] = vdr_caPMT[5];   //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
-
-      //obtaining program_info_length
-      int ilen = (vdr_caPMT[4] << 8) + vdr_caPMT[5];
+      //obtaining program_info_length (12 bits, the ca_pmt_cmd_id is counted in it)
+      int ilen = ((vdr_caPMT[4] & 0x0F) << 8) + vdr_caPMT[5];
       //checking if we need to start copying 1 byte further and omit ca_pmt_cmd_id which we already have
       if (ilen > 0)
       {
         offset = 1;
-        pmto.pilen[1] -= 1;           //-1 for ca_pmt_cmd_id which we have counted
+        ilen -= 1;                    //-1 for ca_pmt_cmd_id which we have counted
       }
+      pmto.pireserved = vdr_caPMT[4] & 0xF0;
+      pmto.pilen = ilen;
 
       length = vdr_caPMTLen;      //ca_pmt data length
       pmto.len = length - 6 - offset;
+      if (pmto.len < 0)
+      {
+        ERRORLOG("%s: CA_PMT too short (%d bytes)", __FUNCTION__, vdr_caPMTLen);
+        if (removed)
+          SendAll();
+        return;
+      }
       unsigned char *pmt_data = new unsigned char[pmto.len];
       memcpy(pmt_data, vdr_caPMT + 6 + offset, pmto.len);    //copy ca_pmt data from vdr
       pmto.data = pmt_data;
@@ -148,6 +153,9 @@ void CAPMT::send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt)
 {
   int length_field;
   int toWrite;
+  // sized per message: VDR builds the CA_PMT in a dynamic buffer
+  vector<unsigned char> buffer(22 + pmt->len);
+  unsigned char *caPMT = buffer.data();
 
 /////// preparing capmt data to send
   // http://cvs.tuxbox.org/lists/tuxbox-cvs-0208/msg00434.html
@@ -179,8 +187,9 @@ void CAPMT::send(const int adapter, const int sid, int ca_lm, const pmtobj *pmt)
   caPMT[21] = (char) adapter + AdapterIndexOffset;   //ca id
 
   //adding CA_PMT from vdr
-  caPMT[10] = pmt->pilen[0];                  //reserved+program_info_length
-  caPMT[11] = pmt->pilen[1] + 1 + 3 + 3 + 3;  //reserved+program_info_length (+1 for ca_pmt_cmd_id, +3 +3 +3 are three descriptors)
+  int pilen = pmt->pilen + 1 + 3 + 3 + 3;     //program_info_length (+1 for ca_pmt_cmd_id, +3 +3 +3 are three descriptors)
+  caPMT[10] = pmt->pireserved | ((pilen >> 8) & 0x0f); //reserved+program_info_length
+  caPMT[11] = pilen & 0xff;                   //program_info_length
   memcpy(caPMT + 22, pmt->data, pmt->len);    //copy ca_pmt data from vdr
   length_field = 22 + pmt->len - 6;           //-6 = 3 bytes for AOT_CA_PMT and 3 for size
 
