@@ -34,7 +34,6 @@ static const char *DESCRIPTION    = trNOOP("SoftCAM for OSCam");
 
 class SCCIAdapter;
 extern unsigned int AdapterIndexOffset;
-extern bool CheckExpiredCW;
 
 struct sDVBAPIEcmInfo {
   //in parameters

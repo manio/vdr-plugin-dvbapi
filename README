@@ -161,14 +161,12 @@ NOTE: you can set this option permanently in setup.conf, like eg:
 dvbapi.AdapterIndexOffset = 2
 It is not exposed to the plugin setup as it is an advanced option.
 
-Disable CW expiration check:
-----------------------------
-The plugin is automatically checking if the key obtained from OSCam is still
-valid and doesn't expired before using it for decrypting. This way if OSCam
-cannot provide a key for a channel, VDR have a chance to switch to other CAM
-which is able to do so. In some circumstances (eg. when you're using Constant
-CW in OSCam) you may need to disable this check, starting VDR like this:
-  vdr -P"dvbapi -d"
+CW expiration:
+--------------
+A key obtained from OSCam stays in use until OSCam sends the next one. OSCam
+sends a CW only when it changes, so a key cannot be judged by its age: an
+expiration check would blank channels with a constant CW. The former option
+-d (--disable-exp) is still accepted but has no effect.
 
 -----------------------------------------------------------------------------
 7. Note for a plugin developers

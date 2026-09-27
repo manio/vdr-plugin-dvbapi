@@ -136,9 +136,6 @@ DeCSAKey::DeCSAKey()
 #ifdef LIBSSL
   csa_aes_key = NULL;
 #endif
-  lastcwlog = 0;
-
-  cwSeen = 0;
 }
 
 DeCSAKey::~DeCSAKey()
@@ -232,29 +229,6 @@ bool DeCSAKey::GetorCreateKeyStruct()
   }
   return (cs_key_even != 0) && (cs_key_odd != 0);
 #endif
-}
-
-bool DeCSAKey::CWExpired()
-{
-  cMutexLock lock(&mutexKEY);
-  if (CheckExpiredCW)
-  {
-    time_t tnow = time(NULL);
-    if (CheckExpiredCW && cwSeen > 0 && (tnow - cwSeen) > MAX_KEY_WAIT)
-    {
-      if ((tnow - lastcwlog) > 10)
-      {
-        lastcwlog = tnow;
-        DEBUGLOG("%s: CheckExpiredCW key is expired", __FUNCTION__);
-      }
-      return true;
-    }
-    else
-    {
-      lastcwlog = tnow;
-    }
-  }
-  return false;
 }
 
 #ifndef LIBDVBCSA
@@ -402,7 +376,6 @@ void DeCSAKey::Des(uint8_t* data, unsigned char parity)
 void DeCSAKey::Des_set_key(const unsigned char *cw, unsigned char parity)
 {
   cMutexLock lock(&mutexKEY);
-  cwSeen = time(NULL);
   des_set_key(cw, des_key_schedule[parity]);
 }
 
@@ -1055,12 +1028,6 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
           wantsparity = 1;
         else if (ev_od == 0xC0) //odd
           wantsparity = 2;
-
-        if (currIdx<0 || (currIdx + 1) >= MAX_CSA_IDX)
-          ERRORLOG("%s: CheckExpiredCW currIdx is out of range %d", __FUNCTION__, currIdx);
-
-        if (!parent->cipher_mode[currIdx] == CA_MODE_ECB && !parent->GetAes(currIdx) && parent->DeCSAKeyArray[currIdx].CWExpired())
-          return false;
 
         if (parent->GetAlgo(currIdx) == CA_ALGO_DES)
         {

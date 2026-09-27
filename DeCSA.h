@@ -40,7 +40,6 @@ extern "C" {
 #define MAX_CSA_PID  0x1FFF
 #define MAX_CSA_IDX  32
 #define MAXADAPTER   64
-#define MAX_KEY_WAIT 25         // max seconds to consider a CW as valid
 
 #include "CA.h"
 
@@ -61,9 +60,6 @@ public:
   ca_descr_t *ca_descr;
 #endif
 
-  time_t cwSeen;                // last time the CW for the related key was seen
-  time_t lastcwlog;
-
 #ifdef LIBSSL
   void *csa_aes_key;
 #endif
@@ -73,7 +69,6 @@ public:
 
   int index;
 
-  bool CWExpired(); //return true if expired
   bool GetorCreateKeyStruct();
 #ifdef LIBSSL
   bool GetorCreateAesKeyStruct();
