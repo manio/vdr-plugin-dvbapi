@@ -24,8 +24,6 @@
 #include <vector>
 #include "SocketHandler.h"
 
-#define CAPMT_BUFFER_SIZE    1024
-
 #define MAX_SOCKETS          16   // max sockets (simultaneus channels) per demux
 #define LIST_MORE            0x00
 #define LIST_FIRST           0x01
@@ -43,7 +41,8 @@ struct pmtobj
   int sid;
   int len;
   int adapter;
-  char pilen[2];
+  unsigned char pireserved;       // reserved bits in front of program_info_length
+  int pilen;                      // program_info_length without ca_pmt_cmd_id
   unsigned char* data;
 
   //ecminfo
@@ -62,7 +61,6 @@ class CAPMT
 {
 private:
   cMutex mutex;
-  unsigned char caPMT[CAPMT_BUFFER_SIZE];
   bool get_pmt(const int adapter, const int sid, unsigned char *buft);
   vector<pmtobj> pmt;
 
