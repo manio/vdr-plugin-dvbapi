@@ -597,7 +597,10 @@ void DeCSAAdapter::SetCaPid(int pid, int index)
 {
   cMutexLock lock(&mutexAdapter);
   DEBUGLOG("%s: SetCaPid cardindex:%d pid:%d index:%d", __FUNCTION__, cardindex, pid, index);
-  AdapterPidMap[pid] = index == -1 ? 0 : index;
+  if (index < 0)
+    AdapterPidMap.erase(pid);   // descrambling of this pid disabled
+  else
+    AdapterPidMap[pid] = index;
 }
 
 #ifndef LIBDVBCSA
@@ -782,7 +785,9 @@ bool DeCSA::SetCaPid(uint8_t adapter_index, ca_pid_t *ca_pid)
   cMutexLock lock(&mutex);
   if (ca_pid->index < MAX_CSA_IDX && ca_pid->pid < MAX_CSA_PID)
   {
-    if (ca_pid->index >= 0 && adapter_index>=0 && adapter_index<MAXADAPTER)
+    // index -1 (OSCam's DVBAPI_INDEX_DISABLE) removes the pid: a stale mapping
+    // would decrypt it with another service's key once that index is reused
+    if (adapter_index < MAXADAPTER)
       DeCSAArray[adapter_index].SetCaPid(ca_pid->pid,ca_pid->index);
     DEBUGLOG("%d.%d: set pid 0x%04x", adapter_index, ca_pid->index, ca_pid->pid);
   }
