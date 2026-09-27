@@ -73,10 +73,14 @@ int SCCIAdapter::Read(unsigned char *Buffer, int MaxLength)
     unsigned char *data = frame.Get(s);
     if (data)
     {
-      if (s <= MaxLength)
-        memcpy(Buffer, data, s);
-      else
+      if (s > MaxLength)
+      {
+        // VDR would take Buffer (not filled) for a frame of s bytes
         ERRORLOG("internal: sc-ci rb frame size exceeded %d", s);
+        frame.Del();
+        return 0;
+      }
+      memcpy(Buffer, data, s);
       frame.Del();
       if (Buffer[2] != 0x80)
         readTimer.Set();
@@ -101,7 +105,7 @@ void SCCIAdapter::Write(const unsigned char *buff, int len)
   {
     struct TPDU *tpdu = (struct TPDU *) buff;
     int slot = tpdu->slot;
-    if (slots[slot])
+    if (slot < MAXDEVICES && slots[slot])
     {
       Frame *slotframe = slots[slot]->getFrame();
       switch (tpdu->tag)
@@ -188,7 +192,7 @@ bool SCCIAdapter::Reset(int Slot)
 eModuleStatus SCCIAdapter::ModuleStatus(int Slot)
 {
   cMutexLock lock(&ciMutex);
-  return (slots[Slot]) ? slots[Slot]->Status() : msNone;
+  return (Slot >= 0 && Slot < MAXDEVICES && slots[Slot]) ? slots[Slot]->Status() : msNone;
 }
 
 bool SCCIAdapter::Assign(cDevice *Device, bool Query)
