@@ -18,10 +18,13 @@
 
 #include <linux/ioctl.h>
 #include <linux/dvb/ca.h>
+#include <poll.h>
 #include "SocketHandler.h"
 #include "Log.h"
 
 #define SOCKET_CHECK_INTERVAL   3000
+// TCP may deliver a message in several segments: how long to wait for the rest
+#define SOCKET_RECEIVE_TIMEOUT  2000
 
 SocketHandler *SockHandler = NULL;
 
@@ -133,6 +136,46 @@ void SocketHandler::Write(const unsigned char *data, int len)
   }
 }
 
+bool SocketHandler::Receive(void *buf, int len)
+{
+  unsigned char *p = (unsigned char *) buf;
+  while (len > 0)
+  {
+    ssize_t n = recv(sock, p, len, MSG_DONTWAIT);
+    if (n > 0)
+    {
+      p += n;
+      len -= n;
+      continue;
+    }
+    if (n == 0)
+      return false;             // closed by OSCam
+    if (errno == EINTR)
+      continue;
+    if (errno != EAGAIN && errno != EWOULDBLOCK)
+      return false;
+    struct pollfd pfd = { sock, POLLIN, 0 };
+    int r = poll(&pfd, 1, SOCKET_RECEIVE_TIMEOUT);
+    if (r < 0 && errno == EINTR)
+      continue;
+    if (r <= 0)
+    {
+      ERRORLOG("%s: incomplete message from OSCam", __FUNCTION__);
+      return false;
+    }
+  }
+  return true;
+}
+
+bool SocketHandler::ReceiveString(char *str)
+{
+  unsigned char len;
+  if (!Receive(&len, 1) || !Receive(str, len))
+    return false;
+  str[len] = 0;
+  return true;
+}
+
 void SocketHandler::SendFilterData(unsigned char demux_id, unsigned char filter_num, unsigned char *data, int len)
 {
   unsigned char buff[6 + len];
@@ -180,12 +223,7 @@ void SocketHandler::SendStopDescrambling()
 void SocketHandler::Action(void)
 {
   DEBUGLOG("%s", __FUNCTION__);
-  unsigned char buff[262];
-  int cRead;
-  uint32_t *request;
-  uint8_t adapter_index;
   int faults = 0;
-  int skip_bytes = 0;
 
   while (Running())
   {
@@ -210,223 +248,181 @@ void SocketHandler::Action(void)
       continue;
     }
 
-    // request
-    cRead = recv(sock, &buff[skip_bytes], sizeof(int)-skip_bytes, MSG_DONTWAIT);
-    if (cRead <= 0)
+    // wait for the next message; the timeout keeps Running() checked
+    struct pollfd pfd = { sock, POLLIN, 0 };
+    int r = poll(&pfd, 1, 100);
+    if (r == 0 || (r < 0 && errno == EINTR))
+      continue;
+
+    // a partially read message would leave the stream out of step
+    uint32_t request;
+    uint8_t adapter_index = 0;
+    if (r < 0 || !Receive(&request, sizeof(request)))
     {
-      if (cRead == 0)
-        CloseConnection();
-      cCondWait::SleepMs(20);
+      CloseConnection();
       continue;
     }
-    request = (uint32_t *) &buff;
-    skip_bytes = 0;
-
-    if (ntohl(*request) != DVBAPI_SERVER_INFO)
+    request = ntohl(request);
+    if (request != DVBAPI_SERVER_INFO)
     {
-      // first byte -> adapter_index
-      cRead = recv(sock, &adapter_index, 1, MSG_DONTWAIT);
-      if (cRead <= 0)
+      if (!Receive(&adapter_index, 1))
       {
-        if (cRead == 0)
-          CloseConnection();
-        cCondWait::SleepMs(20);
+        CloseConnection();
         continue;
       }
       adapter_index -= AdapterIndexOffset;
     }
-
-    *request = ntohl(*request);
-    if (*request == CA_SET_PID)
-      cRead = recv(sock, buff+4, sizeof(ca_pid_t), MSG_DONTWAIT);
-    else if (*request == CA_SET_DESCR)
-      cRead = recv(sock, buff+4, sizeof(ca_descr_t), MSG_DONTWAIT);
-    else if (*request == CA_SET_DESCR_AES)
-      cRead = recv(sock, buff+4, sizeof(ca_descr_aes_t), MSG_DONTWAIT);
-    else if (*request == CA_SET_DESCR_MODE)
-      cRead = recv(sock, buff+4, sizeof(ca_descr_mode_t), MSG_DONTWAIT);
-    else if (*request == CA_SET_DESCR_DATA)
-      cRead = recv(sock, buff+4, sizeof(ca_descr_data_t), MSG_DONTWAIT);
-    else if (*request == DMX_SET_FILTER)
-      cRead = recv(sock, buff+4, sizeof(struct dmx_sct_filter_params), MSG_DONTWAIT);
-    else if (*request == DMX_STOP)
-      cRead = recv(sock, buff+4, 2 + 2, MSG_DONTWAIT);
-    else if (*request == DVBAPI_SERVER_INFO)
-    {
-      unsigned char len;
-      recv(sock, buff+4, 2, MSG_DONTWAIT);             //proto version
-      recv(sock, &len, 1, MSG_DONTWAIT);               //string length
-      cRead = recv(sock, buff+6, len, MSG_DONTWAIT);
-      buff[6+len] = 0;                                 //terminate the string
-    }
-    else if (*request == DVBAPI_ECM_INFO)
-      recv(sock, buff+4, 14, MSG_DONTWAIT);            //read ECM info const len header only
-    else
-    {
-      ERRORLOG("%s: read failed unknown command: %08x", __FUNCTION__, *request);
+    if (!HandleMessage(request, adapter_index))
       CloseConnection();
-      cCondWait::SleepMs(20);
-      continue;
-    }
-
-    if (cRead <= 0)
-    {
-      if (cRead == 0)
-        CloseConnection();
-      cCondWait::SleepMs(20);
-      continue;
-    }
-    if (*request == CA_SET_PID)
-    {
-      DEBUGLOG("%s: Got CA_SET_PID request, adapter_index=%d", __FUNCTION__, adapter_index);
-      memcpy(&ca_pid, &buff[sizeof(int)], sizeof(ca_pid_t));
-      ca_pid.pid = ntohl(ca_pid.pid);
-      ca_pid.index = ntohl(ca_pid.index);
-      decsa->SetCaPid(adapter_index, &ca_pid);
-    }
-    else if (*request == CA_SET_DESCR)
-    {
-      memcpy(&ca_descr, &buff[sizeof(int)], sizeof(ca_descr_t));
-      ca_descr.index = ntohl(ca_descr.index);
-      ca_descr.parity = ntohl(ca_descr.parity);
-      decsa->SetAes(ca_descr_aes.index, false);
-      decsa->SetDescr(&ca_descr, false, adapter_index);
-      DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr.index);
-    }
-    else if (*request == CA_SET_DESCR_AES)
-    {
-      memcpy(&ca_descr_aes, &buff[sizeof(int)], sizeof(ca_descr_aes_t));
-      ca_descr_aes.index = ntohl(ca_descr_aes.index);
-      ca_descr_aes.parity = ntohl(ca_descr_aes.parity);
-      decsa->SetAes(ca_descr_aes.index, true);
-      decsa->SetDescrAes(&ca_descr_aes, false);
-      DEBUGLOG("%s: Got CA_SET_DESCR_AES request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr_aes.index);
-    }
-    else if (*request == CA_SET_DESCR_MODE)
-    {
-      memcpy(&ca_descr_mode, &buff[sizeof(int)], sizeof(ca_descr_mode_t));
-      ca_descr_mode.index = ntohl(ca_descr_mode.index);
-      ca_descr_mode.algo = (ca_descr_algo) ntohl(ca_descr_mode.algo);
-      ca_descr_mode.cipher_mode = (ca_descr_cipher_mode) ntohl(ca_descr_mode.cipher_mode);
-      decsa->SetAlgo(ca_descr_mode.index, ca_descr_mode.algo);
-      decsa->SetCipherMode(ca_descr_mode.index, ca_descr_mode.cipher_mode);
-      DEBUGLOG("%s: Got CA_SET_DESCR_MODE request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr_mode.index);
-    }
-    else if (*request == CA_SET_DESCR_DATA)
-    {
-      memcpy(&ca_descr_data, &buff[sizeof(int)], sizeof(ca_descr_data_t));
-      ca_descr_data.index = ntohl(ca_descr_data.index);
-      ca_descr_data.parity = (ca_descr_parity) ntohl(ca_descr_data.parity);
-      ca_descr_data.data_type = (ca_descr_data_type) ntohl(ca_descr_data.data_type);
-      ca_descr_data.length = ntohl(ca_descr_data.length);
-      memcpy(&data, &buff[sizeof(int) + 16], 16 + ca_descr_data.length - sizeof(ca_descr_data_t));
-
-      //We have a size of CA_SET_DESCR_DATA message > size of ca_descr_data_t because the ca_descr_data.data is a pointer
-      //Size of CA_SET_DESCR_DATA message is a 16 + ca_descr_data.length, see Oscam module-dvbapi.c
-      recv(sock, data + (16 + ca_descr_data.length - sizeof(ca_descr_data_t)), ca_descr_data.length - (16 + ca_descr_data.length - sizeof(ca_descr_data_t)), MSG_DONTWAIT);
-      ca_descr_data.data = data;
-      decsa->SetAes(ca_descr_aes.index, false);
-      decsa->SetData(&ca_descr_data, false);
-      DEBUGLOG("%s: Got CA_SET_DESCR_DATA request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr_data.index);
-    }
-    else if (*request == DMX_SET_FILTER)
-    {
-      unsigned char demux_index = buff[4];
-      unsigned char filter_num = buff[5];
-      int i = 6;
-
-      uint16_t *pid_ptr = (uint16_t *) &buff[i];
-      sFP2.pid = ntohs(*pid_ptr);
-      i += 2;
-
-      memcpy(&sFP2.filter.filter, &buff[i], 16);
-      i += 16;
-      memcpy(&sFP2.filter.mask, &buff[i], 16);
-      i += 16;
-      memcpy(&sFP2.filter.mode, &buff[i], 16);
-      i += 16;
-
-      uint32_t *timeout_ptr = (uint32_t *) &buff[i];
-      sFP2.timeout = ntohl(*timeout_ptr);
-      i += 4;
-
-      uint32_t *flags_ptr = (uint32_t *) &buff[i];
-      sFP2.flags = ntohl(*flags_ptr);
-
-      DEBUGLOG("%s: Got DMX_SET_FILTER request, adapter_index=%d, pid=%X, demux_idx=%d, filter_num=%d", __FUNCTION__, adapter_index, sFP2.pid, demux_index, filter_num);
-      filter->SetFilter(adapter_index, sFP2.pid, 1, demux_index, filter_num, sFP2.filter.filter, sFP2.filter.mask);
-    }
-    else if (*request == DMX_STOP)
-    {
-      unsigned char demux_index = buff[4];
-      unsigned char filter_num = buff[5];
-
-      uint16_t *pid_ptr = (uint16_t *) &buff[6];
-      uint16_t pid = ntohs(*pid_ptr);
-
-      DEBUGLOG("%s: Got DMX_STOP request, adapter_index=%d, pid=%X, demux_idx=%d, filter_num=%d", __FUNCTION__, adapter_index, pid, demux_index, filter_num);
-      filter->SetFilter(adapter_index, pid, 0, demux_index, filter_num, NULL, NULL);
-    }
-    else if (*request == DVBAPI_SERVER_INFO)
-    {
-      uint16_t *proto_ver_ptr = (uint16_t *) &buff[4];
-      protocol_version = ntohs(*proto_ver_ptr);
-      DEBUGLOG("%s: Got SERVER_INFO: %s, protocol_version = %d", __FUNCTION__, &buff[6], protocol_version);
-    }
-    else if (*request == DVBAPI_ECM_INFO)
-    {
-      char cardsystem[255];
-      char reader[255];
-      char from[255];
-      char protocol[255];
-      unsigned char len, hops;
-      int i = 4;
-
-      uint16_t *sid_ptr = (uint16_t *) &buff[i];       //ServiceID
-      uint16_t sid = ntohs(*sid_ptr);
-      i += 2;
-
-      uint16_t *caid_ptr = (uint16_t *) &buff[i];      //CAID
-      uint16_t caid = ntohs(*caid_ptr);
-      i += 2;
-
-      uint16_t *pid_ptr = (uint16_t *) &buff[i];       //PID
-      uint16_t pid = ntohs(*pid_ptr);
-      i += 2;
-
-      uint32_t *prid_ptr = (uint32_t *) &buff[i];      //ProviderID
-      uint32_t prid = ntohl(*prid_ptr);
-      i += 4;
-
-      uint32_t *ecmtime_ptr = (uint32_t *) &buff[i];   //ECM time
-      uint32_t ecmtime = ntohl(*ecmtime_ptr);
-
-      //cardsystem name
-      recv(sock, &len, 1, MSG_DONTWAIT);               //string length
-      recv(sock, cardsystem, len, MSG_DONTWAIT);
-      cardsystem[len] = 0;                             //terminate the string
-
-      //reader name
-      recv(sock, &len, 1, MSG_DONTWAIT);               //string length
-      recv(sock, reader, len, MSG_DONTWAIT);
-      reader[len] = 0;                                 //terminate the string
-
-      //source (from)
-      recv(sock, &len, 1, MSG_DONTWAIT);               //string length
-      recv(sock, from, len, MSG_DONTWAIT);
-      from[len] = 0;                                   //terminate the string
-
-      //protocol name
-      recv(sock, &len, 1, MSG_DONTWAIT);               //string length
-      recv(sock, protocol, len, MSG_DONTWAIT);
-      protocol[len] = 0;                               //terminate the string
-
-      recv(sock, &hops, 1, MSG_DONTWAIT);              //hops
-
-      DEBUGLOG("%s: Got ECM_INFO: adapter_index=%d, SID = %04X, CAID = %04X (%s), PID = %04X, ProvID = %06X, ECM time = %d ms, reader = %s, from = %s, protocol = %s, hops = %d", __FUNCTION__, adapter_index, sid, caid, cardsystem, pid, prid, ecmtime, reader, from, protocol, hops);
-      capmt->UpdateEcmInfo(adapter_index, sid, caid, pid, prid, ecmtime, cardsystem, reader, from, protocol, hops);
-    }
-    else
-      DEBUGLOG("%s: Unknown request: %02X %02X %02X %02X", __FUNCTION__, request[0], request[1], request[2], request[3]);
   }
+}
+
+bool SocketHandler::HandleMessage(uint32_t request, uint8_t adapter_index)
+{
+  unsigned char buff[262];
+
+  if (request == CA_SET_PID)
+  {
+    ca_pid_t ca_pid;
+    if (!Receive(&ca_pid, sizeof(ca_pid_t)))
+      return false;
+    DEBUGLOG("%s: Got CA_SET_PID request, adapter_index=%d", __FUNCTION__, adapter_index);
+    ca_pid.pid = ntohl(ca_pid.pid);
+    ca_pid.index = ntohl(ca_pid.index);
+    decsa->SetCaPid(adapter_index, &ca_pid);
+  }
+  else if (request == CA_SET_DESCR)
+  {
+    ca_descr_t ca_descr;
+    if (!Receive(&ca_descr, sizeof(ca_descr_t)))
+      return false;
+    ca_descr.index = ntohl(ca_descr.index);
+    ca_descr.parity = ntohl(ca_descr.parity);
+    decsa->SetAes(ca_descr.index, false);
+    decsa->SetDescr(&ca_descr, false, adapter_index);
+    DEBUGLOG("%s: Got CA_SET_DESCR request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr.index);
+  }
+  else if (request == CA_SET_DESCR_AES)
+  {
+    ca_descr_aes_t ca_descr_aes;
+    if (!Receive(&ca_descr_aes, sizeof(ca_descr_aes_t)))
+      return false;
+    ca_descr_aes.index = ntohl(ca_descr_aes.index);
+    ca_descr_aes.parity = ntohl(ca_descr_aes.parity);
+    decsa->SetAes(ca_descr_aes.index, true);
+    decsa->SetDescrAes(&ca_descr_aes, false);
+    DEBUGLOG("%s: Got CA_SET_DESCR_AES request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr_aes.index);
+  }
+  else if (request == CA_SET_DESCR_MODE)
+  {
+    ca_descr_mode_t ca_descr_mode;
+    if (!Receive(&ca_descr_mode, sizeof(ca_descr_mode_t)))
+      return false;
+    ca_descr_mode.index = ntohl(ca_descr_mode.index);
+    ca_descr_mode.algo = (ca_descr_algo) ntohl(ca_descr_mode.algo);
+    ca_descr_mode.cipher_mode = (ca_descr_cipher_mode) ntohl(ca_descr_mode.cipher_mode);
+    decsa->SetAlgo(ca_descr_mode.index, ca_descr_mode.algo);
+    decsa->SetCipherMode(ca_descr_mode.index, ca_descr_mode.cipher_mode);
+    DEBUGLOG("%s: Got CA_SET_DESCR_MODE request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr_mode.index);
+  }
+  else if (request == CA_SET_DESCR_DATA)
+  {
+    // on the wire: index, parity, data_type, length, then length bytes of data
+    // (ca_descr_data_t itself ends in a pointer, so its size says nothing)
+    uint32_t header[4];
+    if (!Receive(header, sizeof(header)))
+      return false;
+    ca_descr_data_t ca_descr_data;
+    ca_descr_data.index = ntohl(header[0]);
+    ca_descr_data.parity = (ca_descr_parity) ntohl(header[1]);
+    ca_descr_data.data_type = (ca_descr_data_type) ntohl(header[2]);
+    ca_descr_data.length = ntohl(header[3]);
+    if (ca_descr_data.length > sizeof(buff))
+    {
+      ERRORLOG("%s: CA_SET_DESCR_DATA length %u out of range", __FUNCTION__, ca_descr_data.length);
+      return false;
+    }
+    if (!Receive(buff, ca_descr_data.length))
+      return false;
+    ca_descr_data.data = buff;
+    decsa->SetAes(ca_descr_data.index, false);
+    decsa->SetData(&ca_descr_data, false);
+    DEBUGLOG("%s: Got CA_SET_DESCR_DATA request, adapter_index=%d, index=%x", __FUNCTION__, adapter_index, ca_descr_data.index);
+  }
+  else if (request == DMX_SET_FILTER)
+  {
+    // demux, filter number, pid, filter/mask/mode (16 each), timeout, flags
+    if (!Receive(buff, 2 + 2 + 3 * DMX_FILTER_SIZE + 4 + 4))
+      return false;
+    unsigned char demux_index = buff[0];
+    unsigned char filter_num = buff[1];
+    int i = 2;
+
+    uint16_t pid;
+    memcpy(&pid, &buff[i], 2);
+    pid = ntohs(pid);
+    i += 2;
+
+    unsigned char *flt = &buff[i];
+    i += DMX_FILTER_SIZE;
+    unsigned char *mask = &buff[i];
+    // mode, timeout and flags are not used
+
+    DEBUGLOG("%s: Got DMX_SET_FILTER request, adapter_index=%d, pid=%X, demux_idx=%d, filter_num=%d", __FUNCTION__, adapter_index, pid, demux_index, filter_num);
+    filter->SetFilter(adapter_index, pid, 1, demux_index, filter_num, flt, mask);
+  }
+  else if (request == DMX_STOP)
+  {
+    if (!Receive(buff, 2 + 2))
+      return false;
+    unsigned char demux_index = buff[0];
+    unsigned char filter_num = buff[1];
+
+    uint16_t pid;
+    memcpy(&pid, &buff[2], 2);
+    pid = ntohs(pid);
+
+    DEBUGLOG("%s: Got DMX_STOP request, adapter_index=%d, pid=%X, demux_idx=%d, filter_num=%d", __FUNCTION__, adapter_index, pid, demux_index, filter_num);
+    filter->SetFilter(adapter_index, pid, 0, demux_index, filter_num, NULL, NULL);
+  }
+  else if (request == DVBAPI_SERVER_INFO)
+  {
+    uint16_t proto_ver;
+    char info[256];
+    if (!Receive(&proto_ver, 2) || !ReceiveString(info))
+      return false;
+    protocol_version = ntohs(proto_ver);
+    DEBUGLOG("%s: Got SERVER_INFO: %s, protocol_version = %d", __FUNCTION__, info, protocol_version);
+  }
+  else if (request == DVBAPI_ECM_INFO)
+  {
+    // one length byte each, so 255 characters + terminator at most
+    char cardsystem[256];
+    char reader[256];
+    char from[256];
+    char protocol[256];
+    int8_t hops;
+
+    uint16_t sid, caid, pid;
+    uint32_t prid, ecmtime;
+    if (!Receive(&sid, 2) || !Receive(&caid, 2) || !Receive(&pid, 2) || !Receive(&prid, 4) || !Receive(&ecmtime, 4) ||
+        !ReceiveString(cardsystem) || !ReceiveString(reader) || !ReceiveString(from) || !ReceiveString(protocol) ||
+        !Receive(&hops, 1))
+      return false;
+    sid = ntohs(sid);
+    caid = ntohs(caid);
+    pid = ntohs(pid);
+    prid = ntohl(prid);
+    ecmtime = ntohl(ecmtime);
+
+    DEBUGLOG("%s: Got ECM_INFO: adapter_index=%d, SID = %04X, CAID = %04X (%s), PID = %04X, ProvID = %06X, ECM time = %d ms, reader = %s, from = %s, protocol = %s, hops = %d", __FUNCTION__, adapter_index, sid, caid, cardsystem, pid, prid, ecmtime, reader, from, protocol, hops);
+    capmt->UpdateEcmInfo(adapter_index, sid, caid, pid, prid, ecmtime, cardsystem, reader, from, protocol, hops);
+  }
+  else
+  {
+    // the length is unknown, so the stream cannot be resynchronized
+    ERRORLOG("%s: read failed unknown command: %08x", __FUNCTION__, request);
+    return false;
+  }
+  return true;
 }
