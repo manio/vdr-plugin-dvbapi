@@ -33,20 +33,27 @@ struct dmxfilter
   unsigned char filter[DMX_FILTER_SIZE];
   unsigned char mask[DMX_FILTER_SIZE];
 
-  unsigned char *data;    //if ecm is spanned over TS packet, hold the part here
-  unsigned int len;       //total len
-  unsigned int size;      //size of saved data
-  int lastcc;             //last continuity counter
-
   unsigned char ecm_even = 0;
   unsigned char ecm_odd = 0;
+};
+
+// The filters of one pid share its section assembly: sections are cut from
+// the TS packets once and then matched against every filter.
+struct pidfilters
+{
+  vector<dmxfilter> filters;
+  vector<unsigned char> section;  // section being assembled
+  int sectionLen = 0;             // its total length, 0 while the header is incomplete
+  int lastcc = -1;                // continuity counter of the last packet
 };
 
 class cDvbapiFilter
 {
 private:
   cMutex mutex;
-  map<pair<int, int>, vector<dmxfilter>*> pidmap;
+  map<pair<int, int>, pidfilters> pidmap;
+  void Collect(pidfilters &pf, uint8_t adapter_index, int pid, const unsigned char *data, int len);
+  void Deliver(pidfilters &pf, uint8_t adapter_index, int pid, const unsigned char *data, int len);
 
 public:
   ~cDvbapiFilter();
