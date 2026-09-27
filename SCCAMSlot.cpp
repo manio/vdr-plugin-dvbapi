@@ -240,7 +240,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
       int ca_lm = data[0];                      // lm -> list manager
       int ci_cmd = -1;
       int sid = (data[1] << 8) + data[2];       // program number
-      int ilen = (data[4] << 8) + data[5];      // program info length
+      int ilen = ((data[4] & 0x0F) << 8) + data[5]; // program info length
       DEBUGLOG("%d.%d CA_PMT decoding len=%x lm=%x prg=%d len=%x", cardIndex, slot, dlen, ca_lm, sid, ilen);
       data += 6;
       dlen -= 6;
@@ -255,7 +255,7 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
       dlen -= ilen;
       while (dlen >= 5)
       {
-        ilen = (data[3] << 8) + data[4];        // ES_Info_length
+        ilen = ((data[3] & 0x0F) << 8) + data[4]; // ES_Info_length
         DEBUGLOG("pid=%d,%04x len=%d (0x%x)", data[0], (data[1] << 8) + data[2], ilen, ilen);
         data += 5;
         dlen -= 5;
@@ -279,12 +279,12 @@ void SCCAMSlot::Process(const unsigned char *data, int len)
           b[2] = tcid;
           b[3] = 0x90;
           b[4] = 0x02;
-          b[5] = cid << 8;
+          b[5] = cid >> 8;
           b[6] = cid & 0xff;
           b[7] = 0x9f;
           b[8] = 0x80;
           b[9] = 0x33;          // AOT_CA_PMT_REPLY
-          b[11] = sid << 8;
+          b[11] = sid >> 8;
           b[12] = sid & 0xff;
           b[13] = 0x00;
           b[14] = 0x81;         // CA_ENABLE
