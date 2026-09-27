@@ -108,6 +108,9 @@ void CAPMT::ProcessSIDRequest(int card_index, int sid, int ca_lm, const unsigned
     else
     {
       DEBUGLOG("CA_PMT doesn't contain CA descriptors");
+      // a stop (ca_pmt_cmd_id 0x04) arrives here too: OSCam must drop the service
+      if (removed)
+        SendAll();
       return;
     }
 
