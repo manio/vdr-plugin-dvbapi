@@ -1039,6 +1039,11 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
       int pid = ((data[l + 1] << 8) + data[l + 2]) & MAX_CSA_PID;
       int idx = SearchPIDinMAP(pid);
 
+      // The caller consumes this packet even if its PID is not mapped.
+      // Do not repeatedly scan the remaining buffer on its behalf.
+      if (l == 0 && (idx < 0 || pid == MAX_CSA_PID))
+        return false;
+
       //one idx has several pids (all pids belong to channel)
       if (idx >= 0 && (pid < MAX_CSA_PID) && (currIdx < 0 || idx == currIdx)) // same or no index
       {
@@ -1174,6 +1179,8 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
     }
     else // unencrypted
     {
+      if (l == 0)
+        return false;
       // nothing, we don't create holes for unencrypted packets
     }
   }
