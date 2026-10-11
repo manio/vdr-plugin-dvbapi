@@ -2,7 +2,7 @@ TOC
 1. Introduction
 2. Getting the source code
 3. Basic Installation
-4. VDR and OScam compatibility
+4. VDR, OSCam and libdvbcsa compatibility
 5. Plugin and OSCam setup
 6. Commandline options
 7. Note for a plugin developers
@@ -39,7 +39,7 @@ You will have to grab the source code of course. First install the git
 package provided by your distribution. Then from a terminal, type:
 
    $ cd /usr/local/src/vdr/PLUGINS/src
-   $ git clone git://github.com/manio/vdr-plugin-dvbapi.git
+   $ git clone https://github.com/manio/vdr-plugin-dvbapi.git
    $ ln -s vdr-plugin-dvbapi dvbapi
 
 -----------------------------------------------------------------------------
@@ -49,21 +49,44 @@ package provided by your distribution. Then from a terminal, type:
 For sample installation instructions refer to INSTALL file.
 
 -----------------------------------------------------------------------------
-4. VDR and OScam compatibility
+4. VDR, OSCam and libdvbcsa compatibility
 -----------------------------------------------------------------------------
 
-Recommended VDR version for recent plugin versions is the stable VDR 2.2.0 or
-further Developer versions.
-You also need OScam svn rev >= 11534.
+VDR:
+The plugin is tested with the current stable VDR 2.8.3. It needs at least
+VDR 2.3.3, which introduced the MasterSlot CAM API the plugin uses; the first
+stable VDR with it is 2.4.0.
+
+OSCam:
+You need OSCam svn rev >= 11534 with the 'dvbapi' module enabled.
+
+FFdecsa and libdvbcsa:
+The plugin descrambles with FFdecsa by default, which is part of the plugin
+and supports iCAM. To use libdvbcsa instead (see INSTALL), install one of:
+
+  - https://code.videolan.org/videolan/libdvbcsa
+    The VideoLAN reference implementation. Its git master (not in a release
+    yet) supports iCAM with dvbcsa_bs_key_set_ecm(): build the plugin with
+    "make LIBDVBCSA_NEW=1". The faster bitslice engine of glenvt18's fork
+    is being merged into it; until that work is complete, it is slower than
+    the fork.
+
+  - https://github.com/glenvt18/libdvbcsa
+    A fork with a much faster engine (SSSE3, AVX2, NEON), but without iCAM
+    support: build the plugin with "make LIBDVBCSA=1". iCAM channels cannot
+    be descrambled with it.
 
 *** NOTE FOR OLDER VDR VERSIONS:
+    If you are using VDR older than 2.3.3 then you need an older plugin
+    version:
+    - version 2.2.4 is the last plugin revision that will work for you.
     If you are using older VDR stable versions or developer version older
-    then 2.1.4 then you also need an older plugin version:
+    then 2.1.4 then you need:
     - version 1.0.6 is the last plugin revision that will work for you;
-    you also need OScam svn rev >= 7314 and <= 9854 in this case.
+    you also need OSCam svn rev >= 7314 and <= 9854 in this case.
 
 *** NOTE FOR OLDER OSCAM VERSIONS:
-    If you are using older OScam svn versions older then 11534 then you
+    If you are using older OSCam svn versions older then 11534 then you
     also need an older plugin version:
     - version 2.2.5 is the last plugin revision that will work for you.
 
@@ -196,8 +219,8 @@ While this works very good for recordings, live video/audio will stop
 for a brief moment (but usually only for the first time fastecm kicks in).
 
 VDR compatibility:
-Fast ECM needs 16 Megabyte Buffer to work perfect.
-you should patch this in vdr code in file dvbdevice.c, Function cDvbDevice::OpenDvr
-tsBuffer = new cTSBuffer(fd_dvr, MEGABYTE(5), CardIndex() + 1); should be
+Fast ECM needs a 16 MB TS buffer to work well. VDR uses 16 MB since version
+2.4.5, so no change is needed there. For older VDR versions change the line
+tsBuffer = new cTSBuffer(fd_dvr, MEGABYTE(5), CardIndex() + 1);
+in cDvbDevice::OpenDvr() in dvbdevice.c to
 tsBuffer = new cTSBuffer(fd_dvr, MEGABYTE(16), CardIndex() + 1);
-Maybe this will get default in later vdr releases (>2.4.4).
