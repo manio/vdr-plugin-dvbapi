@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 #ifdef LIBSSL
-#include "openssl/aes.h"
+#include <openssl/evp.h>
 #endif
 
 #include "DVBAPI.h"
@@ -75,7 +75,7 @@ public:
 #ifdef LIBSSL
   bool GetorCreateAesKeyStruct();
   bool SetAesKey(unsigned int parity, const unsigned char *key, int bits);
-  bool GetAesKey(unsigned int parity, AES_KEY &key, unsigned char *iv);
+  bool AesDecrypt(unsigned int parity, unsigned char *data, int len);
   void SetAesIv(const unsigned char *iv);
 #endif
   void Des(uint8_t* data, unsigned char parity);
