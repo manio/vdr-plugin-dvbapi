@@ -93,14 +93,26 @@ bool CheckNull(const unsigned char *data, int len)
 #ifdef LIBSSL
 struct aes_keys_t
 {
-  AES_KEY even;
-  AES_KEY odd;
+  EVP_CIPHER_CTX *even;
+  EVP_CIPHER_CTX *odd;
 };
 
-void aes_set_control_words(void *aeskeys, const unsigned char *ev, const unsigned char *od)
+// ECB only: CBC restarts from the IV in every packet, DeCSAKey::AesDecrypt()
+// chains the blocks itself
+static bool aes_set_key(EVP_CIPHER_CTX *ctx, const unsigned char *key, int bits)
 {
-  AES_set_decrypt_key(ev, 128, &((struct aes_keys_t *) aeskeys)->even);
-  AES_set_decrypt_key(od, 128, &((struct aes_keys_t *) aeskeys)->odd);
+  const EVP_CIPHER *cipher = bits == 256 ? EVP_aes_256_ecb() : bits == 192 ? EVP_aes_192_ecb() : EVP_aes_128_ecb();
+  return EVP_DecryptInit_ex(ctx, cipher, NULL, key, NULL) && EVP_CIPHER_CTX_set_padding(ctx, 0);
+}
+
+void aes_free_key_struct(void *aeskeys)
+{
+  if (aeskeys)
+  {
+    EVP_CIPHER_CTX_free(((struct aes_keys_t *) aeskeys)->even);
+    EVP_CIPHER_CTX_free(((struct aes_keys_t *) aeskeys)->odd);
+    free(aeskeys);
+  }
 }
 
 void * aes_get_key_struct(void)
@@ -109,15 +121,15 @@ void * aes_get_key_struct(void)
   if (aeskeys)
   {
     static const unsigned char packet[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    aes_set_control_words(aeskeys, packet, packet);
+    aeskeys->even = EVP_CIPHER_CTX_new();
+    aeskeys->odd = EVP_CIPHER_CTX_new();
+    if (!aeskeys->even || !aeskeys->odd || !aes_set_key(aeskeys->even, packet, 128) || !aes_set_key(aeskeys->odd, packet, 128))
+    {
+      aes_free_key_struct(aeskeys);
+      return NULL;
+    }
   }
   return aeskeys;
-}
-
-void aes_free_key_struct(void *aeskeys)
-{
-  if (aeskeys)
-    free(aeskeys);
 }
 #endif
 
@@ -227,18 +239,26 @@ bool DeCSAKey::SetAesKey(unsigned int parity, const unsigned char *key, int bits
   if (!csa_aes_key)
     return false;
   aes_keys_t *keys = (aes_keys_t *) csa_aes_key;
-  return AES_set_decrypt_key(key, bits, parity ? &keys->odd : &keys->even) == 0;
+  return aes_set_key(parity ? keys->odd : keys->even, key, bits);
 }
 
-// copies, under the lock: the socket thread may replace key and IV any time
-bool DeCSAKey::GetAesKey(unsigned int parity, AES_KEY &key, unsigned char *iv)
+// under the lock: the socket thread may replace key and IV any time
+bool DeCSAKey::AesDecrypt(unsigned int parity, unsigned char *data, int len)
 {
   cMutexLock lock(&mutexKEY);
   if (!csa_aes_key)
     return false;
   aes_keys_t *keys = (aes_keys_t *) csa_aes_key;
-  key = parity ? keys->odd : keys->even;
-  memcpy(iv, aesIv, sizeof(aesIv));
+  bool cbc = algo == CA_ALGO_AES128 && cipherMode == CA_MODE_CBC;
+  unsigned char in[TS_SIZE];
+  if (cbc)
+    memcpy(in, data, len);
+  int outl;
+  if (!EVP_DecryptUpdate(parity ? keys->odd : keys->even, data, &outl, data, len))
+    return false;
+  if (cbc)
+    for (int i = 0; i < len; i++)
+      data[i] ^= i < 16 ? aesIv[i] : in[i - 16];
   return true;
 }
 
@@ -1104,19 +1124,11 @@ bool DeCSAAdapter::Decrypt(DeCSA* parent, unsigned char *data, int len, bool for
 #ifdef LIBSSL
         else if (algo == CA_ALGO_AES128 || aes)
         {
-          // AES128 of the extended CW mode (ECB or CBC), or a CA_SET_DESCR_AES key (ECB)
-          AES_KEY aes_key;
-          unsigned char iv[16];
-          if (!parent->DeCSAKeyArray[currIdx].GetAesKey((ev_od & 0x40) >> 6, aes_key, iv))
+          // AES128 of the extended CW mode (ECB or CBC), or a CA_SET_DESCR_AES key (ECB);
+          // a residue shorter than one block is transmitted in the clear
+          if (!parent->DeCSAKeyArray[currIdx].AesDecrypt((ev_od & 0x40) >> 6, &data[l + offset], (TS_SIZE - offset) & ~15))
             continue;           // no key yet: leave the packet scrambled
           data[l + 3] &= 0x3f;    // consider it decrypted now
-          // a residue shorter than one block is transmitted in the clear
-          if (algo == CA_ALGO_AES128 && parent->DeCSAKeyArray[currIdx].GetCipherMode() == CA_MODE_CBC)
-            // the chain restarts from the IV in every packet
-            AES_cbc_encrypt(&data[l + offset], &data[l + offset], (TS_SIZE - offset) & ~15, &aes_key, iv, AES_DECRYPT);
-          else
-            for (int j = offset; j + 16 <= TS_SIZE; j += 16)
-              AES_ecb_encrypt(&data[l + j], &data[l + j], &aes_key, AES_DECRYPT);
         }
 #else
         else if (algo == CA_ALGO_AES128 || aes)
