@@ -11,7 +11,7 @@ PLUGIN = dvbapi
 
 ### The version number of this plugin (taken from the main source file):
 
-VERSION = $(shell grep 'static const char \*VERSION *=' DVBAPI.h | awk '{ print $$6 }' | sed -e 's/[";]//g')
+VERSION = $(shell grep '^#define VERSION ' DVBAPI.h | awk '{ print $$3 }' | sed -e 's/"//g')
 GITTAG  = $(shell git describe --always 2>/dev/null)
 
 ### The directory environment:
