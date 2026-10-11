@@ -23,3 +23,104 @@ Added a 'network mode'. This allows connecting to OSCam over the
 network. Filtering of ECM/CAT/EMM is done locally by plugin on
 data provided by VDR.
 OSCam doesn't need access to physical hardware.
+
+2014-08-05 Version 2.1.1
+-------------------------------------------------------------------
+- New option -o to add an offset to the adapter indexes sent to
+  OSCam, so that several VDR clients can share one OSCam.
+- New option -d to disable the CW expiration check.
+- The byte order of the OSCam connection is detected automatically.
+- Network mode: fixed the data filtering; all filters are stopped
+  when the connection to OSCam is lost.
+
+2015-02-18 Version 2.2.0
+-------------------------------------------------------------------
+- Support for version 1 of the OSCam dvbapi network protocol.
+- The network mode is the default now, the socket mode is deprecated.
+- The connection to OSCam is kept open, and VDR no longer gets stuck
+  when OSCam has a problem.
+- DeCSA and filtering no longer depend on a maximum adapter count.
+- Added Estonian and Lithuanian translations.
+
+2015-07-29 Version 2.2.1
+-------------------------------------------------------------------
+- ECM info from OSCam (protocol version 2), including the card system
+  name (OSCam rev 10653), is available through the service interface.
+- Filter: several tables in one TS packet are handled.
+- Longer CW lifetime for providers with long crypto periods.
+- No CAM menu for "replay only" devices.
+
+2016-02-06 Version 2.2.2
+-------------------------------------------------------------------
+- Removed the code for OSCam versions before protocol version 1.
+- Filter: fixed the continuity counter check and the handling of
+  several filters on one pid.
+- DeCSA: the pid range is checked.
+
+2016-05-19 Version 2.2.3
+-------------------------------------------------------------------
+- DES decryption (with the DES functions of the cscrypt library).
+- Faster descrambling; the fill control adapts to small device
+  buffers.
+- The adapter index offset can be set in setup.conf
+  (dvbapi.AdapterIndexOffset).
+- README: note for device plugin developers about the buffer size.
+
+2017-03-28 Version 2.2.4
+-------------------------------------------------------------------
+- AES key support (needs OpenSSL).
+- Removed the legacy socket mode.
+- Updated translations.
+
+2019-07-26 Version 2.2.5
+-------------------------------------------------------------------
+- Support for VDR's MasterSlot CAM feature (needs VDR >= 2.3.3).
+- Extended CW mode for AES128.
+- Fixed compilation with kernels >= 4.14.
+- The Makefile follows VDR's plugin Makefile style.
+
+2022-11-10 Version 2.2.6
+-------------------------------------------------------------------
+- Needs OSCam svn rev >= 11534; older OSCam versions are no longer
+  supported.
+- Fast ECM: the stream is held back up to 2.5 seconds until a late
+  CW arrives (setup option "Enable FastECM").
+- Fixed compilation and operation with libdvbcsa.
+
+2026-10-11 Version 2.2.7
+-------------------------------------------------------------------
+New:
+- iCAM (NDS VideoGuard) support, with FFdecsa or with a libdvbcsa
+  that has dvbcsa_bs_key_set_ecm() (build with LIBDVBCSA_NEW=1).
+- AES uses the OpenSSL EVP API, which removes the OpenSSL 3.0
+  deprecation warnings (#145).
+- The CW expiration check is removed: OSCam sends a CW only when it
+  changes, so a key cannot be judged by its age. The option -d is
+  still accepted but has no effect.
+- The connection to OSCam is reopened after an error, which fixes
+  setups with an adapter index offset when another client of the
+  same OSCam disconnects.
+
+Fixes:
+- iCAM: the ECM mode is taken from VideoGuard ECMs only, as OSCam
+  does it. iCAM channels no longer go black after a few seconds
+  (#140, #143).
+- Section filter: sections are assembled per pid as the Linux DVB
+  demux does (adaptation field, pointer field, stuffing, continuity
+  counter). EMMs that span TS packets are no longer lost.
+- OSCam connection: every message is read completely, also when TCP
+  delivers it in several segments, and writes are serialized.
+- AES and DES decryption: the CBC IV, the uninitialized cipher mode,
+  and missing key length checks.
+- CA_PMT: stopped services are reported to OSCam, the
+  program_info_length and the buffer size are fixed, and the CA_PMT
+  reply names the right service for service ids above 255.
+- A pid that OSCam disables is no longer decrypted with a key index
+  that OSCam has reused for another service.
+- Data races found with ThreadSanitizer: the fill control, and a
+  libdvbcsa key replaced during a batch.
+- CI adapter: oversized frames are dropped, slot numbers are checked.
+- No repeated look-ahead for undecryptable TS packets at the head of
+  the buffer (#150).
+- The "Enable FastECM" setup string is in the translations.
+- COPYING: replaced the FSF postal address.
