@@ -124,3 +124,12 @@ Fixes:
   the buffer (#150).
 - The "Enable FastECM" setup string is in the translations.
 - COPYING: replaced the FSF postal address.
+
+2026-10-23 Version 2.2.8
+-------------------------------------------------------------------
+Fixes:
+- Stopping VDR during live TV on an encrypted channel could make a
+  device's receive thread decrypt with a CAM slot that the plugin
+  had already deleted. The plugin now stops its threads in Stop()
+  and deletes the CAM slots in its destructor, which VDR calls after
+  it has deleted the devices (#163).
