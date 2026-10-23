@@ -72,6 +72,7 @@ class SocketHandler : public cThread
 public:
   SocketHandler();
   ~SocketHandler();
+  void Stop(void);
   void OpenConnection();
   void CloseConnection();
   void Write(const unsigned char *data, int len);

@@ -38,6 +38,16 @@ DVBAPI::DVBAPI(void)
 
 DVBAPI::~DVBAPI()
 {
+  delete sCCIAdapter;
+  sCCIAdapter = NULL;
+  delete SockHandler;
+  SockHandler = NULL;
+  delete filter;
+  filter = NULL;
+  delete decsa;
+  decsa = NULL;
+  delete capmt;
+  capmt = NULL;
 }
 
 const char *DVBAPI::CommandLineHelp(void)
@@ -98,16 +108,12 @@ bool DVBAPI::Start(void)
 
 void DVBAPI::Stop(void)
 {
-  delete sCCIAdapter;
-  sCCIAdapter = NULL;
-  delete SockHandler;
-  SockHandler = NULL;
-  delete filter;
-  filter = NULL;
-  delete decsa;
-  decsa = NULL;
-  delete capmt;
-  capmt = NULL;
+  // A device's receive thread may still be in a CAM slot's Decrypt(), which
+  // uses all of the plugin's objects, until VDR deletes the devices, and VDR
+  // does that after the plugins have stopped: stop the threads here, delete
+  // the objects in the destructor.
+  sCCIAdapter->Stop();
+  SockHandler->Stop();
   INFOLOG("plugin stopped");
 }
 

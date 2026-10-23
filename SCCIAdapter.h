@@ -19,6 +19,7 @@
 #ifndef ___SCCIADAPTER_H
 #define ___SCCIADAPTER_H
 
+#include <atomic>
 #include "SCCAMSlot.h"
 #include "Frame.h"
 #include "CAPMT.h"
@@ -46,10 +47,12 @@ private:
   cTimeMs readTimer;
   Frame frame;
   cRingBufferLinear *rb;
+  std::atomic<bool> stopped;
 
 public:
   SCCIAdapter(void);
   ~SCCIAdapter();
+  void Stop(void);
   int GetVersion()
   {
     return version;

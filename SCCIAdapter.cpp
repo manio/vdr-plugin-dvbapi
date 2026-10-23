@@ -37,6 +37,7 @@
 SCCIAdapter::SCCIAdapter(void)
 {
   tcid = 0;
+  stopped = false;
 
   version = 1;
   memset(slots, 0, sizeof(slots));
@@ -170,6 +171,19 @@ void SCCIAdapter::Write(const unsigned char *buff, int len)
     DEBUGLOG("short write (buff=%d len=%d)", buff != 0, len);
 }
 
+void SCCIAdapter::Stop(void)
+{
+  // the slots outlive Stop() (see DVBAPI::Stop()), so they must not keep a
+  // device that VDR deletes before them
+  stopped = true;
+  for (int i = 0; i < MAXDEVICES; i++)
+  {
+    if (slots[i])
+      slots[i]->Assign(NULL);
+  }
+  Cancel(3);
+}
+
 SCCIAdapter::~SCCIAdapter()
 {
   DEBUGLOG("%s", __FUNCTION__);
@@ -197,5 +211,5 @@ eModuleStatus SCCIAdapter::ModuleStatus(int Slot)
 
 bool SCCIAdapter::Assign(cDevice *Device, bool Query)
 {
-  return true;
+  return !Device || !stopped;
 }
