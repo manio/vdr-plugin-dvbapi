@@ -30,6 +30,11 @@ SocketHandler *SockHandler = NULL;
 
 SocketHandler::~SocketHandler()
 {
+  Stop();
+}
+
+void SocketHandler::Stop(void)
+{
   Cancel(3);
   CloseConnection();
 }
